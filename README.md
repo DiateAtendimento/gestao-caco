@@ -36,7 +36,7 @@ JWT_SECRET=seu_segredo
 GOOGLE_SHEET_ID=16k4heNHfta1LBhSjbmeskHQY-NPAo41pqHwyZT8nSbM
 GOOGLE_SERVICE_ACCOUNT_EMAIL=service-account@projeto.iam.gserviceaccount.com
 GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
-FRONTEND_URL=http://localhost:5173
+FRONTEND_URL=https://gestao-caco.netlify.app
 ```
 
 4. Rode:
@@ -47,7 +47,7 @@ FRONTEND_URL=http://localhost:5173
 1. Publicar `frontend/` como site estático (Netlify).
 2. Ajustar base da API:
    - opção A: definir `window.GESTAO_API_URL` antes dos scripts
-   - opção B: salvar no browser: `localStorage.setItem('apiBaseUrl', 'https://SEU-BACKEND.onrender.com')`
+   - opção B: salvar no browser: `localStorage.setItem('apiBaseUrl', 'https://gestao-caco-backend.onrender.com')`
 
 Rotas públicas esperadas:
 - `/login`

@@ -18,4 +18,4 @@
       - key: GOOGLE_PRIVATE_KEY
         sync: false
       - key: FRONTEND_URL
-        sync: false
+        value: https://gestao-caco.netlify.app
