@@ -10,15 +10,15 @@
   <main class="admin-layout">
     <section class="admin-top">
       <div class="admin-user-mini">
-        <img src="./assets/icons/perfil-masculino.svg" alt="Admin" />
+        <img id="admin-avatar" src="./img/admin.png" alt="Admin" />
         <div>Administrador</div>
+        <button id="btn-logout" class="me-logout">Sair</button>
       </div>
 
       <nav class="admin-menu">
         <button id="btn-home"><img src="./assets/icons/inicio.svg" alt="Início" />Início</button>
         <button id="btn-dashboard"><img src="./assets/icons/dashboard.svg" alt="Dashboard" />Dashboard</button>
         <button id="btn-theme">◌ Modo escuro</button>
-        <button id="btn-logout">Sair</button>
       </nav>
     </section>
 
@@ -42,6 +42,7 @@
         </section>
 
         <section id="tab-solicitacoes" class="tab-content">
+          <h3>Solicitação</h3>
           <div class="table-shell">
             <table class="table">
               <thead>

@@ -1,7 +1,7 @@
 ﻿const express = require('express');
 const { authMiddleware } = require('../middleware/auth');
 const { PROFILE_SHEET, ACTIVITY_COLUMNS } = require('../config/constants');
-const { readSheet } = require('../services/sheetsService');
+const { readSheet, ensureColumn } = require('../services/sheetsService');
 const { equalsIgnoreCase, normalizeText } = require('../utils/text');
 
 const router = express.Router();
@@ -9,6 +9,7 @@ router.use(authMiddleware);
 
 router.get('/me', async (req, res) => {
   try {
+    await ensureColumn(PROFILE_SHEET, 'Senha');
     const { rows } = await readSheet(PROFILE_SHEET);
     const profile = rows.find((row) => equalsIgnoreCase(row.Atendente, req.user.nome));
 

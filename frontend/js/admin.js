@@ -1,12 +1,14 @@
 ﻿import { api, requireAuth, clearSession, toggleTheme } from './auth.js';
 import { ACTIVITIES, AREA_OPTIONS, META_OPTIONS } from './data.js';
+import { showLoading, showStatus } from './feedback.js';
+import { attachAvatar } from './avatar.js';
 
 const user = requireAuth('admin');
 if (!user) throw new Error('Sessão inválida');
 
 const state = {
   cards: [],
-  pendentes: [],
+  selectedSolicitacoes: [],
   selectedAtendente: null,
   dashboardUrl: 'https://docs.google.com/spreadsheets/d/16k4heNHfta1LBhSjbmeskHQY-NPAo41pqHwyZT8nSbM/edit?gid=0#gid=0',
   editingId: null
@@ -18,6 +20,7 @@ const modalConfig = document.getElementById('modal-config');
 const modalSolicitacao = document.getElementById('modal-solicitacao');
 const modalNovoColab = document.getElementById('modal-novo-colab');
 const modalConfirmDelete = document.getElementById('modal-confirm-delete');
+attachAvatar(document.getElementById('admin-avatar'), 'admin');
 
 function showMsg(text) {
   msgEl.textContent = text || '';
@@ -26,12 +29,30 @@ function showMsg(text) {
 function openModal(el) { el.classList.add('open'); }
 function closeModal(el) { el.classList.remove('open'); }
 
-function avatarByName(nome) {
-  return nome?.trim().toLowerCase().endsWith('a') ? 'assets/icons/perfil-feminino.svg' : 'assets/icons/perfil-masculino.svg';
-}
-
 function enabledActivitiesMap(card) {
   return ACTIVITIES.filter((a) => card.atividades?.[a.key] === 'Sim').slice(0, 3);
+}
+
+async function runAction(actionName, loadingText, successType, successText, fn) {
+  const started = performance.now();
+  const loading = await showLoading(loadingText);
+  console.log(`[Admin] ${actionName} iniciado`);
+
+  try {
+    const result = await fn();
+    console.log(`[Admin] ${actionName} concluído em ${Math.round(performance.now() - started)}ms`);
+    if (successText) {
+      await showStatus(successType, successText);
+    }
+    return result;
+  } catch (error) {
+    console.error(`[Admin] ${actionName} erro:`, error.message);
+    showMsg(error.message);
+    await showStatus('erro', `Erro: ${error.message}`);
+    throw error;
+  } finally {
+    loading.close();
+  }
 }
 
 function renderCards() {
@@ -47,7 +68,7 @@ function renderCards() {
           <button class="icon-btn" data-del="${card.nome}" title="Excluir">🗑</button>
           <button class="icon-btn" data-edit="${card.nome}" title="Editar">✎</button>
         </div>
-        <img class="colab-avatar" src="${avatarByName(card.nome)}" alt="${card.nome}" />
+        <img class="colab-avatar" data-avatar-name="${card.nome}" alt="${card.nome}" />
         <div class="colab-name">${card.nome}</div>
         <div class="progress-wrap">
           <div class="progress-green" style="width:${Math.min(card.percentual * 20, 100)}%"></div>
@@ -71,6 +92,10 @@ function renderCards() {
       </div>
     `;
     cardsEl.appendChild(box);
+  });
+
+  cardsEl.querySelectorAll('img[data-avatar-name]').forEach((img) => {
+    attachAvatar(img, img.dataset.avatarName);
   });
 
   const add = document.createElement('article');
@@ -112,26 +137,31 @@ function renderAtividades() {
     btn.innerHTML = `<img src="${item.icon}" alt="${item.label}" /><span>${item.label}</span>`;
     btn.addEventListener('click', async () => {
       try {
-        await api(`/api/users/${encodeURIComponent(state.selectedAtendente)}/atividades`, {
-          method: 'PUT',
-          body: JSON.stringify({ atividade: item.key })
+        await runAction('toggle atividade', 'Atualizando atividade...', 'salvo', 'Atividade atualizada', async () => {
+          await api(`/api/users/${encodeURIComponent(state.selectedAtendente)}/atividades`, {
+            method: 'PUT',
+            body: JSON.stringify({ atividade: item.key })
+          });
+          await loadAdminData();
+          renderAtividades();
+          renderCards();
         });
-        await loadAdminData();
-        renderAtividades();
-        renderCards();
-      } catch (error) {
-        showMsg(error.message);
-      }
+      } catch (_e) {}
     });
     target.appendChild(btn);
   });
 }
 
-function renderPendentes() {
+function renderSolicitacoesSelecionado() {
   const body = document.getElementById('tbody-solicitacoes');
   body.innerHTML = '';
 
-  state.pendentes.forEach((row) => {
+  if (!state.selectedSolicitacoes.length) {
+    body.innerHTML = '<tr><td colspan="5">Nenhuma solicitação para este colaborador. Use "Adicionar solicitação".</td></tr>';
+    return;
+  }
+
+  state.selectedSolicitacoes.forEach((row) => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${row.id}</td>
@@ -141,7 +171,6 @@ function renderPendentes() {
       <td class="actions-cell">
         <button data-edit-sol="${row.id}" title="Editar">✏</button>
         <button data-del-sol="${row.id}" title="Excluir">❌</button>
-        <button data-attr-sol="${row.id}" title="Atribuir">✔</button>
       </td>
     `;
     body.appendChild(tr);
@@ -150,27 +179,14 @@ function renderPendentes() {
   body.querySelectorAll('[data-edit-sol]').forEach((btn) => btn.addEventListener('click', () => openSolicitacao(btn.dataset.editSol)));
   body.querySelectorAll('[data-del-sol]').forEach((btn) => btn.addEventListener('click', async () => {
     try {
-      await api(`/api/solicitacoes/${encodeURIComponent(btn.dataset.delSol)}`, { method: 'DELETE' });
-      await loadAdminData();
-      renderPendentes();
-      renderCards();
-    } catch (error) {
-      showMsg(error.message);
-    }
-  }));
-  body.querySelectorAll('[data-attr-sol]').forEach((btn) => btn.addEventListener('click', async () => {
-    if (!state.selectedAtendente) return showMsg('Selecione um colaborador no modal de configurações.');
-    try {
-      await api(`/api/solicitacoes/${encodeURIComponent(btn.dataset.attrSol)}/atribuir`, {
-        method: 'POST',
-        body: JSON.stringify({ atendenteNome: state.selectedAtendente })
+      await runAction('excluir solicitação', 'Excluindo solicitação...', 'excluido', 'Solicitação excluída', async () => {
+        await api(`/api/solicitacoes/${encodeURIComponent(btn.dataset.delSol)}`, { method: 'DELETE' });
+        await loadSelectedSolicitacoes();
+        await loadAdminData();
+        renderSolicitacoesSelecionado();
+        renderCards();
       });
-      await loadAdminData();
-      renderPendentes();
-      renderCards();
-    } catch (error) {
-      showMsg(error.message);
-    }
+    } catch (_e) {}
   }));
 }
 
@@ -184,11 +200,11 @@ function setupSolicitacaoForm() {
 function openSolicitacao(id = null) {
   state.editingId = id;
   document.getElementById('sol-id').value = id || 'Gerado automaticamente no salvar';
-  document.getElementById('sol-title').textContent = id ? 'Editar Solicitação' : 'Nova Solicitação';
+  document.getElementById('sol-title').textContent = id ? 'Editar Solicitação' : `Nova Solicitação - ${state.selectedAtendente}`;
   document.getElementById('sol-descricao').value = '';
 
   if (id) {
-    const row = state.pendentes.find((p) => p.id === id);
+    const row = state.selectedSolicitacoes.find((p) => p.id === id);
     if (row) {
       document.getElementById('sol-area').value = row.area;
       document.getElementById('sol-meta').value = String(row.meta);
@@ -199,29 +215,51 @@ function openSolicitacao(id = null) {
   openModal(modalSolicitacao);
 }
 
-function openConfig(nome) {
+async function loadSelectedSolicitacoes() {
+  if (!state.selectedAtendente) {
+    state.selectedSolicitacoes = [];
+    return;
+  }
+
+  const data = await api(`/api/demandas?atendente=${encodeURIComponent(state.selectedAtendente)}`);
+  state.selectedSolicitacoes = (data.demandas || []).map((item) => ({
+    id: item.id,
+    area: item.area,
+    descricao: item.descricao,
+    meta: item.meta || 0,
+    finalizado: item.finalizado
+  }));
+  console.log(`[Admin] solicitações do colaborador ${state.selectedAtendente}: ${state.selectedSolicitacoes.length}`);
+}
+
+async function openConfig(nome) {
   state.selectedAtendente = nome;
   document.getElementById('cfg-user-name').textContent = nome;
-  renderAtividades();
-  renderPendentes();
-  openModal(modalConfig);
+
+  try {
+    await runAction('abrir configurações', 'Carregando configurações...', null, null, async () => {
+      await loadSelectedSolicitacoes();
+      renderAtividades();
+      renderSolicitacoesSelecionado();
+      openModal(modalConfig);
+    });
+  } catch (_e) {}
 }
 
 async function loadAdminData() {
-  const [dashboard, pendentes] = await Promise.all([
-    api('/api/dashboard/admin'),
-    api('/api/solicitacoes?pendentes=true')
-  ]);
+  const started = performance.now();
+  const dashboard = await api('/api/dashboard/admin');
   state.cards = dashboard.cards || [];
-  state.pendentes = pendentes.solicitacoes || [];
   state.dashboardUrl = dashboard.dashboardUrl || state.dashboardUrl;
+  console.log(`[Admin] cards carregados: ${state.cards.length}, tempo: ${Math.round(performance.now() - started)}ms`);
 }
 
 document.getElementById('btn-home').addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
 document.getElementById('btn-dashboard').addEventListener('click', () => window.open(state.dashboardUrl, '_blank'));
 document.getElementById('btn-theme').addEventListener('click', toggleTheme);
-document.getElementById('btn-logout').addEventListener('click', () => {
+document.getElementById('btn-logout').addEventListener('click', async () => {
   clearSession();
+  await showStatus('excluido', 'Sessão encerrada');
   window.location.href = 'login.html';
 });
 
@@ -246,25 +284,32 @@ document.getElementById('form-solicitacao').addEventListener('submit', async (ev
   };
 
   try {
-    if (state.editingId) {
-      await api(`/api/solicitacoes/${encodeURIComponent(state.editingId)}`, {
-        method: 'PUT',
-        body: JSON.stringify(payload)
-      });
-    } else {
-      await api('/api/solicitacoes', {
-        method: 'POST',
-        body: JSON.stringify(payload)
-      });
-    }
+    await runAction('salvar solicitação', 'Salvando solicitação...', 'salvo', 'Solicitação salva', async () => {
+      if (state.editingId) {
+        await api(`/api/solicitacoes/${encodeURIComponent(state.editingId)}`, {
+          method: 'PUT',
+          body: JSON.stringify(payload)
+        });
+      } else {
+        const created = await api('/api/solicitacoes', {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
 
-    closeModal(modalSolicitacao);
-    await loadAdminData();
-    renderPendentes();
-    renderCards();
-  } catch (error) {
-    showMsg(error.message);
-  }
+        await api(`/api/solicitacoes/${encodeURIComponent(created.id)}/atribuir`, {
+          method: 'POST',
+          body: JSON.stringify({ atendenteNome: state.selectedAtendente })
+        });
+        console.log(`[Admin] nova solicitação ${created.id} criada e atribuída para ${state.selectedAtendente}`);
+      }
+
+      closeModal(modalSolicitacao);
+      await loadSelectedSolicitacoes();
+      await loadAdminData();
+      renderSolicitacoesSelecionado();
+      renderCards();
+    });
+  } catch (_e) {}
 });
 
 document.getElementById('form-novo-colab').addEventListener('submit', async (event) => {
@@ -276,30 +321,37 @@ document.getElementById('form-novo-colab').addEventListener('submit', async (eve
   };
 
   try {
-    await api('/api/users', {
-      method: 'POST',
-      body: JSON.stringify(body)
+    await runAction('criar colaborador', 'Criando colaborador...', 'salvo', 'Colaborador criado', async () => {
+      await api('/api/users', {
+        method: 'POST',
+        body: JSON.stringify(body)
+      });
+      event.target.reset();
+      closeModal(modalNovoColab);
+      await loadAdminData();
+      renderCards();
     });
-    event.target.reset();
-    closeModal(modalNovoColab);
-    await loadAdminData();
-    renderCards();
-  } catch (error) {
-    showMsg(error.message);
-  }
+  } catch (_e) {}
 });
 
 document.getElementById('btn-confirm-delete').addEventListener('click', async () => {
   try {
-    await api(`/api/users/${encodeURIComponent(state.selectedAtendente)}`, { method: 'DELETE' });
-    closeModal(modalConfirmDelete);
-    closeModal(modalConfig);
-    await loadAdminData();
-    renderCards();
-  } catch (error) {
-    showMsg(error.message);
-  }
+    await runAction('desativar colaborador', 'Desativando colaborador...', 'excluido', 'Colaborador desativado', async () => {
+      await api(`/api/users/${encodeURIComponent(state.selectedAtendente)}`, { method: 'DELETE' });
+      closeModal(modalConfirmDelete);
+      closeModal(modalConfig);
+      await loadAdminData();
+      renderCards();
+    });
+  } catch (_e) {}
 });
 
 setupSolicitacaoForm();
-loadAdminData().then(renderCards).catch((error) => showMsg(error.message));
+(async () => {
+  try {
+    await runAction('carregar dashboard admin', 'Carregando painel admin...', null, null, async () => {
+      await loadAdminData();
+      renderCards();
+    });
+  } catch (_e) {}
+})();

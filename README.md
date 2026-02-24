@@ -71,10 +71,10 @@ Rotas públicas esperadas:
 
 ## Fluxos implementados
 
-- Login por nome na aba `Perfil` com validação `Ativo = Sim` e JWT.
+- Login por nome + senha na aba `Perfil` com validação `Ativo = Sim`, `Senha` e JWT.
 - Admin:
   - Lista de colaboradores ativos (`role=colaborador`)
-  - Criação/desativação de colaborador
+  - Criação/desativação de colaborador (senha inicial = `ramal` se não for enviada no cadastro)
   - Modal de configurações com toggle de atividades
   - Gestão de solicitações pendentes (criar, editar, excluir, atribuir)
   - Link `Dashboard` abre diretamente a planilha do Google Sheets
@@ -86,7 +86,7 @@ Rotas públicas esperadas:
 
 ## Endpoints principais
 
-- `POST /api/auth/login`
+- `POST /api/auth/login` body: `{ "nome": "...", "senha": "..." }`
 - `GET /api/profile/me`
 - `GET /api/users`
 - `POST /api/users`

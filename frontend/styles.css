@@ -57,10 +57,22 @@ button {
 }
 
 /* Login */
-.login-screen {
+.login-shell {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: 1fr 1.05fr;
+  place-items: center;
+  padding: 24px;
+}
+
+.login-screen {
+  min-height: min(84vh, 760px);
+  width: min(1400px, 96vw);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: #f3f3f3;
+  border: 1px solid #d2d2d2;
+  border-radius: 56px;
+  overflow: hidden;
 }
 
 .login-left {
@@ -68,26 +80,23 @@ button {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 34px;
+  padding: 20px 34px;
 }
 
 .login-panel {
-  width: min(500px, 92%);
+  width: min(520px, 94%);
   text-align: center;
 }
 
 .login-logo {
-  width: min(420px, 90%);
-  margin-bottom: 16px;
+  width: min(440px, 95%);
+  margin-bottom: 10px;
 }
 
-.login-subtitle {
-  margin-top: 0;
-  margin-bottom: 72px;
-  font-size: 38px;
-  letter-spacing: 0.8px;
-  color: #2058b3;
-  font-weight: 900;
+.login-desc {
+  margin: 0 0 56px;
+  font-size: 18px;
+  line-height: 1.35;
 }
 
 .login-form-row {
@@ -102,10 +111,11 @@ button {
   padding: 0 22px;
   background: transparent;
   font-size: 18px;
+  text-align: center;
 }
 
 .login-actions {
-  margin-top: 30px;
+  margin-top: 18px;
   display: flex;
   gap: 12px;
   justify-content: center;
@@ -140,17 +150,38 @@ button {
   background: #0d9ab3;
   display: grid;
   place-items: center;
-  padding: 24px;
+  padding: 26px;
 }
 
-.login-hero {
-  width: min(95%, 760px);
+.login-hero-art {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
 }
 
 .login-msg {
   min-height: 24px;
   color: #cf2c2c;
   margin-top: 8px;
+}
+
+.pwd-wrap {
+  position: relative;
+}
+
+.pwd-input {
+  padding-right: 54px;
+}
+
+.pwd-eye {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 0;
+  background: transparent;
+  color: #1f63be;
+  font-size: 20px;
 }
 
 /* Admin */
@@ -172,7 +203,13 @@ button {
 }
 
 .admin-user-mini img {
-  width: 64px;
+  width: 96px;
+}
+
+.admin-user-mini .me-logout {
+  width: 100%;
+  margin-top: 10px;
+  font-size: 15px;
 }
 
 .admin-menu {
@@ -185,15 +222,16 @@ button {
 .admin-menu button {
   border: 0;
   background: transparent;
-  font-size: 34px;
+  font-size: 36px;
   display: flex;
   align-items: center;
   gap: 8px;
   color: var(--text);
+  font-weight: 500;
 }
 
 .admin-menu img {
-  width: 30px;
+  width: 34px;
 }
 
 .admin-cards {
@@ -710,9 +748,46 @@ button {
   font-size: 12px;
 }
 
+.feedback-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.38);
+  z-index: 1200;
+  display: grid;
+  place-items: center;
+}
+
+.feedback-toast {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 1250;
+}
+
+.feedback-card {
+  width: min(280px, 85vw);
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+  padding: 12px;
+  text-align: center;
+}
+
+.feedback-lottie {
+  width: 140px;
+  height: 140px;
+  margin: 0 auto;
+}
+
+#feedback-loading .feedback-card {
+  width: min(320px, 88vw);
+}
+
 @media (max-width: 980px) {
   .login-screen {
     grid-template-columns: 1fr;
+    border-radius: 20px;
   }
 
   .login-right {

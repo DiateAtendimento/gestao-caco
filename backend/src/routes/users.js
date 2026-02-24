@@ -1,6 +1,6 @@
 ﻿const express = require('express');
 const { PROFILE_SHEET, PROFILE_HEADERS, ACTIVITY_COLUMNS } = require('../config/constants');
-const { readSheet, appendMappedRow, updateMappedRow, writeHeadersIfEmpty } = require('../services/sheetsService');
+const { readSheet, appendMappedRow, updateMappedRow, writeHeadersIfEmpty, ensureColumn } = require('../services/sheetsService');
 const { authMiddleware, requireRole } = require('../middleware/auth');
 const { equalsIgnoreCase, normalizeText } = require('../utils/text');
 
@@ -17,6 +17,8 @@ function detectGender(name) {
 router.get('/', async (_req, res) => {
   try {
     await writeHeadersIfEmpty(PROFILE_SHEET, PROFILE_HEADERS);
+    await ensureColumn(PROFILE_SHEET, 'Senha');
+
     const { rows } = await readSheet(PROFILE_SHEET);
     const users = rows
       .filter((row) => row.Ativo === 'Sim' && normalizeText(row.Role).toLowerCase() === 'colaborador')
@@ -42,6 +44,7 @@ router.post('/', async (req, res) => {
   try {
     const nome = normalizeText(req.body?.nome);
     const ramal = normalizeText(req.body?.ramal);
+    const senha = normalizeText(req.body?.senha);
     const genero = normalizeText(req.body?.genero).toLowerCase();
 
     if (!nome || !ramal) {
@@ -53,6 +56,8 @@ router.post('/', async (req, res) => {
     }
 
     await writeHeadersIfEmpty(PROFILE_SHEET, PROFILE_HEADERS);
+    await ensureColumn(PROFILE_SHEET, 'Senha');
+
     const { rows } = await readSheet(PROFILE_SHEET);
     const exists = rows.find((row) => equalsIgnoreCase(row.Atendente, nome));
     if (exists && exists.Ativo === 'Sim') {
@@ -68,12 +73,14 @@ router.post('/', async (req, res) => {
     payload.Ramal = ramal;
     payload.Ativo = 'Sim';
     payload.Role = 'colaborador';
+    payload.Senha = senha || ramal;
+
     ACTIVITY_COLUMNS.forEach((activity) => {
       payload[activity] = 'Não';
     });
 
     await appendMappedRow(PROFILE_SHEET, payload, PROFILE_HEADERS);
-    return res.status(201).json({ message: 'Colaborador criado' });
+    return res.status(201).json({ message: 'Colaborador criado', senhaInicial: payload.Senha });
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }

@@ -7,34 +7,39 @@
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
-  <div class="login-screen">
-    <section class="login-left">
-      <div class="login-panel">
-        <img class="login-logo" src="./assets/icons/logo.svg" alt="Gestão" />
-        <h1 class="login-subtitle">GESTÃO</h1>
-        <p>Coordenação de Atendimento<br />Colaborativo - CACO</p>
+  <div class="login-shell">
+    <div class="login-screen">
+      <section class="login-left">
+        <div class="login-panel">
+          <img class="login-logo" src="./assets/icons/logo.svg" alt="Gestão" />
+          <p class="login-desc">Coordenação de Atendimento<br />Colaborativo - CACO</p>
 
-        <form id="login-form">
-          <div class="login-form-row">
-            <input class="login-input" id="nome" placeholder="" required />
+          <form id="login-form">
+            <div class="login-form-row">
+              <input class="login-input" id="nome" placeholder="Nome" required />
+            </div>
+            <div class="login-form-row pwd-wrap">
+              <input class="login-input pwd-input" id="senha" type="password" placeholder="Senha" required />
+              <button id="toggle-senha" class="pwd-eye" type="button" aria-label="Mostrar senha">👁</button>
+            </div>
+            <button class="btn-access" type="submit">
+              <img src="./assets/icons/btn-acessar-login.svg" alt="Acessar" />
+              <span>Acessar</span>
+            </button>
+          </form>
+
+          <div class="login-actions">
+            <button id="btn-theme" class="btn-theme" type="button">Modo escuro</button>
+            <button id="btn-clear" class="btn-clear" type="button">Limpar sessão</button>
           </div>
-          <button class="btn-access" type="submit">
-            <img src="./assets/icons/btn-acessar-login.svg" alt="Acessar" />
-            <span>Acessar</span>
-          </button>
-        </form>
-
-        <div class="login-actions">
-          <button id="btn-theme" class="btn-theme" type="button">Modo escuro</button>
-          <button id="btn-clear" class="btn-clear" type="button">Limpar sessão</button>
+          <p id="msg" class="login-msg"></p>
         </div>
-        <p id="msg" class="login-msg"></p>
-      </div>
-    </section>
+      </section>
 
-    <section class="login-right">
-      <img class="login-hero" src="./assets/img-login.svg" alt="Comunicação" />
-    </section>
+      <section class="login-right">
+        <img class="login-hero-art" src="./img/img-login.svg" alt="Comunicação" />
+      </section>
+    </div>
   </div>
 
   <script type="module" src="./js/login.js"></script>

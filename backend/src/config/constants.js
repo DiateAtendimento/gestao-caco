@@ -6,6 +6,7 @@ const PROFILE_HEADERS = [
   'Ramal',
   'Ativo',
   'Role',
+  'Senha',
   'Ti',
   'Whatsapp',
   'Email',
@@ -24,7 +25,8 @@ const PROFILE_HEADERS = [
   'Registroviagem'
 ];
 
-const ACTIVITY_COLUMNS = PROFILE_HEADERS.slice(4);
+const PROFILE_NON_ACTIVITY_HEADERS = ['Atendente', 'Ramal', 'Ativo', 'Role', 'Senha'];
+const ACTIVITY_COLUMNS = PROFILE_HEADERS.filter((header) => !PROFILE_NON_ACTIVITY_HEADERS.includes(header));
 
 const DEMANDS_HEADERS = [
   'ID',
@@ -49,6 +51,7 @@ module.exports = {
   PROFILE_SHEET,
   DEMANDS_SHEET,
   PROFILE_HEADERS,
+  PROFILE_NON_ACTIVITY_HEADERS,
   ACTIVITY_COLUMNS,
   DEMANDS_HEADERS,
   STATUS,

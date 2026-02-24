@@ -1,5 +1,7 @@
 ﻿import { api, requireAuth, clearSession, toggleTheme } from './auth.js';
 import { ACTIVITIES } from './data.js';
+import { showLoading, showStatus } from './feedback.js';
+import { attachAvatar } from './avatar.js';
 
 const user = requireAuth('colaborador');
 if (!user) throw new Error('Sessão inválida');
@@ -17,8 +19,26 @@ function showMsg(text) {
   msgEl.textContent = text || '';
 }
 
-function avatarByName(nome) {
-  return nome?.trim().toLowerCase().endsWith('a') ? 'assets/icons/perfil-feminino.svg' : 'assets/icons/perfil-masculino.svg';
+async function runAction(actionName, loadingText, successType, successText, fn) {
+  const started = performance.now();
+  const loading = await showLoading(loadingText);
+  console.log(`[Colaborador] ${actionName} iniciado`);
+
+  try {
+    const result = await fn();
+    console.log(`[Colaborador] ${actionName} concluído em ${Math.round(performance.now() - started)}ms`);
+    if (successText) {
+      await showStatus(successType, successText);
+    }
+    return result;
+  } catch (error) {
+    console.error(`[Colaborador] ${actionName} erro:`, error.message);
+    showMsg(error.message);
+    await showStatus('erro', `Erro: ${error.message}`);
+    throw error;
+  } finally {
+    loading.close();
+  }
 }
 
 function renderAtividades() {
@@ -76,15 +96,15 @@ function renderDemandas() {
 
 async function updateStatus(id, status) {
   try {
-    await api(`/api/demandas/${encodeURIComponent(id)}/status`, {
-      method: 'POST',
-      body: JSON.stringify({ status })
+    await runAction('atualizar status', 'Atualizando status...', 'atribuido', 'Status atualizado', async () => {
+      await api(`/api/demandas/${encodeURIComponent(id)}/status`, {
+        method: 'POST',
+        body: JSON.stringify({ status })
+      });
+      await loadData();
+      renderDemandas();
     });
-    await loadData();
-    renderDemandas();
-  } catch (error) {
-    showMsg(error.message);
-  }
+  } catch (_e) {}
 }
 
 function setupWhatsapp() {
@@ -100,22 +120,22 @@ function setupWhatsapp() {
     event.preventDefault();
 
     try {
-      await api('/api/demandas/registro-whatsapp', {
-        method: 'POST',
-        body: JSON.stringify({
-          assunto: document.getElementById('wpp-assunto').value.trim(),
-          descricao: document.getElementById('wpp-descricao').value.trim()
-        })
+      await runAction('registrar whatsapp', 'Salvando registro...', 'salvo', 'Registro WhatsApp salvo', async () => {
+        await api('/api/demandas/registro-whatsapp', {
+          method: 'POST',
+          body: JSON.stringify({
+            assunto: document.getElementById('wpp-assunto').value.trim(),
+            descricao: document.getElementById('wpp-descricao').value.trim()
+          })
+        });
+        event.target.reset();
       });
-      event.target.reset();
-      showMsg('Registro WhatsApp salvo.');
-    } catch (error) {
-      showMsg(error.message);
-    }
+    } catch (_e) {}
   });
 }
 
 async function loadData() {
+  const started = performance.now();
   const [profile, demandas] = await Promise.all([
     api('/api/profile/me'),
     api(`/api/demandas?atendente=${encodeURIComponent(user.nome)}`)
@@ -127,19 +147,24 @@ async function loadData() {
   document.getElementById('welcome').textContent = user.nome;
   document.getElementById('profile-nome').textContent = `Nome: ${profile.nome}`;
   document.getElementById('profile-ramal').textContent = `Ramal: ${profile.ramal || '-'}`;
-  document.getElementById('me-avatar').src = avatarByName(profile.nome);
+  attachAvatar(document.getElementById('me-avatar'), profile.nome);
+  console.log(`[Colaborador] perfil e demandas carregados em ${Math.round(performance.now() - started)}ms`);
 }
 
-document.getElementById('btn-logout').addEventListener('click', () => {
+document.getElementById('btn-logout').addEventListener('click', async () => {
   clearSession();
+  await showStatus('excluido', 'Sessão encerrada');
   window.location.href = 'login.html';
 });
 document.getElementById('btn-theme').addEventListener('click', toggleTheme);
 
-loadData()
-  .then(() => {
-    renderAtividades();
-    renderDemandas();
-    setupWhatsapp();
-  })
-  .catch((error) => showMsg(error.message));
+(async () => {
+  try {
+    await runAction('carregar painel colaborador', 'Carregando painel colaborador...', null, null, async () => {
+      await loadData();
+      renderAtividades();
+      renderDemandas();
+      setupWhatsapp();
+    });
+  } catch (_e) {}
+})();

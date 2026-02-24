@@ -2,7 +2,7 @@
 const jwt = require('jsonwebtoken');
 const env = require('../config/env');
 const { PROFILE_SHEET } = require('../config/constants');
-const { readSheet } = require('../services/sheetsService');
+const { readSheet, ensureColumn } = require('../services/sheetsService');
 const { equalsIgnoreCase, normalizeText } = require('../utils/text');
 
 const router = express.Router();
@@ -10,10 +10,12 @@ const router = express.Router();
 router.post('/login', async (req, res) => {
   try {
     const nome = normalizeText(req.body?.nome);
-    if (!nome) {
-      return res.status(400).json({ error: 'Nome é obrigatório' });
+    const senha = normalizeText(req.body?.senha);
+    if (!nome || !senha) {
+      return res.status(400).json({ error: 'Nome e senha são obrigatórios' });
     }
 
+    await ensureColumn(PROFILE_SHEET, 'Senha');
     const { rows } = await readSheet(PROFILE_SHEET);
     const user = rows.find((row) => equalsIgnoreCase(row.Atendente, nome));
 
@@ -28,6 +30,15 @@ router.post('/login', async (req, res) => {
 
     if (equalsIgnoreCase(nome, 'admin') && role !== 'admin') {
       return res.status(401).json({ error: 'Login admin requer role=admin' });
+    }
+
+    const senhaPlanilha = normalizeText(user.Senha);
+    if (!senhaPlanilha) {
+      return res.status(401).json({ error: 'Senha não configurada para este usuário' });
+    }
+
+    if (senha !== senhaPlanilha) {
+      return res.status(401).json({ error: 'Senha inválida' });
     }
 
     const payload = {
