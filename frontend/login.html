@@ -1,0 +1,42 @@
+﻿<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gestão CACO - Login</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="login-screen">
+    <section class="login-left">
+      <div class="login-panel">
+        <img class="login-logo" src="./assets/icons/logo.svg" alt="Gestão" />
+        <h1 class="login-subtitle">GESTÃO</h1>
+        <p>Coordenação de Atendimento<br />Colaborativo - CACO</p>
+
+        <form id="login-form">
+          <div class="login-form-row">
+            <input class="login-input" id="nome" placeholder="" required />
+          </div>
+          <button class="btn-access" type="submit">
+            <img src="./assets/icons/btn-acessar-login.svg" alt="Acessar" />
+            <span>Acessar</span>
+          </button>
+        </form>
+
+        <div class="login-actions">
+          <button id="btn-theme" class="btn-theme" type="button">Modo escuro</button>
+          <button id="btn-clear" class="btn-clear" type="button">Limpar sessão</button>
+        </div>
+        <p id="msg" class="login-msg"></p>
+      </div>
+    </section>
+
+    <section class="login-right">
+      <img class="login-hero" src="./assets/img-login.svg" alt="Comunicação" />
+    </section>
+  </div>
+
+  <script type="module" src="./js/login.js"></script>
+</body>
+</html>

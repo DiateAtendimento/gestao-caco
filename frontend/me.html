@@ -1,0 +1,78 @@
+﻿<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gestão CACO - Colaborador</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <main class="me-layout">
+    <aside class="me-side">
+      <article class="profile-card">
+        <div class="profile-head">
+          <img id="me-avatar" src="./assets/icons/perfil-feminino.svg" alt="Perfil" />
+          <h3 id="welcome">Colaborador</h3>
+        </div>
+        <div class="profile-body">
+          <div>Coordenação de Atendimento Colaborativo</div>
+          <div id="profile-nome"></div>
+          <div id="profile-ramal"></div>
+        </div>
+      </article>
+      <button id="btn-logout" class="me-logout">Sair</button>
+      <button id="btn-theme" class="btn-soft" type="button">Modo escuro</button>
+      <p id="msg" class="msg-area"></p>
+    </aside>
+
+    <section class="me-main">
+      <article id="whatsapp-block" class="section-shell hidden">
+        <div class="section-title">Registro WhatsApp</div>
+        <div class="section-content">
+          <div class="whatsapp-pane">
+            <div class="whatsapp-icon-box">
+              <img src="./assets/icons/whatsapp.svg" alt="WhatsApp" />
+              <div>WhatApp</div>
+            </div>
+            <form id="form-whatsapp">
+              <div class="form-row"><input id="wpp-assunto" placeholder="Assunto" required /></div>
+              <div class="form-row"><textarea id="wpp-descricao" placeholder="Adicione uma descrição" required></textarea></div>
+              <div class="form-actions">
+                <button class="btn-main" type="submit">Registrar</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </article>
+
+      <article class="section-shell">
+        <div class="section-title">Minhas Atividades</div>
+        <div class="section-content">
+          <div id="atividades" class="activity-row"></div>
+        </div>
+      </article>
+
+      <article class="section-shell">
+        <div class="section-title">Demandas Atribuídas</div>
+        <div class="section-content">
+          <div class="table-shell demand-table">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Área</th>
+                  <th>Descrição</th>
+                  <th>Ação</th>
+                </tr>
+              </thead>
+              <tbody id="demandas"></tbody>
+            </table>
+          </div>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <script type="module" src="./js/me.js"></script>
+</body>
+</html>

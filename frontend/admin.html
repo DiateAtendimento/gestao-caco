@@ -1,0 +1,127 @@
+﻿<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gestão CACO - Admin</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <main class="admin-layout">
+    <section class="admin-top">
+      <div class="admin-user-mini">
+        <img src="./assets/icons/perfil-masculino.svg" alt="Admin" />
+        <div>Administrador</div>
+      </div>
+
+      <nav class="admin-menu">
+        <button id="btn-home"><img src="./assets/icons/inicio.svg" alt="Início" />Início</button>
+        <button id="btn-dashboard"><img src="./assets/icons/dashboard.svg" alt="Dashboard" />Dashboard</button>
+        <button id="btn-theme">◌ Modo escuro</button>
+        <button id="btn-logout">Sair</button>
+      </nav>
+    </section>
+
+    <p id="msg" class="msg-area"></p>
+    <section id="cards" class="admin-cards"></section>
+  </main>
+
+  <div id="modal-config" class="modal-overlay">
+    <div class="modal">
+      <header class="modal-header">Configurações - <span id="cfg-user-name"></span>
+        <button id="btn-close-config" class="modal-close-x">×</button>
+      </header>
+      <div class="modal-content">
+        <div class="tab-row">
+          <button data-tab="atividades">Atividades</button>
+          <button data-tab="solicitacoes">Solicitações</button>
+        </div>
+
+        <section id="tab-atividades" class="tab-content active">
+          <div id="atividades-grid" class="activity-grid"></div>
+        </section>
+
+        <section id="tab-solicitacoes" class="tab-content">
+          <div class="table-shell">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Área</th>
+                  <th>Meta</th>
+                  <th>Descrição</th>
+                  <th>Ação</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-solicitacoes"></tbody>
+            </table>
+            <button id="btn-new-solicitacao" class="btn-plus-inline" type="button">
+              <span class="dot">+</span> Adicionar solicitação
+            </button>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-solicitacao" class="modal-overlay">
+    <div class="modal small">
+      <header class="modal-header"><span id="sol-title">Nova Solicitação</span>
+        <button id="btn-close-sol" class="modal-close-x">×</button>
+      </header>
+      <div class="modal-content">
+        <form id="form-solicitacao">
+          <div class="form-row"><input id="sol-id" readonly /></div>
+          <div class="form-row"><select id="sol-area"></select></div>
+          <div class="form-row"><select id="sol-meta"></select></div>
+          <div class="form-row"><textarea id="sol-descricao" placeholder="Descrição" required></textarea></div>
+          <div class="form-actions">
+            <button class="btn-main" type="submit">Salvar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-novo-colab" class="modal-overlay">
+    <div class="modal small">
+      <header class="modal-header">Novo Colaborador
+        <button id="btn-close-colab" class="modal-close-x">×</button>
+      </header>
+      <div class="modal-content">
+        <form id="form-novo-colab">
+          <div class="form-row"><input id="colab-nome" placeholder="Nome" required /></div>
+          <div class="form-row"><input id="colab-ramal" placeholder="Ramal" required /></div>
+          <div class="form-row">
+            <select id="colab-genero">
+              <option value="masculino">Masculino</option>
+              <option value="feminino">Feminino</option>
+            </select>
+          </div>
+          <div class="form-actions">
+            <button class="btn-main" type="submit">Salvar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-confirm-delete" class="modal-overlay">
+    <div class="modal small">
+      <header class="modal-header">Excluir colaborador
+        <button id="btn-close-delete" class="modal-close-x">×</button>
+      </header>
+      <div class="modal-content">
+        <p>Tem certeza que deseja excluir este colaborador?</p>
+        <p><strong id="confirm-delete-name"></strong></p>
+        <div class="form-actions">
+          <button id="btn-confirm-delete" class="btn-danger" type="button">Confirmar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="./js/admin.js"></script>
+</body>
+</html>
+

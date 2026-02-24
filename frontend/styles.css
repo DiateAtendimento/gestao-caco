@@ -1,0 +1,742 @@
+﻿:root {
+  --bg: #ececec;
+  --text: #1f1f1f;
+  --muted: #6c6c6c;
+  --teal: #0e9bb4;
+  --teal-dark: #0b87a0;
+  --white: #ffffff;
+  --red: #ff5656;
+  --green: #5bd37b;
+  --yellow: #f3be31;
+  --line: #d7d7d7;
+  --shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="dark"] {
+  --bg: #101820;
+  --text: #e7eef5;
+  --muted: #a1b0be;
+  --teal: #108ea4;
+  --teal-dark: #0f7f91;
+  --white: #1a2632;
+  --red: #ff6d6d;
+  --green: #4bc16d;
+  --yellow: #e9b121;
+  --line: #2c3f52;
+  --shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Segoe UI", Tahoma, sans-serif;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+/* Login */
+.login-screen {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr 1.05fr;
+}
+
+.login-left {
+  background: #f3f3f3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 34px;
+}
+
+.login-panel {
+  width: min(500px, 92%);
+  text-align: center;
+}
+
+.login-logo {
+  width: min(420px, 90%);
+  margin-bottom: 16px;
+}
+
+.login-subtitle {
+  margin-top: 0;
+  margin-bottom: 72px;
+  font-size: 38px;
+  letter-spacing: 0.8px;
+  color: #2058b3;
+  font-weight: 900;
+}
+
+.login-form-row {
+  margin-bottom: 18px;
+}
+
+.login-input {
+  width: 100%;
+  height: 54px;
+  border: 3px solid #1f63be;
+  border-radius: 30px;
+  padding: 0 22px;
+  background: transparent;
+  font-size: 18px;
+}
+
+.login-actions {
+  margin-top: 30px;
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.btn-ghost,
+.btn-theme,
+.btn-clear {
+  border: 0;
+  background: transparent;
+  color: #1f63be;
+}
+
+.btn-access {
+  border: 0;
+  background: transparent;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: #1f63be;
+  font-size: 30px;
+  font-weight: 600;
+}
+
+.btn-access img {
+  width: 52px;
+}
+
+.login-right {
+  background: #0d9ab3;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.login-hero {
+  width: min(95%, 760px);
+}
+
+.login-msg {
+  min-height: 24px;
+  color: #cf2c2c;
+  margin-top: 8px;
+}
+
+/* Admin */
+.admin-layout {
+  padding: 16px 20px 28px;
+}
+
+.admin-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+
+.admin-user-mini {
+  width: 90px;
+  text-align: center;
+  font-size: 11px;
+}
+
+.admin-user-mini img {
+  width: 64px;
+}
+
+.admin-menu {
+  display: flex;
+  gap: 26px;
+  align-items: center;
+  margin-right: 50px;
+}
+
+.admin-menu button {
+  border: 0;
+  background: transparent;
+  font-size: 34px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+}
+
+.admin-menu img {
+  width: 30px;
+}
+
+.admin-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 24px;
+}
+
+.colab-card {
+  border: 1px solid #cdcdcd;
+  border-radius: 28px 28px 0 0;
+  overflow: hidden;
+  background: var(--white);
+  box-shadow: var(--shadow);
+}
+
+.colab-head {
+  background: var(--teal);
+  padding: 10px 12px 8px;
+  text-align: center;
+  color: #fff;
+  position: relative;
+}
+
+.colab-avatar {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  object-fit: contain;
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.colab-name {
+  margin: 6px 0 8px;
+  font-weight: 700;
+  font-size: 19px;
+}
+
+.colab-icon-actions {
+  position: absolute;
+  right: 10px;
+  top: 8px;
+  display: flex;
+  gap: 6px;
+}
+
+.icon-btn {
+  border: 0;
+  background: transparent;
+  color: #ff4f4f;
+  font-size: 18px;
+  padding: 0;
+}
+
+.progress-wrap {
+  height: 25px;
+  border-radius: 20px;
+  background: var(--red);
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-green {
+  height: 100%;
+  background: var(--green);
+  border-radius: 20px;
+}
+
+.progress-text {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 16px;
+}
+
+.colab-body {
+  text-align: center;
+  padding: 10px 10px 12px;
+}
+
+.colab-body h5 {
+  margin: 4px 0;
+  font-size: 12px;
+  color: #7a7a7a;
+}
+
+.card-acts {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  margin: 9px 0;
+}
+
+.card-acts img {
+  width: 18px;
+}
+
+.exec-text {
+  color: #6d6d6d;
+  font-size: 11px;
+  margin: 8px 0;
+}
+
+.count-row {
+  display: flex;
+  justify-content: space-around;
+  margin-top: 6px;
+}
+
+.count-item b {
+  font-size: 30px;
+  color: #1554a7;
+}
+
+.count-item span {
+  display: block;
+  font-size: 11px;
+  margin-top: 4px;
+  color: #1255ab;
+}
+
+.count-item.red b,
+.count-item.red span {
+  color: #ef3d3d;
+}
+
+.add-colab-card {
+  min-height: 330px;
+  border: 2px dashed #0f9bb4;
+  border-radius: 24px;
+  background: transparent;
+  display: grid;
+  place-items: center;
+}
+
+.add-colab-card button {
+  border: 0;
+  background: transparent;
+  color: #0f9bb4;
+  font-size: 22px;
+  font-weight: 700;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.add-colab-card img {
+  width: 46px;
+}
+
+/* Modais */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 14px;
+}
+
+.modal-overlay.open {
+  display: flex;
+}
+
+.modal {
+  width: min(1050px, 96vw);
+  background: var(--bg);
+  border: 1px solid #c7c7c7;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.modal.small {
+  width: min(480px, 94vw);
+}
+
+.modal-header {
+  background: var(--teal);
+  color: #fff;
+  padding: 12px 18px;
+  font-size: 33px;
+  font-weight: 700;
+  text-align: center;
+  position: relative;
+}
+
+.modal-close-x {
+  position: absolute;
+  right: 16px;
+  top: 8px;
+  border: 0;
+  color: #fff;
+  background: transparent;
+  font-size: 40px;
+}
+
+.modal-content {
+  padding: 14px 18px 16px;
+}
+
+.tab-row {
+  display: flex;
+  gap: 10px;
+  margin: 6px 0 12px;
+}
+
+.tab-row button {
+  border: 1px solid #c6c6c6;
+  border-radius: 16px;
+  background: #fff;
+  padding: 8px 14px;
+}
+
+.tab-content {
+  display: none;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+.activity-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.activity-btn {
+  border: 0;
+  background: transparent;
+  text-align: center;
+  color: var(--text);
+}
+
+.activity-btn img {
+  width: 54px;
+  height: 54px;
+  object-fit: contain;
+}
+
+.activity-btn span {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.activity-btn.disabled {
+  filter: grayscale(1);
+  opacity: 0.5;
+}
+
+.table-shell {
+  border: 1px solid #c7c7c7;
+  border-radius: 18px;
+  padding: 8px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  font-size: 12px;
+  text-align: left;
+  border-bottom: 1px solid #e3e3e3;
+  padding: 10px 8px;
+  vertical-align: top;
+}
+
+.table th {
+  color: #646464;
+}
+
+.table td.actions-cell {
+  white-space: nowrap;
+}
+
+.table td.actions-cell button {
+  border: 0;
+  background: transparent;
+  font-size: 20px;
+  margin-right: 4px;
+}
+
+.btn-plus-inline {
+  margin-top: 10px;
+  border: 0;
+  background: transparent;
+  font-size: 22px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-plus-inline .dot {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #30c759;
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+}
+
+.form-row {
+  margin-bottom: 10px;
+}
+
+.form-row input,
+.form-row select,
+.form-row textarea {
+  width: 100%;
+  border: 1px solid #c7c7c7;
+  border-radius: 8px;
+  background: #fff;
+  padding: 10px;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.btn-main {
+  border: 0;
+  background: #30c759;
+  color: #fff;
+  border-radius: 14px;
+  padding: 8px 16px;
+  font-weight: 700;
+}
+
+.btn-soft {
+  border: 1px solid #b8b8b8;
+  background: #fff;
+  border-radius: 14px;
+  padding: 8px 16px;
+}
+
+.btn-danger {
+  border: 0;
+  background: #ef3d3d;
+  color: #fff;
+  border-radius: 14px;
+  padding: 8px 16px;
+}
+
+/* Colaborador */
+.me-layout {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 20px;
+  padding: 16px;
+}
+
+.me-side {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.profile-card {
+  border: 1px solid #c9c9c9;
+  border-radius: 20px 20px 0 0;
+  overflow: hidden;
+  background: var(--white);
+}
+
+.profile-head {
+  background: var(--teal);
+  color: #fff;
+  text-align: center;
+  padding: 14px 10px;
+}
+
+.profile-head img {
+  width: 72px;
+}
+
+.profile-head h3 {
+  margin: 6px 0 0;
+}
+
+.profile-body {
+  padding: 10px;
+  font-size: 12px;
+  color: #666;
+  line-height: 1.5;
+}
+
+.me-logout {
+  width: 160px;
+  border: 0;
+  border-radius: 22px;
+  background: #f35353;
+  color: #fff;
+  font-weight: 700;
+  padding: 10px 0;
+  align-self: center;
+}
+
+.me-main {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.section-shell {
+  border-radius: 18px;
+}
+
+.section-title {
+  background: var(--teal);
+  color: #fff;
+  text-align: center;
+  padding: 10px;
+  border-radius: 18px;
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.section-content {
+  border: 1px solid #c9c9c9;
+  border-radius: 0 0 18px 18px;
+  background: var(--white);
+  padding: 10px;
+}
+
+.whatsapp-pane {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  gap: 12px;
+  align-items: center;
+}
+
+.whatsapp-icon-box {
+  text-align: center;
+  color: #fff;
+  font-weight: 700;
+  background: var(--teal);
+  border-radius: 10px;
+  padding: 10px;
+}
+
+.whatsapp-icon-box img {
+  width: 95px;
+}
+
+.activity-row {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 28px;
+  padding: 8px 0;
+}
+
+.activity-chip {
+  text-align: center;
+  font-size: 12px;
+  color: #555;
+}
+
+.activity-chip img {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+}
+
+.demand-table td .status-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-status {
+  border: 0;
+  border-radius: 12px;
+  color: #fff;
+  font-weight: 700;
+  font-size: 11px;
+  padding: 5px 10px;
+}
+
+.btn-status.andamento {
+  background: var(--yellow);
+  color: #242424;
+}
+
+.btn-status.concluido {
+  background: #35bf4a;
+}
+
+.top-right-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.msg-area {
+  min-height: 20px;
+  color: #d23f3f;
+  font-size: 12px;
+}
+
+@media (max-width: 980px) {
+  .login-screen {
+    grid-template-columns: 1fr;
+  }
+
+  .login-right {
+    min-height: 280px;
+  }
+
+  .admin-menu {
+    margin-right: 0;
+    gap: 10px;
+  }
+
+  .admin-menu button {
+    font-size: 13px;
+  }
+
+  .admin-menu img {
+    width: 22px;
+  }
+
+  .me-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .whatsapp-pane {
+    grid-template-columns: 1fr;
+  }
+}

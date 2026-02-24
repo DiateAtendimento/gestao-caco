@@ -1,0 +1,4 @@
+﻿/login    /login.html   200
+/admin    /admin.html   200
+/me       /me.html      200
+/*        /login.html   200

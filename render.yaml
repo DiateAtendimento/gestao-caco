@@ -1,0 +1,21 @@
+﻿services:
+  - type: web
+    name: gestao-caco-backend
+    env: node
+    rootDir: backend
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: PORT
+        value: 3000
+      - key: JWT_SECRET
+        sync: false
+      - key: GOOGLE_SHEET_ID
+        value: 16k4heNHfta1LBhSjbmeskHQY-NPAo41pqHwyZT8nSbM
+      - key: GOOGLE_SERVICE_ACCOUNT_EMAIL
+        sync: false
+      - key: GOOGLE_PRIVATE_KEY
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
