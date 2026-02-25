@@ -2,6 +2,7 @@
 import { showLoading, showStatus } from './feedback.js';
 
 applyTheme();
+let loginInFlight = false;
 
 document.getElementById('btn-theme').addEventListener('click', toggleTheme);
 document.getElementById('toggle-senha').addEventListener('click', () => {
@@ -12,9 +13,14 @@ document.getElementById('toggle-senha').addEventListener('click', () => {
 
 document.getElementById('login-form').addEventListener('submit', async (event) => {
   event.preventDefault();
+  if (loginInFlight) {
+    return;
+  }
+
   const nome = document.getElementById('nome').value.trim();
   const senha = document.getElementById('senha').value.trim();
   const msg = document.getElementById('msg');
+  const submitBtn = document.querySelector('#login-form button[type="submit"]');
 
   if (!nome || !senha) {
     msg.textContent = 'Informe nome e senha.';
@@ -22,6 +28,8 @@ document.getElementById('login-form').addEventListener('submit', async (event) =
     return;
   }
 
+  loginInFlight = true;
+  if (submitBtn) submitBtn.disabled = true;
   const loading = await showLoading('Validando acesso...');
   console.log('[Login] iniciando autenticação para:', nome);
 
@@ -41,6 +49,8 @@ document.getElementById('login-form').addEventListener('submit', async (event) =
     await showStatus('erro', `Erro no login: ${error.message}`);
   } finally {
     loading.close();
+    loginInFlight = false;
+    if (submitBtn) submitBtn.disabled = false;
   }
 });
 

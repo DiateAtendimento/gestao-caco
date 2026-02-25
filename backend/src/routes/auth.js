@@ -6,6 +6,7 @@ const { readSheet, ensureColumn } = require('../services/sheetsService');
 const { equalsIgnoreCase, normalizeText } = require('../utils/text');
 
 const router = express.Router();
+let senhaColumnReady = false;
 
 router.post('/login', async (req, res) => {
   try {
@@ -15,7 +16,10 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'Nome e senha são obrigatórios' });
     }
 
-    await ensureColumn(PROFILE_SHEET, 'Senha');
+    if (!senhaColumnReady) {
+      await ensureColumn(PROFILE_SHEET, 'Senha');
+      senhaColumnReady = true;
+    }
     const { rows } = await readSheet(PROFILE_SHEET);
     const user = rows.find((row) => equalsIgnoreCase(row.Atendente, nome));
 
