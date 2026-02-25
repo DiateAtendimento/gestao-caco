@@ -1,10 +1,11 @@
-﻿import { api, requireAuth, clearSession, toggleTheme } from './auth.js';
+﻿import { api, requireAuth, clearSession, initThemeIcon } from './auth.js';
 import { ACTIVITIES, AREA_OPTIONS, META_OPTIONS } from './data.js';
 import { showLoading, showStatus } from './feedback.js';
 import { attachAvatar } from './avatar.js';
 
 const user = requireAuth('admin');
 if (!user) throw new Error('Sessão inválida');
+initThemeIcon();
 
 const state = {
   cards: [],
@@ -31,6 +32,12 @@ function closeModal(el) { el.classList.remove('open'); }
 
 function enabledActivitiesMap(card) {
   return ACTIVITIES.filter((a) => card.atividades?.[a.key] === 'Sim').slice(0, 3);
+}
+
+function formatPercent(value) {
+  const num = Number(value || 0);
+  const fixed = Number.isInteger(num) ? String(num) : num.toFixed(1).replace('.', ',');
+  return `${fixed}%`;
 }
 
 async function runAction(actionName, loadingText, successType, successText, fn) {
@@ -72,7 +79,7 @@ function renderCards() {
         <div class="colab-name">${card.nome}</div>
         <div class="progress-wrap">
           <div class="progress-green" style="width:${Math.min(card.percentual * 20, 100)}%"></div>
-          <div class="progress-text">${card.percentual.toFixed(0)}%</div>
+          <div class="progress-text">${formatPercent(card.percentual)}</div>
         </div>
       </div>
       <div class="colab-body">
@@ -267,9 +274,8 @@ async function refreshSilently() {
   }
 }
 
-document.getElementById('btn-home').addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
 document.getElementById('btn-dashboard').addEventListener('click', () => window.open(state.dashboardUrl, '_blank'));
-document.getElementById('btn-theme').addEventListener('click', toggleTheme);
+
 document.getElementById('btn-logout').addEventListener('click', async () => {
   clearSession();
   await showStatus('excluido', 'Sessão encerrada');
@@ -372,3 +378,4 @@ setupSolicitacaoForm();
     });
   } catch (_e) {}
 })();
+

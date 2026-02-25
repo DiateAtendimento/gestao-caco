@@ -31,6 +31,21 @@ export function toggleTheme() {
   applyTheme();
 }
 
+export function initThemeIcon() {
+  applyTheme();
+  let btn = document.getElementById('theme-floating-btn');
+  if (!btn) {
+    btn = document.createElement('button');
+    btn.id = 'theme-floating-btn';
+    btn.className = 'theme-floating-btn';
+    btn.type = 'button';
+    btn.title = 'Alternar modo escuro';
+    btn.innerHTML = '<i class="bi bi-moon-stars-fill"></i>';
+    document.body.appendChild(btn);
+  }
+  btn.onclick = toggleTheme;
+}
+
 export function requireAuth(role) {
   applyTheme();
   const user = getUser();

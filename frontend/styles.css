@@ -227,9 +227,11 @@ button {
 
 .admin-menu {
   display: flex;
-  gap: 26px;
+  gap: 10px;
   align-items: center;
-  margin-right: 50px;
+  margin-right: 0;
+  margin-left: auto;
+  justify-content: flex-end;
 }
 
 .admin-menu button {
@@ -259,6 +261,13 @@ button {
   overflow: hidden;
   background: var(--white);
   box-shadow: var(--shadow);
+  will-change: transform, box-shadow;
+  transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.colab-card:hover {
+  transform: translateY(-7px) scale(1.012);
+  box-shadow: 0 18px 30px rgba(0, 0, 0, 0.18);
 }
 
 .colab-head {
@@ -769,6 +778,23 @@ button {
   min-height: 20px;
   color: #d23f3f;
   font-size: 12px;
+}
+
+.theme-floating-btn {
+  position: fixed;
+  left: 14px;
+  bottom: 14px;
+  z-index: 1350;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--white);
+  color: var(--text);
+  display: grid;
+  place-items: center;
+  box-shadow: var(--shadow);
+  font-size: 20px;
 }
 
 .status-dot {

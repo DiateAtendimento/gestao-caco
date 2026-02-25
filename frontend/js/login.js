@@ -1,10 +1,10 @@
-﻿import { api, setSession, clearSession, applyTheme, toggleTheme } from './auth.js';
+﻿import { api, setSession, clearSession, initThemeIcon } from './auth.js';
 import { showLoading, showStatus } from './feedback.js';
 
-applyTheme();
+initThemeIcon();
 let loginInFlight = false;
 
-document.getElementById('btn-theme').addEventListener('click', toggleTheme);
+
 document.getElementById('toggle-senha').addEventListener('click', () => {
   const senha = document.getElementById('senha');
   const current = senha.getAttribute('type');
@@ -60,3 +60,4 @@ document.getElementById('btn-clear').addEventListener('click', async () => {
   await showStatus('excluido', 'Sessão removida');
   console.log('[Login] sessão limpa manualmente');
 });
+

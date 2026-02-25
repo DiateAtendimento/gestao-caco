@@ -7,6 +7,10 @@ const { equalsIgnoreCase, normalizeText } = require('../utils/text');
 const router = express.Router();
 router.use(authMiddleware);
 
+function isSim(value) {
+  return normalizeText(value).toLowerCase() === 'sim';
+}
+
 router.get('/me', async (req, res) => {
   try {
     await ensureColumn(PROFILE_SHEET, 'Senha');
@@ -17,7 +21,7 @@ router.get('/me', async (req, res) => {
       return res.status(404).json({ error: 'Perfil não encontrado ou inativo' });
     }
 
-    const atividades = ACTIVITY_COLUMNS.filter((key) => normalizeText(profile[key]) === 'Sim');
+    const atividades = ACTIVITY_COLUMNS.filter((key) => isSim(profile[key]));
 
     return res.json({
       nome: profile.Atendente,
@@ -25,7 +29,7 @@ router.get('/me', async (req, res) => {
       role: normalizeText(profile.Role).toLowerCase(),
       atividades,
       flags: ACTIVITY_COLUMNS.reduce((acc, key) => {
-        acc[key] = profile[key] || 'Não';
+        acc[key] = isSim(profile[key]) ? 'Sim' : 'Não';
         return acc;
       }, {})
     });

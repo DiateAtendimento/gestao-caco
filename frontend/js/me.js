@@ -1,10 +1,11 @@
-﻿import { api, requireAuth, clearSession, toggleTheme } from './auth.js';
+﻿import { api, requireAuth, clearSession, initThemeIcon } from './auth.js';
 import { ACTIVITIES } from './data.js';
 import { showLoading, showStatus, mountInlineLottie, showAtribuicaoRecebida } from './feedback.js';
 import { attachAvatar } from './avatar.js';
 
 const user = requireAuth('colaborador');
 if (!user) throw new Error('Sessão inválida');
+initThemeIcon();
 
 const state = {
   profile: null,
@@ -21,6 +22,10 @@ const seenDemandasKey = `seenDemandas:${user.nome}`;
 
 function showMsg(text) {
   msgEl.textContent = text || '';
+}
+
+function isEnabled(value) {
+  return String(value || '').trim().toLowerCase() === 'sim';
 }
 
 async function runAction(actionName, loadingText, successType, successText, fn) {
@@ -118,7 +123,7 @@ function renderDemandas() {
 
 function renderRegistrosSiga() {
   sigaBodyEl.innerHTML = '';
-  if (!state.profile?.flags?.Registrosiga || state.profile.flags.Registrosiga !== 'Sim') {
+  if (!isEnabled(state.profile?.flags?.Registrosiga)) {
     sigaBlockEl.classList.add('hidden');
     return;
   }
@@ -182,7 +187,7 @@ async function registrarSiga(id) {
 
 function setupWhatsapp() {
   const block = document.getElementById('whatsapp-block');
-  if (state.profile?.flags?.Whatsapp !== 'Sim') {
+  if (!isEnabled(state.profile?.flags?.Whatsapp)) {
     block.classList.add('hidden');
     return;
   }
@@ -248,7 +253,7 @@ document.getElementById('btn-logout').addEventListener('click', async () => {
   await showStatus('excluido', 'Sessão encerrada');
   window.location.href = 'login.html';
 });
-document.getElementById('btn-theme').addEventListener('click', toggleTheme);
+
 
 async function refreshSilently() {
   try {
@@ -277,3 +282,4 @@ async function refreshSilently() {
     });
   } catch (_e) {}
 })();
+

@@ -140,13 +140,19 @@ export async function showStatus(type, message, duration = 2200) {
     console.error(`[Lottie] erro ${type}:`, error.message);
   }
 
+  const minDurationByType = {
+    atribuido: 3500,
+    excluido: 3500
+  };
+  const finalDuration = Math.max(duration, minDurationByType[type] || 0);
+
   window.setTimeout(() => {
     toast.classList.add('hidden');
     if (toastAnimation) {
       toastAnimation.destroy();
       toastAnimation = null;
     }
-  }, duration);
+  }, finalDuration);
 }
 
 export async function mountInlineLottie(containerIdOrElement, type, loop = true) {
