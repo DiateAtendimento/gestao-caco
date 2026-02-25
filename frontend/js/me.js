@@ -19,6 +19,46 @@ const sigaBodyEl = document.getElementById('registros-siga-body');
 const sigaBlockEl = document.getElementById('siga-block');
 const msgEl = document.getElementById('msg');
 const seenDemandasKey = `seenDemandas:${user.nome}`;
+const WHATSAPP_ASSUNTOS = [
+  'Atendimento',
+  'Atuária',
+  'Auditoria',
+  'Auditoria - Direta',
+  'Benefício',
+  'CadPrev - Duvidas',
+  'CadPrev - Erro',
+  'CadPrev - Liberação de Acesso',
+  'Certificação Profissional',
+  'CNIS-RPPS',
+  'COMPREV - Sistema',
+  'COMPREV - Termo de Adesão e Operacionalização',
+  'COMPREV/DATAPREV',
+  'Contabilidade',
+  'Contencioso',
+  'CRP - EMERGENCIAL',
+  'E-Social',
+  'Email',
+  'Encaminhamento da legislação',
+  'Gescon',
+  'Indicador de Situação Previdenciária - ISP',
+  'Informações Judiciais - Outros',
+  'INSS',
+  'Investimentos',
+  'Normatização',
+  'Outros Assuntos',
+  'Pedido de Reunião',
+  'Plano de Custeio',
+  'Previdência Complementar - SURPC',
+  'PRÓ-GESTÃO RPPS',
+  'Programa de Regularidade',
+  'Pronto - DATAPREV',
+  'Prova de Vida',
+  'Repasse e Parcelamento - Confessado',
+  'Repasse e Parcelamento - PAP',
+  'SIG-RPPS',
+  'SIPREV',
+  'SIRC - DATAPREV'
+];
 
 function showMsg(text) {
   msgEl.textContent = text || '';
@@ -193,6 +233,14 @@ function setupWhatsapp() {
   }
 
   block.classList.remove('hidden');
+  const assuntoSelect = document.getElementById('wpp-assunto');
+  if (assuntoSelect && !assuntoSelect.dataset.ready) {
+    assuntoSelect.innerHTML = `
+      <option value="">Selecione o assunto</option>
+      ${WHATSAPP_ASSUNTOS.map((item) => `<option value="${item}">${item}</option>`).join('')}
+    `;
+    assuntoSelect.dataset.ready = 'true';
+  }
 
   document.getElementById('form-whatsapp').addEventListener('submit', async (event) => {
     event.preventDefault();

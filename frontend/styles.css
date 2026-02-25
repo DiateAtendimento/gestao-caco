@@ -215,11 +215,13 @@ img {
   background: rgba(35, 157, 181, 0.58);
   display: grid;
   place-items: center;
+  padding: 0;
 }
 
 .login-hero-art {
-  width: min(90%, 620px);
-  border-radius: 8px;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 /* Shared app shell */
@@ -435,7 +437,7 @@ img {
 .icon-btn {
   border: 0;
   background: transparent;
-  color: #ff5d5d;
+  color: #ffffff;
   font-size: 19px;
   padding: 0;
 }
@@ -443,7 +445,7 @@ img {
 .progress-wrap {
   height: 22px;
   border-radius: 999px;
-  background: #e5edf8;
+  background: var(--red);
   position: relative;
   overflow: hidden;
 }
@@ -819,7 +821,7 @@ img {
   border-radius: 22px;
   overflow: hidden;
   border: 1px solid var(--line);
-  background: color-mix(in srgb, var(--panel-strong) 86%, white 14%);
+  background: var(--card);
 }
 
 .modal.small {

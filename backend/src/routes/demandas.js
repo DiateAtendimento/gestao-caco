@@ -9,6 +9,10 @@ const { toBrDate } = require('../utils/datetime');
 const router = express.Router();
 router.use(authMiddleware);
 
+function getRegisteredBy(row) {
+  return row['Registrado por'] || row['Registrador por'] || '';
+}
+
 function isBrDate(value) {
   return /^\d{2}\/\d{2}\/\d{4}$/.test(normalizeText(value));
 }
@@ -25,7 +29,7 @@ function mapDemanda(row) {
     descricao: row['Descrição'],
     finalizado: row.Finalizado,
     meta: parseMeta(row.Meta),
-    registradoPor: row['Registrado por'],
+    registradoPor: getRegisteredBy(row),
     finalizadoPor: row['Finalizado por'],
     atribuidaPara: row['Atribuida para'],
     concluido: isConcluidoValue(row.Finalizado)
@@ -35,11 +39,11 @@ function mapDemanda(row) {
 async function hasSigaPermission(nome) {
   const { rows } = await readSheet(PROFILE_SHEET);
   const user = rows.find((row) => equalsIgnoreCase(row.Atendente, nome));
-  return user && normalizeText(user.Registrosiga) === 'Sim';
+  return !!(user && equalsIgnoreCase(user.Registrosiga, 'Sim'));
 }
 
 function isSigaQueueItem(row) {
-  const registradoPor = normalizeText(row['Registrado por']);
+  const registradoPor = normalizeText(getRegisteredBy(row));
   const atribuidaPara = normalizeText(row['Atribuida para']);
   const finalizado = normalizeText(row.Finalizado);
   return !!registradoPor && !atribuidaPara && !isBrDate(finalizado);
@@ -124,9 +128,10 @@ router.post('/registro-whatsapp', async (req, res) => {
       'Data do Registro': toBrDate(),
       Finalizado: '',
       'Registrado por': req.user.nome,
+      'Registrador por': req.user.nome,
       'Finalizado por': '',
       'Atribuida para': '',
-      Meta: '0'
+      Meta: '0.5'
     });
 
     await appendMappedRow(DEMANDS_SHEET, row);
@@ -165,6 +170,9 @@ router.post('/registros-siga/:id/registrado', async (req, res) => {
 
     item.Finalizado = toBrDate();
     item['Finalizado por'] = req.user.nome;
+    if (parseMeta(item.Meta) <= 0) {
+      item.Meta = '0.5';
+    }
     await updateMappedRow(DEMANDS_SHEET, item._rowIndex, item);
 
     return res.json({ message: 'Registro finalizado com sucesso' });
