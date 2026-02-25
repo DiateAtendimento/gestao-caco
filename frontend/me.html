@@ -8,8 +8,8 @@
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
-  <main class="me-layout">
-    <aside class="me-side">
+  <main class="app-shell me-shell glass-frame">
+    <aside class="app-sidebar me-side">
       <article class="profile-card">
         <div class="profile-head">
           <img id="me-avatar" src="./assets/icons/perfil-feminino.svg" alt="Perfil" />
@@ -22,10 +22,39 @@
         </div>
       </article>
       <button id="btn-logout" class="me-logout">Sair</button>
+      <button id="theme-toggle" class="theme-switch" type="button" aria-label="Alternar tema">
+        <i class="bi bi-moon-stars-fill"></i>
+        <span>Modo escuro</span>
+      </button>
       <p id="msg" class="msg-area"></p>
+
+      <div class="sidebar-footer">
+        <div class="caco-badge">
+          <img src="./assets/icons/logo.svg" alt="CACO" />
+        </div>
+      </div>
     </aside>
 
-    <section class="me-main">
+    <section class="app-content me-main">
+      <article id="whatsapp-block" class="section-shell hidden">
+        <div class="section-title">Registro WhatsApp</div>
+        <div class="section-content">
+          <div class="whatsapp-pane">
+            <div class="whatsapp-icon-box">
+              <img src="./assets/icons/whatsapp.svg" alt="WhatsApp" />
+              <div>WhatsApp</div>
+            </div>
+            <form id="form-whatsapp">
+              <div class="form-row"><input id="wpp-assunto" placeholder="Assunto" required /></div>
+              <div class="form-row"><textarea id="wpp-descricao" placeholder="Adicione uma descrição" required></textarea></div>
+              <div class="form-actions">
+                <button class="btn-main" type="submit">Registrar</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </article>
+
       <article id="siga-block" class="section-shell hidden">
         <div class="section-title">Registros SIGA</div>
         <div class="section-content">
@@ -41,25 +70,6 @@
               </thead>
               <tbody id="registros-siga-body"></tbody>
             </table>
-          </div>
-        </div>
-      </article>
-
-      <article id="whatsapp-block" class="section-shell hidden">
-        <div class="section-title">Registro WhatsApp</div>
-        <div class="section-content">
-          <div class="whatsapp-pane">
-            <div class="whatsapp-icon-box">
-              <img src="./assets/icons/whatsapp.svg" alt="WhatsApp" />
-              <div>WhatApp</div>
-            </div>
-            <form id="form-whatsapp">
-              <div class="form-row"><input id="wpp-assunto" placeholder="Assunto" required /></div>
-              <div class="form-row"><textarea id="wpp-descricao" placeholder="Adicione uma descrição" required></textarea></div>
-              <div class="form-actions">
-                <button class="btn-main" type="submit">Registrar</button>
-              </div>
-            </form>
           </div>
         </div>
       </article>

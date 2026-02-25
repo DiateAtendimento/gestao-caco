@@ -256,7 +256,9 @@ async function openConfig(nome) {
 async function loadAdminData() {
   const started = performance.now();
   const dashboard = await api('/api/dashboard/admin');
-  state.cards = dashboard.cards || [];
+  state.cards = (dashboard.cards || []).sort((a, b) =>
+    String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR', { sensitivity: 'base' })
+  );
   state.dashboardUrl = dashboard.dashboardUrl || state.dashboardUrl;
   console.log(`[Admin] cards carregados: ${state.cards.length}, tempo: ${Math.round(performance.now() - started)}ms`);
 }

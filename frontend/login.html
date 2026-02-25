@@ -8,37 +8,40 @@
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
-  <div class="login-shell">
-    <div class="login-screen">
-      <section class="login-left">
-        <div class="login-panel">
-          <img class="login-logo" src="./assets/icons/logo.svg" alt="Gestão" />
-          <p class="login-desc">Coordenação de Atendimento<br />Colaborativo - CACO</p>
+  <div class="page-bg">
+    <div class="login-shell">
+      <div class="login-screen glass-frame">
+        <section class="login-left">
+          <div class="login-panel">
+            <img class="login-logo" src="./assets/icons/logo.svg" alt="Gestão" />
+            <p class="login-desc">Coordenação de Atendimento<br />Colaborativo - CACO</p>
 
-          <form id="login-form">
-            <div class="login-form-row">
-              <input class="login-input" id="nome" placeholder="Nome" required />
-            </div>
-            <div class="login-form-row pwd-wrap">
-              <input class="login-input pwd-input" id="senha" type="password" placeholder="Senha" required />
-              <button id="toggle-senha" class="pwd-eye" type="button" aria-label="Mostrar senha">👁</button>
-            </div>
-            <button class="btn-access" type="submit">
-              <img src="./assets/icons/btn-acessar-login.svg" alt="Acessar" />
-              <span>Acessar</span>
-            </button>
-          </form>
+            <form id="login-form">
+              <div class="login-form-row field-with-icon">
+                <i class="bi bi-person-fill"></i>
+                <input class="login-input" id="nome" placeholder="Nome" required />
+              </div>
+              <div class="login-form-row pwd-wrap field-with-icon">
+                <i class="bi bi-lock-fill"></i>
+                <input class="login-input pwd-input" id="senha" type="password" placeholder="Senha" required />
+                <button id="toggle-senha" class="pwd-eye" type="button" aria-label="Mostrar senha">
+                  <i class="bi bi-eye-fill"></i>
+                </button>
+              </div>
+              <button class="btn-access" type="submit">Acessar</button>
+            </form>
 
-          <div class="login-actions">
-            <button id="btn-clear" class="btn-clear" type="button">Limpar sessão</button>
+            <div class="login-actions">
+              <button id="btn-clear" class="btn-clear" type="button">Limpar sessão</button>
+            </div>
+            <p id="msg" class="login-msg"></p>
           </div>
-          <p id="msg" class="login-msg"></p>
-        </div>
-      </section>
+        </section>
 
-      <section class="login-right">
-        <img class="login-hero-art" src="./img/img-login.svg" alt="Comunicação" />
-      </section>
+        <section class="login-right">
+          <img class="login-hero-art" src="./img/img-login.svg" alt="Comunicação" />
+        </section>
+      </div>
     </div>
   </div>
 

@@ -8,21 +8,39 @@
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
-  <main class="admin-layout">
-    <section class="admin-top">
-      <div class="admin-user-mini">
+  <main class="app-shell admin-shell glass-frame">
+    <aside class="app-sidebar">
+      <section class="admin-user-mini">
         <img id="admin-avatar" src="./img/admin.png" alt="Admin" />
-        <div>Administrador</div>
+        <div class="sidebar-user-name">Administrador</div>
         <button id="btn-logout" class="me-logout">Sair</button>
+      </section>
+
+      <div class="sidebar-footer">
+        <button id="theme-toggle" class="theme-switch" type="button" aria-label="Alternar tema">
+          <i class="bi bi-moon-stars-fill"></i>
+          <span>Modo escuro</span>
+        </button>
+        <div class="caco-badge">
+          <img src="./assets/icons/logo.svg" alt="CACO" />
+        </div>
       </div>
+    </aside>
 
-      <nav class="admin-menu">
-        <button id="btn-dashboard"><img src="./assets/icons/dashboard.svg" alt="Dashboard" />Dashboard</button>
-      </nav>
+    <section class="app-content">
+      <header class="topbar">
+        <div class="topbar-brand">
+          <img src="./assets/icons/logo.svg" alt="Gestão" />
+          <p>Coordenação de Atendimento Colaborativo - CACO</p>
+        </div>
+        <nav class="admin-menu">
+          <button id="btn-dashboard" type="button"><img src="./assets/icons/dashboard.svg" alt="Dashboard" />Dashboard</button>
+        </nav>
+      </header>
+
+      <p id="msg" class="msg-area"></p>
+      <section id="cards" class="admin-cards"></section>
     </section>
-
-    <p id="msg" class="msg-area"></p>
-    <section id="cards" class="admin-cards"></section>
   </main>
 
   <div id="modal-config" class="modal-overlay">
@@ -124,4 +142,3 @@
   <script type="module" src="./js/admin.js"></script>
 </body>
 </html>
-

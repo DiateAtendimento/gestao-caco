@@ -24,25 +24,30 @@ export function applyTheme() {
   document.documentElement.setAttribute('data-theme', theme);
 }
 
+function refreshThemeToggleIcon(btn) {
+  if (!btn) return;
+  const isDark = (document.documentElement.getAttribute('data-theme') || 'light') === 'dark';
+  const icon = btn.querySelector('i');
+  if (icon) {
+    icon.className = `bi ${isDark ? 'bi-sun-fill' : 'bi-moon-stars-fill'}`;
+  } else {
+    btn.textContent = isDark ? '☀' : '🌙';
+  }
+}
+
 export function toggleTheme() {
   const current = document.documentElement.getAttribute('data-theme') || 'light';
   const next = current === 'light' ? 'dark' : 'light';
   localStorage.setItem('theme', next);
   applyTheme();
+  refreshThemeToggleIcon(document.getElementById('theme-toggle'));
 }
 
 export function initThemeIcon() {
   applyTheme();
-  let btn = document.getElementById('theme-floating-btn');
-  if (!btn) {
-    btn = document.createElement('button');
-    btn.id = 'theme-floating-btn';
-    btn.className = 'theme-floating-btn';
-    btn.type = 'button';
-    btn.title = 'Alternar modo escuro';
-    btn.innerHTML = '<i class="bi bi-moon-stars-fill"></i>';
-    document.body.appendChild(btn);
-  }
+  const btn = document.getElementById('theme-toggle');
+  if (!btn) return;
+  refreshThemeToggleIcon(btn);
   btn.onclick = toggleTheme;
 }
 
