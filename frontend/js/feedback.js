@@ -6,7 +6,10 @@ const LOTTIES = {
   salvo: 'assets/lotties/Salvo.json',
   excluido: 'assets/lotties/excluido.json',
   atribuido: 'assets/lotties/atribuido.json',
-  erro: 'assets/lotties/Error.json'
+  erro: 'assets/lotties/Error.json',
+  sem_atividade: 'assets/lotties/sem-atividade.json',
+  sem_atribuicao: 'assets/lotties/sem-atribuicao.json',
+  atribuicao_recebida: 'assets/lotties/atribuicao-recebida.json'
 };
 
 let lottieReadyPromise = null;
@@ -74,6 +77,10 @@ async function playAnimation(container, path, loop = false) {
   });
 }
 
+function lottiePath(type) {
+  return LOTTIES[type] || LOTTIES.erro;
+}
+
 export async function mountLoginLottie(containerId) {
   const host = typeof containerId === 'string' ? document.getElementById(containerId) : containerId;
   if (!host) return;
@@ -125,7 +132,7 @@ export async function showStatus(type, message, duration = 2200) {
   text.textContent = message;
   toast.classList.remove('hidden');
 
-  const file = LOTTIES[type] || LOTTIES.erro;
+  const file = lottiePath(type);
   try {
     if (toastAnimation) toastAnimation.destroy();
     toastAnimation = await playAnimation(lottieContainer, file, false);
@@ -139,5 +146,47 @@ export async function showStatus(type, message, duration = 2200) {
       toastAnimation.destroy();
       toastAnimation = null;
     }
+  }, duration);
+}
+
+export async function mountInlineLottie(containerIdOrElement, type, loop = true) {
+  const host = typeof containerIdOrElement === 'string'
+    ? document.getElementById(containerIdOrElement)
+    : containerIdOrElement;
+  if (!host) return null;
+
+  host.innerHTML = '';
+  const slot = document.createElement('div');
+  slot.className = 'feedback-lottie-inline';
+  host.appendChild(slot);
+
+  try {
+    return await playAnimation(slot, lottiePath(type), loop);
+  } catch (error) {
+    console.error(`[Lottie] erro inline ${type}:`, error.message);
+    return null;
+  }
+}
+
+export async function showAtribuicaoRecebida(nomeUsuario, duration = 5000) {
+  let bubble = document.getElementById('atrib-recebida-bubble');
+  if (!bubble) {
+    bubble = document.createElement('div');
+    bubble.id = 'atrib-recebida-bubble';
+    bubble.className = 'atrib-bubble';
+    bubble.innerHTML = `
+      <div class="atrib-bubble-text"></div>
+      <div class="atrib-bubble-lottie"></div>
+    `;
+    document.body.appendChild(bubble);
+  }
+
+  bubble.querySelector('.atrib-bubble-text').textContent = `${nomeUsuario}, você recebeu uma nova atribuição`;
+  bubble.classList.remove('hidden');
+
+  await mountInlineLottie(bubble.querySelector('.atrib-bubble-lottie'), 'atribuicao_recebida', true);
+
+  window.setTimeout(() => {
+    bubble.classList.add('hidden');
   }, duration);
 }

@@ -1,6 +1,6 @@
 ﻿import { api, requireAuth, clearSession, toggleTheme } from './auth.js';
 import { ACTIVITIES } from './data.js';
-import { showLoading, showStatus } from './feedback.js';
+import { showLoading, showStatus, mountInlineLottie, showAtribuicaoRecebida } from './feedback.js';
 import { attachAvatar } from './avatar.js';
 
 const user = requireAuth('colaborador');
@@ -14,6 +14,7 @@ const state = {
 const atividadesEl = document.getElementById('atividades');
 const demandasEl = document.getElementById('demandas');
 const msgEl = document.getElementById('msg');
+const seenDemandasKey = `seenDemandas:${user.nome}`;
 
 function showMsg(text) {
   msgEl.textContent = text || '';
@@ -45,7 +46,14 @@ function renderAtividades() {
   atividadesEl.innerHTML = '';
 
   if (!state.profile?.atividades?.length) {
-    atividadesEl.innerHTML = '<p>Nenhuma atividade vinculada</p>';
+    const box = document.createElement('div');
+    box.className = 'empty-state-box';
+    box.innerHTML = `
+      <div id="lottie-sem-atividade"></div>
+      <p>Nenhuma atividade vinculada no momento.</p>
+    `;
+    atividadesEl.appendChild(box);
+    mountInlineLottie('lottie-sem-atividade', 'sem_atividade', true);
     return;
   }
 
@@ -66,7 +74,17 @@ function renderDemandas() {
   const abertas = state.demandas.filter((d) => !d.concluido);
 
   if (!abertas.length) {
-    demandasEl.innerHTML = '<tr><td colspan="4">Nenhuma demanda atribuída</td></tr>';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td colspan="4">
+        <div class="empty-state-table">
+          <div id="lottie-sem-atribuicao"></div>
+          <p>Nenhuma demanda atribuída para você.</p>
+        </div>
+      </td>
+    `;
+    demandasEl.appendChild(tr);
+    mountInlineLottie('lottie-sem-atribuicao', 'sem_atribuicao', true);
     return;
   }
 
@@ -143,6 +161,18 @@ async function loadData() {
 
   state.profile = profile;
   state.demandas = demandas.demandas || [];
+
+  const currentIds = state.demandas.map((d) => d.id);
+  const previousRaw = localStorage.getItem(seenDemandasKey);
+  if (previousRaw) {
+    const previousIds = JSON.parse(previousRaw);
+    const hasNew = currentIds.some((id) => !previousIds.includes(id));
+    if (hasNew) {
+      showAtribuicaoRecebida(user.nome, 5000);
+      console.log('[Colaborador] nova atribuição detectada');
+    }
+  }
+  localStorage.setItem(seenDemandasKey, JSON.stringify(currentIds));
 
   document.getElementById('welcome').textContent = user.nome;
   document.getElementById('profile-nome').textContent = `Nome: ${profile.nome}`;

@@ -58,15 +58,18 @@ button {
 
 /* Login */
 .login-shell {
-  min-height: 100vh;
+  min-height: 100dvh;
+  height: 100dvh;
   display: grid;
   place-items: center;
-  padding: 24px;
+  padding: 8px;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .login-screen {
-  min-height: min(84vh, 760px);
-  width: min(1400px, 96vw);
+  min-height: min(74vh, 640px);
+  width: min(1120px, 88vw);
   display: grid;
   grid-template-columns: 1fr 1fr;
   background: #f3f3f3;
@@ -80,7 +83,7 @@ button {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px 34px;
+  padding: 18px 30px;
 }
 
 .login-panel {
@@ -94,8 +97,8 @@ button {
 }
 
 .login-desc {
-  margin: 0 0 56px;
-  font-size: 18px;
+  margin: 0 0 42px;
+  font-size: 16px;
   line-height: 1.35;
 }
 
@@ -115,7 +118,7 @@ button {
 }
 
 .login-actions {
-  margin-top: 18px;
+  margin-top: 10px;
   display: flex;
   gap: 12px;
   justify-content: center;
@@ -150,7 +153,7 @@ button {
   background: #0d9ab3;
   display: grid;
   place-items: center;
-  padding: 26px;
+  padding: 20px;
 }
 
 .login-hero-art {
@@ -197,13 +200,23 @@ button {
 }
 
 .admin-user-mini {
-  width: 90px;
+  width: 170px;
   text-align: center;
   font-size: 11px;
+  background: var(--white);
+  border: 1px solid #c9c9c9;
+  border-radius: 14px;
+  padding: 10px 10px 12px;
+  box-shadow: var(--shadow);
 }
 
 .admin-user-mini img {
-  width: 96px;
+  width: 94px;
+  height: 94px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+  margin: 0 auto 8px;
 }
 
 .admin-user-mini .me-logout {
@@ -260,7 +273,7 @@ button {
   width: 68px;
   height: 68px;
   border-radius: 50%;
-  object-fit: contain;
+  object-fit: cover;
   background: rgba(255, 255, 255, 0.35);
 }
 
@@ -582,6 +595,13 @@ button {
   padding: 8px 16px;
 }
 
+.btn-soft.iconized {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
 .btn-danger {
   border: 0;
   background: #ef3d3d;
@@ -620,6 +640,9 @@ button {
 
 .profile-head img {
   width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  object-fit: cover;
 }
 
 .profile-head h3 {
@@ -766,18 +789,87 @@ button {
 
 .feedback-card {
   width: min(280px, 85vw);
-  background: var(--white);
-  border: 1px solid var(--line);
+  background: transparent;
+  border: 0;
   border-radius: 18px;
-  box-shadow: var(--shadow);
+  box-shadow: none;
   padding: 12px;
   text-align: center;
+  color: #fff;
+  font-weight: 600;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
 }
 
 .feedback-lottie {
   width: 140px;
   height: 140px;
   margin: 0 auto;
+}
+
+.feedback-lottie-inline {
+  width: 140px;
+  height: 140px;
+  margin: 0 auto;
+}
+
+.empty-state-box {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  color: var(--muted);
+  padding: 10px 0;
+}
+
+.empty-state-table {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  color: var(--muted);
+  padding: 6px 0;
+}
+
+.empty-state-box p,
+.empty-state-table p {
+  margin: 0;
+  font-size: 13px;
+  text-align: center;
+}
+
+.atrib-bubble {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 1300;
+  display: grid;
+  gap: 8px;
+  justify-items: end;
+}
+
+.atrib-bubble-text {
+  background: #27b34a;
+  color: #fff;
+  border-radius: 22px;
+  padding: 14px 16px;
+  max-width: 260px;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.atrib-bubble-text::after {
+  content: "";
+  display: block;
+  width: 0;
+  height: 0;
+  margin-top: 8px;
+  border-left: 14px solid transparent;
+  border-right: 14px solid transparent;
+  border-top: 14px solid #27b34a;
+}
+
+.atrib-bubble-lottie {
+  width: 220px;
+  height: 220px;
 }
 
 #feedback-loading .feedback-card {
