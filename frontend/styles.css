@@ -345,7 +345,7 @@ button {
 }
 
 .exec-text {
-  color: #6d6d6d;
+  color: var(--muted);
   font-size: 11px;
   margin: 8px 0;
 }
@@ -524,7 +524,7 @@ button {
 }
 
 .table th {
-  color: #646464;
+  color: var(--muted);
 }
 
 .table td.actions-cell {
@@ -652,7 +652,7 @@ button {
 .profile-body {
   padding: 10px;
   font-size: 12px;
-  color: #666;
+  color: var(--text);
   line-height: 1.5;
 }
 
@@ -726,7 +726,7 @@ button {
 .activity-chip {
   text-align: center;
   font-size: 12px;
-  color: #555;
+  color: var(--text);
 }
 
 .activity-chip img {
@@ -769,6 +769,19 @@ button {
   min-height: 20px;
   color: #d23f3f;
   font-size: 12px;
+}
+
+.status-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+.status-dot.andamento {
+  background: #f29c1f;
 }
 
 .feedback-overlay {

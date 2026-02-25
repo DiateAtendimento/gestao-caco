@@ -34,8 +34,9 @@ const DEMANDS_HEADERS = [
   'Descrição',
   'Data do Registro',
   'Finalizado',
-  'Número da solicitação',
-  'Nome do atendente',
+  'Registrado por',
+  'Finalizado por',
+  'Atribuida para',
   'Meta'
 ];
 

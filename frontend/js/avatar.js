@@ -11,7 +11,7 @@ function candidates(name) {
   const clean = sanitizeName(raw);
   const base = ['img'];
   const exts = ['png', 'jpg', 'jpeg', 'webp', 'svg'];
-  const vars = [...new Set([raw, clean])];
+  const vars = [...new Set([raw, clean, raw.toLowerCase(), clean.toLowerCase()])];
 
   const list = [];
   vars.forEach((v) => {

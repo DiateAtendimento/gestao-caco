@@ -8,11 +8,14 @@ if (!user) throw new Error('Sessão inválida');
 
 const state = {
   profile: null,
-  demandas: []
+  demandas: [],
+  sigaRegistros: []
 };
 
 const atividadesEl = document.getElementById('atividades');
 const demandasEl = document.getElementById('demandas');
+const sigaBodyEl = document.getElementById('registros-siga-body');
+const sigaBlockEl = document.getElementById('siga-block');
 const msgEl = document.getElementById('msg');
 const seenDemandasKey = `seenDemandas:${user.nome}`;
 
@@ -89,9 +92,10 @@ function renderDemandas() {
   }
 
   abertas.forEach((d) => {
+    const andamentoDot = d.finalizado === 'Em andamento' ? '<span class="status-dot andamento"></span>' : '';
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td>${d.id}</td>
+      <td>${andamentoDot}${d.id}</td>
       <td>${d.area}</td>
       <td>${d.descricao}</td>
       <td>
@@ -112,6 +116,45 @@ function renderDemandas() {
   });
 }
 
+function renderRegistrosSiga() {
+  sigaBodyEl.innerHTML = '';
+  if (!state.profile?.flags?.Registrosiga || state.profile.flags.Registrosiga !== 'Sim') {
+    sigaBlockEl.classList.add('hidden');
+    return;
+  }
+
+  sigaBlockEl.classList.remove('hidden');
+  if (!state.sigaRegistros.length) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td colspan="4">
+        <div class="empty-state-table">
+          <div id="lottie-sem-siga"></div>
+          <p>Nenhum registro pendente no SIGA.</p>
+        </div>
+      </td>
+    `;
+    sigaBodyEl.appendChild(tr);
+    mountInlineLottie('lottie-sem-siga', 'sem_atribuicao', true);
+    return;
+  }
+
+  state.sigaRegistros.forEach((d) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${d.id}</td>
+      <td>${d.area}</td>
+      <td>${d.descricao}</td>
+      <td><button class="btn-status concluido" data-siga="${d.id}" type="button">Registrado</button></td>
+    `;
+    sigaBodyEl.appendChild(tr);
+  });
+
+  sigaBodyEl.querySelectorAll('[data-siga]').forEach((btn) => {
+    btn.addEventListener('click', () => registrarSiga(btn.dataset.siga));
+  });
+}
+
 async function updateStatus(id, status) {
   try {
     await runAction('atualizar status', 'Atualizando status...', 'atribuido', 'Status atualizado', async () => {
@@ -121,6 +164,18 @@ async function updateStatus(id, status) {
       });
       await loadData();
       renderDemandas();
+    });
+  } catch (_e) {}
+}
+
+async function registrarSiga(id) {
+  try {
+    await runAction('registrar no SIGA', 'Finalizando registro...', 'salvo', 'Registro finalizado', async () => {
+      await api(`/api/demandas/registros-siga/${encodeURIComponent(id)}/registrado`, {
+        method: 'POST'
+      });
+      await loadData();
+      renderRegistrosSiga();
     });
   } catch (_e) {}
 }
@@ -154,13 +209,20 @@ function setupWhatsapp() {
 
 async function loadData() {
   const started = performance.now();
-  const [profile, demandas] = await Promise.all([
+  const requests = [
     api('/api/profile/me'),
     api(`/api/demandas?atendente=${encodeURIComponent(user.nome)}`)
-  ]);
+  ];
+
+  if (state.profile?.flags?.Registrosiga === 'Sim' || !state.profile) {
+    requests.push(api('/api/demandas/registros-siga').catch(() => ({ registros: [] })));
+  }
+
+  const [profile, demandas, siga] = await Promise.all(requests);
 
   state.profile = profile;
   state.demandas = demandas.demandas || [];
+  state.sigaRegistros = siga?.registros || [];
 
   const currentIds = state.demandas.map((d) => d.id);
   const previousRaw = localStorage.getItem(seenDemandasKey);
@@ -188,13 +250,30 @@ document.getElementById('btn-logout').addEventListener('click', async () => {
 });
 document.getElementById('btn-theme').addEventListener('click', toggleTheme);
 
+async function refreshSilently() {
+  try {
+    await loadData();
+    renderAtividades();
+    renderDemandas();
+    renderRegistrosSiga();
+  } catch (error) {
+    console.error('[Colaborador] polling erro:', error.message);
+  }
+}
+
 (async () => {
   try {
     await runAction('carregar painel colaborador', 'Carregando painel colaborador...', null, null, async () => {
       await loadData();
       renderAtividades();
       renderDemandas();
+      renderRegistrosSiga();
       setupWhatsapp();
+    });
+
+    setInterval(refreshSilently, 12000);
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) refreshSilently();
     });
   } catch (_e) {}
 })();

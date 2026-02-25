@@ -1,22 +1,22 @@
 ﻿import { API_BASE_URL } from './config.js';
 
 export function getToken() {
-  return localStorage.getItem('token');
+  return sessionStorage.getItem('token');
 }
 
 export function getUser() {
-  const raw = localStorage.getItem('user');
+  const raw = sessionStorage.getItem('user');
   return raw ? JSON.parse(raw) : null;
 }
 
 export function setSession(token, user) {
-  localStorage.setItem('token', token);
-  localStorage.setItem('user', JSON.stringify(user));
+  sessionStorage.setItem('token', token);
+  sessionStorage.setItem('user', JSON.stringify(user));
 }
 
 export function clearSession() {
-  localStorage.removeItem('token');
-  localStorage.removeItem('user');
+  sessionStorage.removeItem('token');
+  sessionStorage.removeItem('user');
 }
 
 export function applyTheme() {

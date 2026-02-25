@@ -1,16 +1,10 @@
 ﻿const express = require('express');
-const { authMiddleware, requireRole } = require('../middleware/auth');
-const { DEMANDS_SHEET, DEMANDS_HEADERS, STATUS } = require('../config/constants');
+const { authMiddleware } = require('../middleware/auth');
+const { DEMANDS_SHEET, DEMANDS_HEADERS } = require('../config/constants');
 const { readSheet, appendMappedRow, updateMappedRow, deleteRow, writeHeadersIfEmpty } = require('../services/sheetsService');
-const {
-  ensureDemandsMetaColumn,
-  generateNextSolicitacaoId,
-  numericPartFromId,
-  demandsRowTemplate,
-  parseMeta
-} = require('../services/demandService');
+const { ensureDemandsMetaColumn, generateNextSolicitacaoId, demandsRowTemplate, parseMeta } = require('../services/demandService');
 const { normalizeText } = require('../utils/text');
-const { toBrDateTime } = require('../utils/datetime');
+const { toBrDate } = require('../utils/datetime');
 
 const router = express.Router();
 router.use(authMiddleware);
@@ -22,8 +16,9 @@ function mapSolicitacao(row) {
     descricao: row['Descrição'],
     dataRegistro: row['Data do Registro'],
     finalizado: row.Finalizado,
-    numeroSolicitacao: row['Número da solicitação'],
-    nomeAtendente: row['Nome do atendente'],
+    registradoPor: row['Registrado por'],
+    finalizadoPor: row['Finalizado por'],
+    atribuidaPara: row['Atribuida para'],
     meta: parseMeta(row.Meta)
   };
 }
@@ -32,17 +27,17 @@ router.get('/', async (req, res) => {
   try {
     await writeHeadersIfEmpty(DEMANDS_SHEET, DEMANDS_HEADERS);
     await ensureDemandsMetaColumn();
-    const { rows } = await readSheet(DEMANDS_SHEET);
 
+    const { rows } = await readSheet(DEMANDS_SHEET);
     const pendentes = req.query.pendentes === 'true';
     const atendente = normalizeText(req.query.atendente);
 
     let filtered = rows;
     if (pendentes) {
-      filtered = filtered.filter((row) => !normalizeText(row['Nome do atendente']));
+      filtered = filtered.filter((row) => !normalizeText(row['Atribuida para']));
     }
     if (atendente) {
-      filtered = filtered.filter((row) => normalizeText(row['Nome do atendente']) === atendente);
+      filtered = filtered.filter((row) => normalizeText(row['Atribuida para']) === atendente);
     }
 
     return res.json({ solicitacoes: filtered.map(mapSolicitacao) });
@@ -73,10 +68,11 @@ router.post('/', async (req, res) => {
       ID: id,
       Assunto: area,
       'Descrição': descricao,
-      'Data do Registro': toBrDateTime(),
-      Finalizado: STATUS.NAO_INICIADA,
-      'Número da solicitação': numericPartFromId(id),
-      'Nome do atendente': '',
+      'Data do Registro': toBrDate(),
+      Finalizado: '',
+      'Registrado por': req.user.nome,
+      'Finalizado por': '',
+      'Atribuida para': '',
       Meta: String(meta)
     });
 
@@ -154,11 +150,7 @@ router.post('/:id/atribuir', async (req, res) => {
       return res.status(404).json({ error: 'Solicitação não encontrada' });
     }
 
-    item['Nome do atendente'] = atendenteNome;
-    if (!item.Finalizado) {
-      item.Finalizado = STATUS.NAO_INICIADA;
-    }
-
+    item['Atribuida para'] = atendenteNome;
     await updateMappedRow(DEMANDS_SHEET, item._rowIndex, item);
     return res.json({ message: 'Solicitação atribuída' });
   } catch (error) {

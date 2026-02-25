@@ -254,6 +254,19 @@ async function loadAdminData() {
   console.log(`[Admin] cards carregados: ${state.cards.length}, tempo: ${Math.round(performance.now() - started)}ms`);
 }
 
+async function refreshSilently() {
+  try {
+    await loadAdminData();
+    renderCards();
+    if (state.selectedAtendente) {
+      await loadSelectedSolicitacoes();
+      renderSolicitacoesSelecionado();
+    }
+  } catch (error) {
+    console.error('[Admin] polling erro:', error.message);
+  }
+}
+
 document.getElementById('btn-home').addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
 document.getElementById('btn-dashboard').addEventListener('click', () => window.open(state.dashboardUrl, '_blank'));
 document.getElementById('btn-theme').addEventListener('click', toggleTheme);
@@ -352,6 +365,10 @@ setupSolicitacaoForm();
     await runAction('carregar dashboard admin', 'Carregando painel admin...', null, null, async () => {
       await loadAdminData();
       renderCards();
+    });
+    setInterval(refreshSilently, 12000);
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) refreshSilently();
     });
   } catch (_e) {}
 })();
