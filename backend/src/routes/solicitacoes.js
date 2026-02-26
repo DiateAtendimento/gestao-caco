@@ -1,6 +1,6 @@
 ﻿const express = require('express');
 const { authMiddleware } = require('../middleware/auth');
-const { DEMANDS_SHEET, DEMANDS_HEADERS } = require('../config/constants');
+const { DEMANDS_SHEET, DEMANDS_HEADERS, STATUS } = require('../config/constants');
 const { readSheet, appendMappedRow, updateMappedRow, deleteRow, writeHeadersIfEmpty } = require('../services/sheetsService');
 const { ensureDemandsMetaColumn, generateNextSolicitacaoId, demandsRowTemplate, parseMeta } = require('../services/demandService');
 const { normalizeText } = require('../utils/text');
@@ -23,6 +23,15 @@ function mapSolicitacao(row) {
   };
 }
 
+function isBrDate(value) {
+  return /^\d{2}\/\d{2}\/\d{4}$/.test(normalizeText(value));
+}
+
+function isConcluido(status) {
+  const text = normalizeText(status);
+  return isBrDate(text) || text.startsWith(STATUS.CONCLUIDO);
+}
+
 router.get('/', async (req, res) => {
   try {
     await writeHeadersIfEmpty(DEMANDS_SHEET, DEMANDS_HEADERS);
@@ -34,7 +43,7 @@ router.get('/', async (req, res) => {
 
     let filtered = rows;
     if (pendentes) {
-      filtered = filtered.filter((row) => !normalizeText(row['Atribuida para']));
+      filtered = filtered.filter((row) => !normalizeText(row['Atribuida para']) && !isConcluido(row.Finalizado));
     }
     if (atendente) {
       filtered = filtered.filter((row) => normalizeText(row['Atribuida para']) === atendente);

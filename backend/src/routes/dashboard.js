@@ -18,9 +18,8 @@ function isConcluido(status) {
 }
 
 function isSigaQueueItem(row) {
-  const registradoPor = normalizeText(row['Registrado por']);
-  const atribuidaPara = normalizeText(row['Atribuida para']);
-  return !!registradoPor && !atribuidaPara && !isConcluido(row.Finalizado);
+  const registradoPor = normalizeText(row['Registrado por'] || row['Registrador por']);
+  return !!registradoPor && !isConcluido(row.Finalizado);
 }
 
 router.get('/admin', async (_req, res) => {
@@ -44,7 +43,7 @@ router.get('/admin', async (_req, res) => {
         return !st || st === STATUS.NAO_INICIADA;
       }).length;
 
-      if (normalizeText(col.Registrosiga) === 'Sim') {
+      if (normalizeText(col.Registrosiga).toLowerCase() === 'sim') {
         percentual = 0;
         emAndamento = 0;
         naoIniciadas = pendingSigaCount;

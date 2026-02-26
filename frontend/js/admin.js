@@ -21,7 +21,11 @@ const modalConfig = document.getElementById('modal-config');
 const modalSolicitacao = document.getElementById('modal-solicitacao');
 const modalNovoColab = document.getElementById('modal-novo-colab');
 const modalConfirmDelete = document.getElementById('modal-confirm-delete');
-attachAvatar(document.getElementById('admin-avatar'), 'admin');
+const adminAvatar = document.getElementById('admin-avatar');
+if (adminAvatar) {
+  adminAvatar.src = './img/admin.png';
+  adminAvatar.onerror = () => attachAvatar(adminAvatar, 'admin');
+}
 
 function showMsg(text) {
   msgEl.textContent = text || '';
@@ -161,10 +165,14 @@ function renderAtividades() {
 
 function renderSolicitacoesSelecionado() {
   const body = document.getElementById('tbody-solicitacoes');
+  const thDataRegistro = document.getElementById('th-data-registro');
+  const card = state.cards.find((c) => c.nome === state.selectedAtendente);
+  const showDataRegistro = card?.atividades?.Registrosiga === 'Sim';
   body.innerHTML = '';
+  thDataRegistro.style.display = showDataRegistro ? '' : 'none';
 
   if (!state.selectedSolicitacoes.length) {
-    body.innerHTML = '<tr><td colspan="5">Nenhuma solicitação pendente. Use "Adicionar solicitação".</td></tr>';
+    body.innerHTML = `<tr><td colspan="${showDataRegistro ? 6 : 5}">Nenhuma solicitação pendente. Use "Adicionar solicitação".</td></tr>`;
     return;
   }
 
@@ -173,6 +181,7 @@ function renderSolicitacoesSelecionado() {
     tr.innerHTML = `
       <td>${row.id}</td>
       <td>${row.area}</td>
+      ${showDataRegistro ? `<td>${row.dataRegistro || '-'}</td>` : ''}
       <td>${Number(row.meta).toFixed(2)}%</td>
       <td>${row.descricao}</td>
       <td class="actions-cell">
@@ -247,6 +256,7 @@ async function loadSelectedSolicitacoes() {
   state.selectedSolicitacoes = (data.solicitacoes || []).map((item) => ({
     id: item.id,
     area: item.area,
+    dataRegistro: item.dataRegistro,
     descricao: item.descricao,
     meta: item.meta || 0,
     finalizado: item.finalizado
