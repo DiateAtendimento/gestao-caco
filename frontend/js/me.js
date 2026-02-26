@@ -172,7 +172,7 @@ function renderRegistrosSiga() {
   if (!state.sigaRegistros.length) {
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td colspan="4">
+      <td colspan="5">
         <div class="empty-state-table">
           <div id="lottie-sem-siga"></div>
           <p>Nenhum registro pendente no SIGA.</p>
@@ -184,9 +184,10 @@ function renderRegistrosSiga() {
     return;
   }
 
-  state.sigaRegistros.forEach((d) => {
+  state.sigaRegistros.forEach((d, index) => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
+      <td>${index + 1}</td>
       <td>${d.id}</td>
       <td>${d.area}</td>
       <td>${d.descricao}</td>
@@ -267,7 +268,7 @@ async function loadData() {
     api(`/api/demandas?atendente=${encodeURIComponent(user.nome)}`)
   ];
 
-  if (state.profile?.flags?.Registrosiga === 'Sim' || !state.profile) {
+  if (isEnabled(state.profile?.flags?.Registrosiga) || !state.profile) {
     requests.push(api('/api/demandas/registros-siga').catch(() => ({ registros: [] })));
   }
 

@@ -33,6 +33,7 @@
 
             <div class="login-actions">
               <button id="btn-clear" class="btn-clear" type="button">Limpar sessão</button>
+              <button id="btn-primeiro-acesso" class="btn-clear" type="button">Primeiro acesso</button>
             </div>
             <p id="msg" class="login-msg"></p>
           </div>
@@ -41,6 +42,30 @@
         <section class="login-right">
           <img class="login-hero-art" src="./img/img-login.svg" alt="Comunicação" />
         </section>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-primeiro-acesso" class="modal-overlay">
+    <div class="modal small">
+      <header class="modal-header">Primeiro acesso
+        <button id="btn-close-primeiro-acesso" class="modal-close-x" type="button">×</button>
+      </header>
+      <div class="modal-content">
+        <form id="form-primeiro-acesso">
+          <div class="form-row">
+            <input id="pa-nome" placeholder="Digite seu primeiro nome" required />
+          </div>
+          <div class="form-row">
+            <input id="pa-senha" type="password" placeholder="Digite sua senha" required />
+          </div>
+          <div class="form-row">
+            <input id="pa-senha2" type="password" placeholder="Digite sua senha novamente" required />
+          </div>
+          <div class="form-actions">
+            <button class="btn-main" type="submit">Confirmar</button>
+          </div>
+        </form>
       </div>
     </div>
   </div>

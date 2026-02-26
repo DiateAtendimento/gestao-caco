@@ -43,10 +43,8 @@ async function hasSigaPermission(nome) {
 }
 
 function isSigaQueueItem(row) {
-  const registradoPor = normalizeText(getRegisteredBy(row));
-  const atribuidaPara = normalizeText(row['Atribuida para']);
   const finalizado = normalizeText(row.Finalizado);
-  return !!registradoPor && !atribuidaPara && !isBrDate(finalizado);
+  return !isBrDate(finalizado);
 }
 
 router.get('/', async (req, res) => {

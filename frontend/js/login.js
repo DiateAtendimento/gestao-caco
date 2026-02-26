@@ -4,6 +4,13 @@ import { showLoading, showStatus } from './feedback.js';
 initThemeIcon();
 let loginInFlight = false;
 
+function openPrimeiroAcesso() {
+  document.getElementById('modal-primeiro-acesso').classList.add('open');
+}
+
+function closePrimeiroAcesso() {
+  document.getElementById('modal-primeiro-acesso').classList.remove('open');
+}
 
 document.getElementById('toggle-senha').addEventListener('click', () => {
   const senha = document.getElementById('senha');
@@ -59,5 +66,45 @@ document.getElementById('btn-clear').addEventListener('click', async () => {
   document.getElementById('msg').textContent = 'Sessão limpa.';
   await showStatus('excluido', 'Sessão removida');
   console.log('[Login] sessão limpa manualmente');
+});
+
+document.getElementById('btn-primeiro-acesso').addEventListener('click', () => {
+  openPrimeiroAcesso();
+});
+
+document.getElementById('btn-close-primeiro-acesso').addEventListener('click', () => {
+  closePrimeiroAcesso();
+});
+
+document.getElementById('form-primeiro-acesso').addEventListener('submit', async (event) => {
+  event.preventDefault();
+
+  const nome = document.getElementById('pa-nome').value.trim();
+  const senha = document.getElementById('pa-senha').value.trim();
+  const confirmarSenha = document.getElementById('pa-senha2').value.trim();
+  const msg = document.getElementById('msg');
+
+  if (!nome || !senha || !confirmarSenha) {
+    msg.textContent = 'Preencha todos os campos do primeiro acesso.';
+    await showStatus('erro', 'Preencha todos os campos');
+    return;
+  }
+
+  const loading = await showLoading('Configurando primeiro acesso...');
+  try {
+    await api('/api/auth/primeiro-acesso', {
+      method: 'POST',
+      body: JSON.stringify({ nome, senha, confirmarSenha })
+    });
+    msg.textContent = 'Primeiro acesso concluído. Agora faça login.';
+    await showStatus('salvo', 'Senha cadastrada com sucesso');
+    event.target.reset();
+    closePrimeiroAcesso();
+  } catch (error) {
+    msg.textContent = error.message;
+    await showStatus('erro', error.message);
+  } finally {
+    loading.close();
+  }
 });
 

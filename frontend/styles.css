@@ -662,6 +662,11 @@ img {
   padding: 10px;
 }
 
+#siga-block .demand-table {
+  max-height: 430px;
+  overflow-y: auto;
+}
+
 .table-shell {
   border: 1px solid var(--line);
   border-radius: 18px;
@@ -1026,9 +1031,12 @@ img {
     grid-template-columns: 1fr;
   }
 
-  .login-left,
-  .login-right {
+  .login-left {
     padding: 20px 16px;
+  }
+
+  .login-right {
+    padding: 0;
   }
 
   .login-logo {
