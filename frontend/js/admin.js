@@ -164,7 +164,7 @@ function renderSolicitacoesSelecionado() {
   body.innerHTML = '';
 
   if (!state.selectedSolicitacoes.length) {
-    body.innerHTML = '<tr><td colspan="5">Nenhuma solicitação para este colaborador. Use "Adicionar solicitação".</td></tr>';
+    body.innerHTML = '<tr><td colspan="5">Nenhuma solicitação pendente. Use "Adicionar solicitação".</td></tr>';
     return;
   }
 
@@ -178,6 +178,7 @@ function renderSolicitacoesSelecionado() {
       <td class="actions-cell">
         <button data-edit-sol="${row.id}" title="Editar">✏</button>
         <button data-del-sol="${row.id}" title="Excluir">❌</button>
+        <button data-assign-sol="${row.id}" title="Atribuir"><i class="bi bi-send-fill"></i></button>
       </td>
     `;
     body.appendChild(tr);
@@ -188,6 +189,20 @@ function renderSolicitacoesSelecionado() {
     try {
       await runAction('excluir solicitação', 'Excluindo solicitação...', 'excluido', 'Solicitação excluída', async () => {
         await api(`/api/solicitacoes/${encodeURIComponent(btn.dataset.delSol)}`, { method: 'DELETE' });
+        await loadSelectedSolicitacoes();
+        await loadAdminData();
+        renderSolicitacoesSelecionado();
+        renderCards();
+      });
+    } catch (_e) {}
+  }));
+  body.querySelectorAll('[data-assign-sol]').forEach((btn) => btn.addEventListener('click', async () => {
+    try {
+      await runAction('atribuir solicitação', 'Atribuindo solicitação...', 'atribuido', 'Solicitação atribuída', async () => {
+        await api(`/api/solicitacoes/${encodeURIComponent(btn.dataset.assignSol)}/atribuir`, {
+          method: 'POST',
+          body: JSON.stringify({ atendenteNome: state.selectedAtendente })
+        });
         await loadSelectedSolicitacoes();
         await loadAdminData();
         renderSolicitacoesSelecionado();
@@ -228,8 +243,8 @@ async function loadSelectedSolicitacoes() {
     return;
   }
 
-  const data = await api(`/api/demandas?atendente=${encodeURIComponent(state.selectedAtendente)}`);
-  state.selectedSolicitacoes = (data.demandas || []).map((item) => ({
+  const data = await api('/api/solicitacoes?pendentes=true');
+  state.selectedSolicitacoes = (data.solicitacoes || []).map((item) => ({
     id: item.id,
     area: item.area,
     descricao: item.descricao,
@@ -312,16 +327,11 @@ document.getElementById('form-solicitacao').addEventListener('submit', async (ev
           body: JSON.stringify(payload)
         });
       } else {
-        const created = await api('/api/solicitacoes', {
+        await api('/api/solicitacoes', {
           method: 'POST',
           body: JSON.stringify(payload)
         });
-
-        await api(`/api/solicitacoes/${encodeURIComponent(created.id)}/atribuir`, {
-          method: 'POST',
-          body: JSON.stringify({ atendenteNome: state.selectedAtendente })
-        });
-        console.log(`[Admin] nova solicitação ${created.id} criada e atribuída para ${state.selectedAtendente}`);
+        console.log('[Admin] nova solicitação criada e mantida como pendente para atribuição manual');
       }
 
       closeModal(modalSolicitacao);

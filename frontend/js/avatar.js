@@ -9,9 +9,10 @@ function sanitizeName(name) {
 function candidates(name) {
   const raw = String(name || '').trim();
   const clean = sanitizeName(raw);
+  const title = clean ? `${clean.charAt(0).toUpperCase()}${clean.slice(1).toLowerCase()}` : '';
   const base = ['img'];
   const exts = ['png', 'jpg', 'jpeg', 'webp', 'svg'];
-  const vars = [...new Set([raw, clean, raw.toLowerCase(), clean.toLowerCase()])];
+  const vars = [...new Set([raw, clean, raw.toLowerCase(), clean.toLowerCase(), title])];
 
   const list = [];
   vars.forEach((v) => {
