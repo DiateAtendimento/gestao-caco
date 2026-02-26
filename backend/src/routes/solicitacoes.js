@@ -16,7 +16,7 @@ function mapSolicitacao(row) {
     descricao: row['Descrição'],
     dataRegistro: row['Data do Registro'],
     finalizado: row.Finalizado,
-    registradoPor: row['Registrado por'],
+    registradoPor: row['Registrado por'] || row['Registrador por'],
     finalizadoPor: row['Finalizado por'],
     atribuidaPara: row['Atribuida para'],
     meta: parseMeta(row.Meta)
@@ -47,7 +47,9 @@ router.get('/', async (req, res) => {
       filtered = filtered.filter((row) => !normalizeText(row['Atribuida para']) && !isConcluido(row.Finalizado));
     }
     if (minhas) {
-      filtered = filtered.filter((row) => normalizeText(row['Registrado por']) === normalizeText(req.user.nome));
+      filtered = filtered.filter((row) =>
+        normalizeText(row['Registrado por'] || row['Registrador por']) === normalizeText(req.user.nome)
+      );
     }
     if (atendente) {
       filtered = filtered.filter((row) => normalizeText(row['Atribuida para']) === atendente);
@@ -83,6 +85,7 @@ router.post('/', async (req, res) => {
       'Data do Registro': toBrDate(),
       Finalizado: '',
       'Registrado por': req.user.nome,
+      'Registrador por': req.user.nome,
       'Finalizado por': '',
       'Atribuida para': '',
       Meta: String(meta),
