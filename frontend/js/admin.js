@@ -10,6 +10,7 @@ initThemeIcon();
 const state = {
   cards: [],
   selectedSolicitacoes: [],
+  draftSolicitacoesByAtendente: {},
   selectedAtendente: null,
   dashboardUrl: 'https://docs.google.com/spreadsheets/d/16k4heNHfta1LBhSjbmeskHQY-NPAo41pqHwyZT8nSbM/edit?gid=0#gid=0',
   editingId: null
@@ -34,6 +35,14 @@ function showMsg(text) {
 
 function openModal(el) { el.classList.add('open'); }
 function closeModal(el) { el.classList.remove('open'); }
+
+function getDraftsForSelected() {
+  return state.draftSolicitacoesByAtendente[state.selectedAtendente] || [];
+}
+
+function setDraftsForSelected(drafts) {
+  state.draftSolicitacoesByAtendente[state.selectedAtendente] = drafts;
+}
 
 function enabledActivitiesMap(card) {
   return ACTIVITIES.filter((a) => card.atividades?.[a.key] === 'Sim').slice(0, 3);
@@ -212,6 +221,13 @@ function renderSolicitacoesSelecionado() {
 
   body.querySelectorAll('[data-edit-sol]').forEach((btn) => btn.addEventListener('click', () => openSolicitacao(btn.dataset.editSol)));
   body.querySelectorAll('[data-del-sol]').forEach((btn) => btn.addEventListener('click', async () => {
+    const row = state.selectedSolicitacoes.find((item) => item.id === btn.dataset.delSol);
+    if (row?.isDraft) {
+      setDraftsForSelected(getDraftsForSelected().filter((item) => item.id !== row.id));
+      await loadSelectedSolicitacoes();
+      renderSolicitacoesSelecionado();
+      return;
+    }
     try {
       await runAction('excluir solicitação', 'Excluindo solicitação...', 'excluido', 'Solicitação excluída', async () => {
         await api(`/api/solicitacoes/${encodeURIComponent(btn.dataset.delSol)}`, { method: 'DELETE' });
@@ -223,6 +239,28 @@ function renderSolicitacoesSelecionado() {
     } catch (_e) {}
   }));
   body.querySelectorAll('[data-assign-sol]').forEach((btn) => btn.addEventListener('click', async () => {
+    const row = state.selectedSolicitacoes.find((item) => item.id === btn.dataset.assignSol);
+    if (row?.isDraft) {
+      try {
+        await runAction('atribuir solicitação', 'Atribuindo solicitação...', 'atribuido', 'Solicitação atribuída', async () => {
+          await api('/api/solicitacoes', {
+            method: 'POST',
+            body: JSON.stringify({
+              area: row.area,
+              meta: Number(row.meta),
+              descricao: row.descricao,
+              atendenteNome: state.selectedAtendente
+            })
+          });
+          setDraftsForSelected(getDraftsForSelected().filter((item) => item.id !== row.id));
+          await loadSelectedSolicitacoes();
+          await loadAdminData();
+          renderSolicitacoesSelecionado();
+          renderCards();
+        });
+      } catch (_e) {}
+      return;
+    }
     try {
       await runAction('atribuir solicitação', 'Atribuindo solicitação...', 'atribuido', 'Solicitação atribuída', async () => {
         await api(`/api/solicitacoes/${encodeURIComponent(btn.dataset.assignSol)}/atribuir`, {
@@ -270,15 +308,17 @@ async function loadSelectedSolicitacoes() {
   }
 
   const data = await api('/api/solicitacoes?pendentes=true&minhas=true');
-  state.selectedSolicitacoes = (data.solicitacoes || []).map((item) => ({
+  const persisted = (data.solicitacoes || []).map((item) => ({
     id: item.id,
     area: item.area,
     dataRegistro: item.dataRegistro,
     descricao: item.descricao,
     meta: item.meta || 0,
     finalizado: item.finalizado,
-    atribuidaPara: item.atribuidaPara
+    atribuidaPara: item.atribuidaPara,
+    isDraft: false
   }));
+  state.selectedSolicitacoes = [...getDraftsForSelected(), ...persisted];
   console.log(`[Admin] solicitações do colaborador ${state.selectedAtendente}: ${state.selectedSolicitacoes.length}`);
 }
 
@@ -350,16 +390,33 @@ document.getElementById('form-solicitacao').addEventListener('submit', async (ev
   try {
     await runAction('salvar solicitação', 'Salvando solicitação...', 'salvo', 'Solicitação salva', async () => {
       if (state.editingId) {
-        await api(`/api/solicitacoes/${encodeURIComponent(state.editingId)}`, {
-          method: 'PUT',
-          body: JSON.stringify(payload)
-        });
+        const draft = getDraftsForSelected().find((item) => item.id === state.editingId);
+        if (draft) {
+          draft.area = payload.area;
+          draft.meta = payload.meta;
+          draft.descricao = payload.descricao;
+          setDraftsForSelected([...getDraftsForSelected()]);
+        } else {
+          await api(`/api/solicitacoes/${encodeURIComponent(state.editingId)}`, {
+            method: 'PUT',
+            body: JSON.stringify(payload)
+          });
+        }
       } else {
-        await api('/api/solicitacoes', {
-          method: 'POST',
-          body: JSON.stringify(payload)
+        const draftId = `RASC-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+        const drafts = getDraftsForSelected();
+        drafts.unshift({
+          id: draftId,
+          area: payload.area,
+          descricao: payload.descricao,
+          meta: payload.meta,
+          dataRegistro: '',
+          finalizado: '',
+          atribuidaPara: '',
+          isDraft: true
         });
-        console.log('[Admin] nova solicitação criada e mantida pendente para atribuição manual');
+        setDraftsForSelected(drafts);
+        console.log('[Admin] solicitação salva como rascunho local; aguardando atribuição');
       }
 
       closeModal(modalSolicitacao);

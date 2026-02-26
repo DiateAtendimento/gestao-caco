@@ -73,6 +73,7 @@ router.post('/', async (req, res) => {
     const area = normalizeText(req.body?.area);
     const descricao = normalizeText(req.body?.descricao);
     const meta = parseMeta(req.body?.meta);
+    const atendenteNome = normalizeText(req.body?.atendenteNome);
     if (!area || !descricao || meta <= 0) {
       return res.status(400).json({ error: 'Área, descrição e meta são obrigatórios' });
     }
@@ -87,7 +88,7 @@ router.post('/', async (req, res) => {
       'Registrado por': req.user.nome,
       'Registrador por': req.user.nome,
       'Finalizado por': '',
-      'Atribuida para': '',
+      'Atribuida para': atendenteNome || '',
       Meta: String(meta),
       'Meta registro siga': '0.5'
     });
