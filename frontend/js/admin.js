@@ -11,6 +11,7 @@ const state = {
   cards: [],
   selectedSolicitacoes: [],
   draftSolicitacoesByAtendente: {},
+  recentlyAssignedByAtendente: {},
   selectedAtendente: null,
   dashboardUrl: 'https://docs.google.com/spreadsheets/d/16k4heNHfta1LBhSjbmeskHQY-NPAo41pqHwyZT8nSbM/edit?gid=0#gid=0',
   editingId: null
@@ -42,6 +43,29 @@ function getDraftsForSelected() {
 
 function setDraftsForSelected(drafts) {
   state.draftSolicitacoesByAtendente[state.selectedAtendente] = drafts;
+}
+
+function getRecentlyAssignedForSelected() {
+  return state.recentlyAssignedByAtendente[state.selectedAtendente] || {};
+}
+
+function markRecentlyAssigned(id) {
+  const now = Date.now();
+  const hiddenUntil = now + 120000;
+  const current = { ...getRecentlyAssignedForSelected() };
+  current[id] = hiddenUntil;
+  state.recentlyAssignedByAtendente[state.selectedAtendente] = current;
+}
+
+function cleanupRecentlyAssigned() {
+  const now = Date.now();
+  const current = { ...getRecentlyAssignedForSelected() };
+  Object.keys(current).forEach((id) => {
+    if (current[id] <= now) {
+      delete current[id];
+    }
+  });
+  state.recentlyAssignedByAtendente[state.selectedAtendente] = current;
 }
 
 function enabledActivitiesMap(card) {
@@ -243,7 +267,7 @@ function renderSolicitacoesSelecionado() {
     if (row?.isDraft) {
       try {
         await runAction('atribuir solicitação', 'Atribuindo solicitação...', 'atribuido', 'Solicitação atribuída', async () => {
-          await api('/api/solicitacoes', {
+          const created = await api('/api/solicitacoes', {
             method: 'POST',
             body: JSON.stringify({
               area: row.area,
@@ -252,6 +276,9 @@ function renderSolicitacoesSelecionado() {
               atendenteNome: state.selectedAtendente
             })
           });
+          if (created?.id) {
+            markRecentlyAssigned(created.id);
+          }
           setDraftsForSelected(getDraftsForSelected().filter((item) => item.id !== row.id));
           await loadSelectedSolicitacoes();
           await loadAdminData();
@@ -267,6 +294,7 @@ function renderSolicitacoesSelecionado() {
           method: 'POST',
           body: JSON.stringify({ atendenteNome: state.selectedAtendente })
         });
+        markRecentlyAssigned(btn.dataset.assignSol);
         await loadSelectedSolicitacoes();
         await loadAdminData();
         renderSolicitacoesSelecionado();
@@ -308,6 +336,8 @@ async function loadSelectedSolicitacoes() {
   }
 
   const data = await api('/api/solicitacoes?pendentes=true&minhas=true');
+  cleanupRecentlyAssigned();
+  const recentlyAssigned = getRecentlyAssignedForSelected();
   const persisted = (data.solicitacoes || []).map((item) => ({
     id: item.id,
     area: item.area,
@@ -317,7 +347,7 @@ async function loadSelectedSolicitacoes() {
     finalizado: item.finalizado,
     atribuidaPara: item.atribuidaPara,
     isDraft: false
-  }));
+  })).filter((item) => !recentlyAssigned[item.id]);
   state.selectedSolicitacoes = [...getDraftsForSelected(), ...persisted];
   console.log(`[Admin] solicitações do colaborador ${state.selectedAtendente}: ${state.selectedSolicitacoes.length}`);
 }
