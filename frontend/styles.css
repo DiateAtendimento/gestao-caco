@@ -747,6 +747,10 @@ img {
   margin-right: 4px;
 }
 
+.table td.actions-cell .btn-assign-sol {
+  color: #1f78d1;
+}
+
 .status-actions {
   display: flex;
   gap: 8px;

@@ -40,10 +40,14 @@ router.get('/', async (req, res) => {
     const { rows } = await readSheet(DEMANDS_SHEET);
     const pendentes = req.query.pendentes === 'true';
     const atendente = normalizeText(req.query.atendente);
+    const minhas = req.query.minhas === 'true';
 
     let filtered = rows;
     if (pendentes) {
       filtered = filtered.filter((row) => !normalizeText(row['Atribuida para']) && !isConcluido(row.Finalizado));
+    }
+    if (minhas) {
+      filtered = filtered.filter((row) => normalizeText(row['Registrado por']) === normalizeText(req.user.nome));
     }
     if (atendente) {
       filtered = filtered.filter((row) => normalizeText(row['Atribuida para']) === atendente);
@@ -67,8 +71,6 @@ router.post('/', async (req, res) => {
     const area = normalizeText(req.body?.area);
     const descricao = normalizeText(req.body?.descricao);
     const meta = parseMeta(req.body?.meta);
-    const atendenteNome = normalizeText(req.body?.atendenteNome);
-
     if (!area || !descricao || meta <= 0) {
       return res.status(400).json({ error: 'Área, descrição e meta são obrigatórios' });
     }
@@ -82,7 +84,7 @@ router.post('/', async (req, res) => {
       Finalizado: '',
       'Registrado por': req.user.nome,
       'Finalizado por': '',
-      'Atribuida para': atendenteNome || '',
+      'Atribuida para': '',
       Meta: String(meta),
       'Meta registro siga': '0.5'
     });

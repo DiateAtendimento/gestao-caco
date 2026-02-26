@@ -204,7 +204,7 @@ function renderSolicitacoesSelecionado() {
       <td class="actions-cell">
         <button data-edit-sol="${row.id}" title="Editar">✏</button>
         <button data-del-sol="${row.id}" title="Excluir">❌</button>
-        ${row.atribuidaPara ? '' : `<button data-assign-sol="${row.id}" title="Atribuir"><i class="bi bi-send-fill"></i></button>`}
+        <button data-assign-sol="${row.id}" class="btn-assign-sol" title="Atribuir"><i class="bi bi-send-fill"></i></button>
       </td>
     `;
     body.appendChild(tr);
@@ -269,7 +269,7 @@ async function loadSelectedSolicitacoes() {
     return;
   }
 
-  const data = await api(`/api/solicitacoes?atendente=${encodeURIComponent(state.selectedAtendente)}`);
+  const data = await api('/api/solicitacoes?pendentes=true&minhas=true');
   state.selectedSolicitacoes = (data.solicitacoes || []).map((item) => ({
     id: item.id,
     area: item.area,
@@ -357,12 +357,9 @@ document.getElementById('form-solicitacao').addEventListener('submit', async (ev
       } else {
         await api('/api/solicitacoes', {
           method: 'POST',
-          body: JSON.stringify({
-            ...payload,
-            atendenteNome: state.selectedAtendente
-          })
+          body: JSON.stringify(payload)
         });
-        console.log(`[Admin] nova solicitação criada e atribuída para ${state.selectedAtendente}`);
+        console.log('[Admin] nova solicitação criada e mantida pendente para atribuição manual');
       }
 
       closeModal(modalSolicitacao);
