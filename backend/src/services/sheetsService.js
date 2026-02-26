@@ -1,7 +1,24 @@
-﻿const sheets = require('../config/google');
+const sheets = require('../config/google');
 const env = require('../config/env');
 
+const READ_CACHE_TTL_MS = 4000;
+const sheetReadCache = new Map();
+
+function cacheKey(sheetName) {
+  return `${env.googleSheetId}:${sheetName}`;
+}
+
+function invalidateSheetCache(sheetName) {
+  sheetReadCache.delete(cacheKey(sheetName));
+}
+
 async function readSheet(sheetName) {
+  const key = cacheKey(sheetName);
+  const cached = sheetReadCache.get(key);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.value;
+  }
+
   const range = `${sheetName}!A1:ZZ`;
   const response = await sheets.spreadsheets.values.get({
     spreadsheetId: env.googleSheetId,
@@ -10,7 +27,9 @@ async function readSheet(sheetName) {
 
   const values = response.data.values || [];
   if (!values.length) {
-    return { headers: [], rows: [] };
+    const empty = { headers: [], rows: [] };
+    sheetReadCache.set(key, { value: empty, expiresAt: Date.now() + READ_CACHE_TTL_MS });
+    return empty;
   }
 
   const headers = values[0];
@@ -22,7 +41,9 @@ async function readSheet(sheetName) {
     return rowObj;
   });
 
-  return { headers, rows };
+  const parsed = { headers, rows };
+  sheetReadCache.set(key, { value: parsed, expiresAt: Date.now() + READ_CACHE_TTL_MS });
+  return parsed;
 }
 
 async function writeHeadersIfEmpty(sheetName, headers) {
@@ -37,6 +58,7 @@ async function writeHeadersIfEmpty(sheetName, headers) {
     valueInputOption: 'RAW',
     requestBody: { values: [headers] }
   });
+  invalidateSheetCache(sheetName);
 
   return headers;
 }
@@ -54,6 +76,7 @@ async function ensureColumn(sheetName, headerName) {
     valueInputOption: 'RAW',
     requestBody: { values: [updatedHeaders] }
   });
+  invalidateSheetCache(sheetName);
 
   return updatedHeaders;
 }
@@ -70,6 +93,7 @@ async function appendMappedRow(sheetName, data, fallbackHeaders = []) {
     insertDataOption: 'INSERT_ROWS',
     requestBody: { values: [row] }
   });
+  invalidateSheetCache(sheetName);
 }
 
 async function updateMappedRow(sheetName, rowIndex, data) {
@@ -82,6 +106,7 @@ async function updateMappedRow(sheetName, rowIndex, data) {
     valueInputOption: 'RAW',
     requestBody: { values: [row] }
   });
+  invalidateSheetCache(sheetName);
 }
 
 async function deleteRow(sheetName, rowIndex) {
@@ -111,6 +136,7 @@ async function deleteRow(sheetName, rowIndex) {
       ]
     }
   });
+  invalidateSheetCache(sheetName);
 }
 
 module.exports = {

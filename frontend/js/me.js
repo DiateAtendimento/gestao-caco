@@ -124,7 +124,7 @@ function renderDemandas() {
   if (!abertas.length) {
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td colspan="4">
+      <td colspan="5">
         <div class="empty-state-table">
           <div id="lottie-sem-atribuicao"></div>
           <p>Nenhuma demanda atribuída para você.</p>
@@ -138,13 +138,19 @@ function renderDemandas() {
 
   abertas.forEach((d) => {
     const andamentoDot = d.finalizado === 'Em andamento' ? '<span class="status-dot andamento"></span>' : '';
+    const categoriaClass = String(d.categoria || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const noteBtn = d.motivoReabertura
+      ? `<button class="btn-note" data-note="${d.id}" type="button" title="Motivo da reabertura">🗒</button>`
+      : '';
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${andamentoDot}${d.id}</td>
       <td>${d.area}</td>
+      <td><span class="cat-badge ${categoriaClass}">${d.categoria || '-'}</span></td>
       <td>${d.descricao}</td>
       <td>
         <div class="status-actions">
+          ${noteBtn}
           <button class="btn-status andamento" data-start="${d.id}" type="button">Em andamento</button>
           <button class="btn-status concluido" data-done="${d.id}" type="button">Concluído</button>
         </div>
@@ -158,6 +164,13 @@ function renderDemandas() {
   });
   demandasEl.querySelectorAll('[data-done]').forEach((btn) => {
     btn.addEventListener('click', () => updateStatus(btn.dataset.done, 'Concluído'));
+  });
+  demandasEl.querySelectorAll('[data-note]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const demanda = abertas.find((d) => d.id === btn.dataset.note);
+      if (!demanda) return;
+      window.alert(`Motivo da reabertura:\n\n${demanda.motivoReabertura}`);
+    });
   });
 }
 
@@ -203,11 +216,32 @@ function renderRegistrosSiga() {
 }
 
 async function updateStatus(id, status) {
+  const demanda = state.demandas.find((d) => d.id === id);
+  const medidasAdotadas = status === 'Concluído'
+    ? window.prompt('Informe as medidas adotadas para concluir:') || ''
+    : '';
+  const respostaFinal = status === 'Concluído' && Number(demanda?.demandaReabertaQtd || 0) >= 1
+    ? window.prompt('Informe a resposta final da demanda reaberta:') || ''
+    : '';
+
+  if (status === 'Concluído' && !String(medidasAdotadas).trim()) {
+    await showStatus('erro', 'Medidas adotadas é obrigatório para concluir');
+    return;
+  }
+  if (status === 'Concluído' && Number(demanda?.demandaReabertaQtd || 0) >= 1 && !String(respostaFinal).trim()) {
+    await showStatus('erro', 'Resposta final é obrigatória para demanda reaberta');
+    return;
+  }
+
   try {
     await runAction('atualizar status', 'Atualizando status...', 'atribuido', 'Status atualizado', async () => {
       await api(`/api/demandas/${encodeURIComponent(id)}/status`, {
         method: 'POST',
-        body: JSON.stringify({ status })
+        body: JSON.stringify({
+          status,
+          medidasAdotadas: String(medidasAdotadas).trim(),
+          respostaFinal: String(respostaFinal).trim()
+        })
       });
       await loadData();
       renderDemandas();
@@ -326,7 +360,7 @@ async function refreshSilently() {
       setupWhatsapp();
     });
 
-    setInterval(refreshSilently, 12000);
+    setInterval(refreshSilently, 60000);
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden) refreshSilently();
     });

@@ -1,5 +1,5 @@
 ﻿import { api, requireAuth, clearSession, initThemeIcon } from './auth.js';
-import { ACTIVITIES, AREA_OPTIONS, META_OPTIONS } from './data.js';
+import { ACTIVITIES, AREA_OPTIONS, META_OPTIONS, CATEGORY_OPTIONS } from './data.js';
 import { showLoading, showStatus } from './feedback.js';
 import { attachAvatar } from './avatar.js';
 
@@ -10,6 +10,7 @@ initThemeIcon();
 const state = {
   cards: [],
   selectedSolicitacoes: [],
+  selectedHistorico: [],
   draftSolicitacoesByAtendente: {},
   recentlyAssignedByAtendente: {},
   selectedAtendente: null,
@@ -78,13 +79,19 @@ function formatPercent(value) {
   return `${fixed}%`;
 }
 
+function inferCategoryFromMeta(meta) {
+  const val = Number(meta || 0);
+  if (val >= 5) return 'Urgente';
+  if (val >= 3) return 'Médio';
+  return 'Baixo';
+}
+
 function resolveMood(card) {
-  const totalDemandas = Number(card.emAndamento || 0) + Number(card.naoIniciadas || 0);
-  if (totalDemandas <= 5) return { label: 'Fluxo Leve', className: 'mood-leve' };
-  if (totalDemandas <= 20) return { label: 'Ritmo Bom', className: 'mood-bom' };
-  if (totalDemandas <= 50) return { label: 'Atenção', className: 'mood-atencao' };
-  if (totalDemandas <= 100) return { label: 'No Limite', className: 'mood-limite' };
-  return { label: 'Sobrecarregado', className: 'mood-critico' };
+  const percentual = Number(card.percentual || 0);
+  if (percentual < 30) return { label: 'Leve', className: 'mood-leve' };
+  if (percentual < 50) return { label: 'Média', className: 'mood-bom' };
+  if (percentual < 80) return { label: 'Alta', className: 'mood-atencao' };
+  return { label: 'Sobrecarga', className: 'mood-critico' };
 }
 
 async function runAction(actionName, loadingText, successType, successText, fn) {
@@ -134,6 +141,7 @@ function renderCards() {
           <div class="progress-text">${formatPercent(percentualCapped)}</div>
         </div>
         ${overLimit ? '<div class="card-limit-warning">Atendente ultrapassou o limite de atividades</div>' : ''}
+        ${card.staleOver48h ? '<div class="card-stale-warning">Existem demandas paradas a mais de 48h</div>' : ''}
       </div>
       <div class="colab-body">
         <h5>Atividades</h5>
@@ -221,7 +229,7 @@ function renderSolicitacoesSelecionado() {
   thDataRegistro.style.display = showDataRegistro ? '' : 'none';
 
   if (!state.selectedSolicitacoes.length) {
-    body.innerHTML = `<tr><td colspan="${showDataRegistro ? 6 : 5}">Nenhuma solicitação para este atendente. Use "Adicionar solicitação".</td></tr>`;
+    body.innerHTML = `<tr><td colspan="${showDataRegistro ? 7 : 6}">Nenhuma solicitação para este atendente. Use "Adicionar solicitação".</td></tr>`;
     return;
   }
 
@@ -231,6 +239,7 @@ function renderSolicitacoesSelecionado() {
       <td>${row.id}</td>
       <td>${row.area}</td>
       ${showDataRegistro ? `<td>${row.dataRegistro || '-'}</td>` : ''}
+      <td>${row.categoria || '-'}</td>
       <td>${Number(row.meta).toFixed(2)}%</td>
       <td>${row.descricao}</td>
       <td class="actions-cell">
@@ -270,6 +279,7 @@ function renderSolicitacoesSelecionado() {
             method: 'POST',
             body: JSON.stringify({
               area: row.area,
+              categoria: row.categoria,
               meta: Number(row.meta),
               descricao: row.descricao,
               atendenteNome: state.selectedAtendente
@@ -306,8 +316,14 @@ function renderSolicitacoesSelecionado() {
 function setupSolicitacaoForm() {
   const area = document.getElementById('sol-area');
   const meta = document.getElementById('sol-meta');
+  const categoria = document.getElementById('sol-categoria');
   area.innerHTML = AREA_OPTIONS.map((item) => `<option value="${item}">${item}</option>`).join('');
   meta.innerHTML = META_OPTIONS.map((m) => `<option value="${m}">${m.toFixed(2)}%</option>`).join('');
+  categoria.innerHTML = CATEGORY_OPTIONS.map((c) => `<option value="${c}">${c}</option>`).join('');
+  meta.addEventListener('change', () => {
+    categoria.value = inferCategoryFromMeta(meta.value);
+  });
+  categoria.value = inferCategoryFromMeta(meta.value);
 }
 
 function openSolicitacao(id = null) {
@@ -315,12 +331,14 @@ function openSolicitacao(id = null) {
   document.getElementById('sol-id').value = id || 'Gerado automaticamente no salvar';
   document.getElementById('sol-title').textContent = id ? 'Editar Solicitação' : `Nova Solicitação - ${state.selectedAtendente}`;
   document.getElementById('sol-descricao').value = '';
+  document.getElementById('sol-categoria').value = inferCategoryFromMeta(document.getElementById('sol-meta').value);
 
   if (id) {
     const row = state.selectedSolicitacoes.find((p) => p.id === id);
     if (row) {
       document.getElementById('sol-area').value = row.area;
       document.getElementById('sol-meta').value = String(row.meta);
+      document.getElementById('sol-categoria').value = row.categoria || inferCategoryFromMeta(row.meta);
       document.getElementById('sol-descricao').value = row.descricao;
     }
   }
@@ -341,6 +359,7 @@ async function loadSelectedSolicitacoes() {
     id: item.id,
     area: item.area,
     dataRegistro: item.dataRegistro,
+    categoria: item.categoria || '',
     descricao: item.descricao,
     meta: item.meta || 0,
     finalizado: item.finalizado,
@@ -351,6 +370,57 @@ async function loadSelectedSolicitacoes() {
   console.log(`[Admin] solicitações do colaborador ${state.selectedAtendente}: ${state.selectedSolicitacoes.length}`);
 }
 
+function renderHistoricoSelecionado() {
+  const body = document.getElementById('tbody-historico');
+  body.innerHTML = '';
+  if (!state.selectedHistorico.length) {
+    body.innerHTML = '<tr><td colspan="8">Nenhuma demanda concluída para este atendente.</td></tr>';
+    return;
+  }
+
+  state.selectedHistorico.forEach((row) => {
+    const canReopen = Number(row.demandaReabertaQtd || 0) < 1;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${row.id}</td>
+      <td>${row.area}</td>
+      <td>${row.descricao}</td>
+      <td><button data-reopen="${row.id}" title="Reabrir" ${canReopen ? '' : 'disabled'}>↺</button></td>
+      <td>${row.medidasAdotadas || '-'}</td>
+      <td>${row.motivoReabertura || '-'}</td>
+      <td>${row.respostaFinal || '-'}</td>
+      <td>${row.finalizado || '-'}</td>
+    `;
+    body.appendChild(tr);
+  });
+
+  body.querySelectorAll('[data-reopen]').forEach((btn) => btn.addEventListener('click', async () => {
+    const motivo = window.prompt('Informe o motivo da reabertura:');
+    if (!motivo || !motivo.trim()) return;
+    try {
+      await runAction('reabrir demanda', 'Reabrindo demanda...', 'salvo', 'Demanda reaberta', async () => {
+        await api(`/api/solicitacoes/${encodeURIComponent(btn.dataset.reopen)}/reabrir`, {
+          method: 'POST',
+          body: JSON.stringify({ motivoReabertura: motivo.trim() })
+        });
+        await loadSelectedHistorico();
+        await loadAdminData();
+        renderHistoricoSelecionado();
+        renderCards();
+      });
+    } catch (_e) {}
+  }));
+}
+
+async function loadSelectedHistorico() {
+  if (!state.selectedAtendente) {
+    state.selectedHistorico = [];
+    return;
+  }
+  const data = await api(`/api/solicitacoes?historico=true&atendente=${encodeURIComponent(state.selectedAtendente)}`);
+  state.selectedHistorico = data.solicitacoes || [];
+}
+
 async function openConfig(nome) {
   state.selectedAtendente = nome;
   document.getElementById('cfg-user-name').textContent = nome;
@@ -358,8 +428,10 @@ async function openConfig(nome) {
   try {
     await runAction('abrir configurações', 'Carregando configurações...', null, null, async () => {
       await loadSelectedSolicitacoes();
+      await loadSelectedHistorico();
       renderAtividades();
       renderSolicitacoesSelecionado();
+      renderHistoricoSelecionado();
       openModal(modalConfig);
     });
   } catch (_e) {}
@@ -381,7 +453,9 @@ async function refreshSilently() {
     renderCards();
     if (state.selectedAtendente) {
       await loadSelectedSolicitacoes();
+      await loadSelectedHistorico();
       renderSolicitacoesSelecionado();
+      renderHistoricoSelecionado();
     }
   } catch (error) {
     console.error('[Admin] polling erro:', error.message);
@@ -407,11 +481,45 @@ document.querySelectorAll('[data-tab]').forEach((btn) => btn.addEventListener('c
 }));
 
 document.getElementById('btn-new-solicitacao').addEventListener('click', () => openSolicitacao());
+document.getElementById('btn-assign-all').addEventListener('click', async () => {
+  if (!state.selectedSolicitacoes.length) return;
+  try {
+    await runAction('atribuir todas solicitações', 'Atribuindo todas as solicitações...', 'atribuido', 'Solicitações atribuídas', async () => {
+      for (const row of state.selectedSolicitacoes) {
+        if (row.isDraft) {
+          const created = await api('/api/solicitacoes', {
+            method: 'POST',
+            body: JSON.stringify({
+              area: row.area,
+              categoria: row.categoria,
+              meta: Number(row.meta),
+              descricao: row.descricao,
+              atendenteNome: state.selectedAtendente
+            })
+          });
+          if (created?.id) markRecentlyAssigned(created.id);
+        } else {
+          await api(`/api/solicitacoes/${encodeURIComponent(row.id)}/atribuir`, {
+            method: 'POST',
+            body: JSON.stringify({ atendenteNome: state.selectedAtendente })
+          });
+          markRecentlyAssigned(row.id);
+        }
+      }
+      setDraftsForSelected([]);
+      await loadSelectedSolicitacoes();
+      await loadAdminData();
+      renderSolicitacoesSelecionado();
+      renderCards();
+    });
+  } catch (_e) {}
+});
 
 document.getElementById('form-solicitacao').addEventListener('submit', async (event) => {
   event.preventDefault();
   const payload = {
     area: document.getElementById('sol-area').value,
+    categoria: document.getElementById('sol-categoria').value,
     meta: Number(document.getElementById('sol-meta').value),
     descricao: document.getElementById('sol-descricao').value.trim()
   };
@@ -422,6 +530,7 @@ document.getElementById('form-solicitacao').addEventListener('submit', async (ev
         const draft = getDraftsForSelected().find((item) => item.id === state.editingId);
         if (draft) {
           draft.area = payload.area;
+          draft.categoria = payload.categoria;
           draft.meta = payload.meta;
           draft.descricao = payload.descricao;
           setDraftsForSelected([...getDraftsForSelected()]);
@@ -437,6 +546,7 @@ document.getElementById('form-solicitacao').addEventListener('submit', async (ev
         drafts.unshift({
           id: draftId,
           area: payload.area,
+          categoria: payload.categoria,
           descricao: payload.descricao,
           meta: payload.meta,
           dataRegistro: '',
@@ -498,7 +608,7 @@ setupSolicitacaoForm();
       await loadAdminData();
       renderCards();
     });
-    setInterval(refreshSilently, 12000);
+    setInterval(refreshSilently, 60000);
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden) refreshSilently();
     });

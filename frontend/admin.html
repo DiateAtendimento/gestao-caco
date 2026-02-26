@@ -52,6 +52,7 @@
         <div class="tab-row">
           <button data-tab="atividades">Atividades</button>
           <button data-tab="solicitacoes">Solicitações</button>
+          <button data-tab="historico">Histórico de Demandas</button>
         </div>
 
         <section id="tab-atividades" class="tab-content active">
@@ -67,6 +68,7 @@
                   <th>ID</th>
                   <th>Área</th>
                   <th id="th-data-registro" style="display:none;">Data do registro</th>
+                  <th>Categoria</th>
                   <th>Meta</th>
                   <th>Descrição</th>
                   <th>Ação</th>
@@ -77,6 +79,30 @@
             <button id="btn-new-solicitacao" class="btn-plus-inline" type="button">
               <span class="dot">+</span> Adicionar solicitação
             </button>
+            <button id="btn-assign-all" class="btn-plus-inline" type="button">
+              <span class="dot"><i class="bi bi-send-fill"></i></span> Atribuir todas
+            </button>
+          </div>
+        </section>
+
+        <section id="tab-historico" class="tab-content">
+          <h3>Histórico de demandas</h3>
+          <div class="table-shell">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Área</th>
+                  <th>Descrição</th>
+                  <th>Ação</th>
+                  <th>Medidas adotadas</th>
+                  <th>Motivo da reabertura</th>
+                  <th>Resposta final</th>
+                  <th>Data da conclusão</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-historico"></tbody>
+            </table>
           </div>
         </section>
       </div>
@@ -92,6 +118,7 @@
         <form id="form-solicitacao">
           <div class="form-row"><input id="sol-id" readonly /></div>
           <div class="form-row"><select id="sol-area"></select></div>
+          <div class="form-row"><select id="sol-categoria" required></select></div>
           <div class="form-row"><select id="sol-meta"></select></div>
           <div class="form-row"><textarea id="sol-descricao" placeholder="Descrição" required></textarea></div>
           <div class="form-actions">

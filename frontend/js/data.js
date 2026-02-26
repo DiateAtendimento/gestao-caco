@@ -20,3 +20,5 @@
 export const AREA_OPTIONS = ACTIVITIES.map((a) => a.label);
 
 export const META_OPTIONS = [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5];
+
+export const CATEGORY_OPTIONS = ['Baixo', 'Médio', 'Urgente'];

@@ -34,11 +34,17 @@ const DEMANDS_HEADERS = [
   'Descrição',
   'Data do Registro',
   'Finalizado',
-  'Registrado por',
-  'Finalizado por',
   'Atribuida para',
+  'Registrador por',
+  'Registrado por',
   'Meta',
-  'Meta registro siga'
+  'Finalizado por',
+  'Meta registro siga',
+  'Categoria',
+  'Medidas adotadas',
+  'Demanda reaberta qtd',
+  'Motivo reabertura',
+  'Resposta final'
 ];
 
 const STATUS = {

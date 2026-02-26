@@ -17,6 +17,22 @@ function isConcluido(status) {
   return isBrDate(text) || text.startsWith(STATUS.CONCLUIDO);
 }
 
+function parseBrDate(value) {
+  const text = normalizeText(value);
+  const match = text.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!match) return null;
+  const day = Number(match[1]);
+  const month = Number(match[2]) - 1;
+  const year = Number(match[3]);
+  return new Date(year, month, day, 0, 0, 0, 0);
+}
+
+function isOlderThan48h(value) {
+  const dt = parseBrDate(value);
+  if (!dt) return false;
+  return (Date.now() - dt.getTime()) >= (48 * 60 * 60 * 1000);
+}
+
 function isSigaQueueItem(row) {
   return !isConcluido(row.Finalizado);
 }
@@ -45,6 +61,7 @@ router.get('/admin', async (_req, res) => {
     const cards = colaboradores.map((col) => {
       const minhas = demandas.filter((d) => normalizeText(d['Atribuida para']) === normalizeText(col.Atendente));
       const abertas = minhas.filter((d) => !isConcluido(d.Finalizado));
+      let staleCount = abertas.filter((d) => isOlderThan48h(d['Data do Registro'])).length;
 
       let percentual = abertas.reduce((acc, d) => acc + parseMeta(d.Meta), 0);
       let emAndamento = abertas.filter((d) => d.Finalizado === STATUS.EM_ANDAMENTO).length;
@@ -56,6 +73,7 @@ router.get('/admin', async (_req, res) => {
       if (normalizeText(col.Registrosiga).toLowerCase() === 'sim') {
         percentual += pendingSigaMeta;
         naoIniciadas += pendingSigaCount;
+        staleCount += pendingSiga.filter((d) => isOlderThan48h(d['Data do Registro'])).length;
       }
 
       return {
@@ -64,6 +82,7 @@ router.get('/admin', async (_req, res) => {
         percentual,
         emAndamento,
         naoIniciadas,
+        staleOver48h: staleCount > 0,
         atividades: ACTIVITY_COLUMNS.reduce((acc, key) => {
           acc[key] = col[key] || 'Não';
           return acc;

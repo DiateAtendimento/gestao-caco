@@ -2,7 +2,7 @@
 const { authMiddleware } = require('../middleware/auth');
 const { DEMANDS_SHEET, PROFILE_SHEET, STATUS } = require('../config/constants');
 const { readSheet, updateMappedRow, appendMappedRow } = require('../services/sheetsService');
-const { parseMeta, demandsRowTemplate } = require('../services/demandService');
+const { parseMeta, demandsRowTemplate, generateNextSolicitacaoId, ensureDemandsMetaColumn } = require('../services/demandService');
 const { normalizeText, equalsIgnoreCase } = require('../utils/text');
 const { toBrDate } = require('../utils/datetime');
 
@@ -30,9 +30,14 @@ function mapDemanda(row) {
     dataRegistro: row['Data do Registro'],
     finalizado: row.Finalizado,
     meta: parseMeta(row.Meta),
+    categoria: row.Categoria || '',
     registradoPor: getRegisteredBy(row),
     finalizadoPor: row['Finalizado por'],
     atribuidaPara: row['Atribuida para'],
+    medidasAdotadas: row['Medidas adotadas'] || '',
+    demandaReabertaQtd: Number(row['Demanda reaberta qtd'] || 0),
+    motivoReabertura: row['Motivo reabertura'] || '',
+    respostaFinal: row['Resposta final'] || '',
     concluido: isConcluidoValue(row.Finalizado)
   };
 }
@@ -74,6 +79,8 @@ router.post('/:id/status', async (req, res) => {
   try {
     const id = normalizeText(req.params.id);
     const statusInput = normalizeText(req.body?.status);
+    const medidasAdotadas = normalizeText(req.body?.medidasAdotadas);
+    const respostaFinal = normalizeText(req.body?.respostaFinal);
 
     if (![STATUS.NAO_INICIADA, STATUS.EM_ANDAMENTO, STATUS.CONCLUIDO].includes(statusInput)) {
       return res.status(400).json({ error: 'Status inválido' });
@@ -91,6 +98,16 @@ router.post('/:id/status', async (req, res) => {
     }
 
     if (statusInput === STATUS.CONCLUIDO) {
+      if (!medidasAdotadas) {
+        return res.status(400).json({ error: 'Medidas adotadas é obrigatório para concluir' });
+      }
+      if (Number(item['Demanda reaberta qtd'] || 0) >= 1 && !respostaFinal) {
+        return res.status(400).json({ error: 'Resposta final é obrigatória para demanda reaberta' });
+      }
+      item['Medidas adotadas'] = medidasAdotadas;
+      if (Number(item['Demanda reaberta qtd'] || 0) >= 1) {
+        item['Resposta final'] = respostaFinal;
+      }
       item.Finalizado = toBrDate();
       item['Finalizado por'] = req.user.nome;
     } else if (statusInput === STATUS.EM_ANDAMENTO) {
@@ -120,8 +137,10 @@ router.post('/registro-whatsapp', async (req, res) => {
       return res.status(400).json({ error: 'Assunto e descrição são obrigatórios' });
     }
 
+    await ensureDemandsMetaColumn();
+    const id = await generateNextSolicitacaoId(assunto);
     const row = demandsRowTemplate({
-      ID: `WPP-${Date.now()}`,
+      ID: id,
       Assunto: assunto,
       'Descrição': descricao,
       'Data do Registro': toBrDate(),
@@ -131,7 +150,12 @@ router.post('/registro-whatsapp', async (req, res) => {
       'Finalizado por': '',
       'Atribuida para': '',
       Meta: '0.5',
-      'Meta registro siga': '0.5'
+      'Meta registro siga': '0.5',
+      Categoria: 'Baixo',
+      'Medidas adotadas': '',
+      'Demanda reaberta qtd': '0',
+      'Motivo reabertura': '',
+      'Resposta final': ''
     });
 
     await appendMappedRow(DEMANDS_SHEET, row);
