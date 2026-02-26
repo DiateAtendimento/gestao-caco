@@ -116,9 +116,8 @@ function renderCards() {
     const acts = enabledActivitiesMap(card);
     const mood = resolveMood(card);
     const percentualRaw = Number(card.percentual || 0);
-    const percentualRawPct = percentualRaw * 20;
-    const percentualCapped = Math.min(percentualRawPct, 100);
-    const overLimit = percentualRawPct > 100;
+    const percentualCapped = Math.min(percentualRaw, 100);
+    const overLimit = percentualRaw > 100;
     const box = document.createElement('article');
     box.className = 'colab-card';
     box.innerHTML = `
