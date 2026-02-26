@@ -172,7 +172,7 @@ function renderRegistrosSiga() {
   if (!state.sigaRegistros.length) {
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td colspan="5">
+      <td colspan="6">
         <div class="empty-state-table">
           <div id="lottie-sem-siga"></div>
           <p>Nenhum registro pendente no SIGA.</p>
@@ -190,6 +190,7 @@ function renderRegistrosSiga() {
       <td>${index + 1}</td>
       <td>${d.id}</td>
       <td>${d.area}</td>
+      <td>${d.dataRegistro || '-'}</td>
       <td>${d.descricao}</td>
       <td><button class="btn-status concluido" data-siga="${d.id}" type="button">Registrado</button></td>
     `;

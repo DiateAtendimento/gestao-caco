@@ -4,6 +4,7 @@ const { currentYear } = require('../utils/datetime');
 
 async function ensureDemandsMetaColumn() {
   await ensureColumn(DEMANDS_SHEET, 'Meta');
+  await ensureColumn(DEMANDS_SHEET, 'Meta registro siga');
 }
 
 function parseMeta(value) {

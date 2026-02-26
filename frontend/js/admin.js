@@ -21,9 +21,10 @@ const modalConfig = document.getElementById('modal-config');
 const modalSolicitacao = document.getElementById('modal-solicitacao');
 const modalNovoColab = document.getElementById('modal-novo-colab');
 const modalConfirmDelete = document.getElementById('modal-confirm-delete');
+const ADMIN_AVATAR_SRC = './img/admin.png?v=20260226';
 const adminAvatar = document.getElementById('admin-avatar');
 if (adminAvatar) {
-  adminAvatar.src = './img/admin.png';
+  adminAvatar.src = ADMIN_AVATAR_SRC;
   adminAvatar.onerror = () => attachAvatar(adminAvatar, 'admin');
 }
 
@@ -42,6 +43,15 @@ function formatPercent(value) {
   const num = Number(value || 0);
   const fixed = Number.isInteger(num) ? String(num) : num.toFixed(1).replace('.', ',');
   return `${fixed}%`;
+}
+
+function resolveMood(card) {
+  const totalDemandas = Number(card.emAndamento || 0) + Number(card.naoIniciadas || 0);
+  if (totalDemandas <= 5) return { label: 'Fluxo Leve', className: 'mood-leve' };
+  if (totalDemandas <= 20) return { label: 'Ritmo Bom', className: 'mood-bom' };
+  if (totalDemandas <= 50) return { label: 'Atenção', className: 'mood-atencao' };
+  if (totalDemandas <= 100) return { label: 'No Limite', className: 'mood-limite' };
+  return { label: 'Sobrecarregado', className: 'mood-critico' };
 }
 
 async function runAction(actionName, loadingText, successType, successText, fn) {
@@ -71,6 +81,11 @@ function renderCards() {
 
   state.cards.forEach((card) => {
     const acts = enabledActivitiesMap(card);
+    const mood = resolveMood(card);
+    const percentualRaw = Number(card.percentual || 0);
+    const percentualRawPct = percentualRaw * 20;
+    const percentualCapped = Math.min(percentualRawPct, 100);
+    const overLimit = percentualRawPct > 100;
     const box = document.createElement('article');
     box.className = 'colab-card';
     box.innerHTML = `
@@ -81,10 +96,12 @@ function renderCards() {
         </div>
         <img class="colab-avatar" data-avatar-name="${card.nome}" alt="${card.nome}" />
         <div class="colab-name">${card.nome}</div>
+        <div class="mood-badge ${mood.className}" title="Humor baseado no volume de atividades">${mood.label}</div>
         <div class="progress-wrap">
-          <div class="progress-green" style="width:${Math.min(card.percentual * 20, 100)}%"></div>
-          <div class="progress-text">${formatPercent(card.percentual)}</div>
+          <div class="progress-green" style="width:${percentualCapped}%"></div>
+          <div class="progress-text">${formatPercent(percentualCapped)}</div>
         </div>
+        ${overLimit ? '<div class="card-limit-warning">Atendente ultrapassou o limite de atividades</div>' : ''}
       </div>
       <div class="colab-body">
         <h5>Atividades</h5>
@@ -172,7 +189,7 @@ function renderSolicitacoesSelecionado() {
   thDataRegistro.style.display = showDataRegistro ? '' : 'none';
 
   if (!state.selectedSolicitacoes.length) {
-    body.innerHTML = `<tr><td colspan="${showDataRegistro ? 6 : 5}">Nenhuma solicitação pendente. Use "Adicionar solicitação".</td></tr>`;
+    body.innerHTML = `<tr><td colspan="${showDataRegistro ? 6 : 5}">Nenhuma solicitação para este atendente. Use "Adicionar solicitação".</td></tr>`;
     return;
   }
 
@@ -187,7 +204,7 @@ function renderSolicitacoesSelecionado() {
       <td class="actions-cell">
         <button data-edit-sol="${row.id}" title="Editar">✏</button>
         <button data-del-sol="${row.id}" title="Excluir">❌</button>
-        <button data-assign-sol="${row.id}" title="Atribuir"><i class="bi bi-send-fill"></i></button>
+        ${row.atribuidaPara ? '' : `<button data-assign-sol="${row.id}" title="Atribuir"><i class="bi bi-send-fill"></i></button>`}
       </td>
     `;
     body.appendChild(tr);
@@ -252,14 +269,15 @@ async function loadSelectedSolicitacoes() {
     return;
   }
 
-  const data = await api('/api/solicitacoes?pendentes=true');
+  const data = await api(`/api/solicitacoes?atendente=${encodeURIComponent(state.selectedAtendente)}`);
   state.selectedSolicitacoes = (data.solicitacoes || []).map((item) => ({
     id: item.id,
     area: item.area,
     dataRegistro: item.dataRegistro,
     descricao: item.descricao,
     meta: item.meta || 0,
-    finalizado: item.finalizado
+    finalizado: item.finalizado,
+    atribuidaPara: item.atribuidaPara
   }));
   console.log(`[Admin] solicitações do colaborador ${state.selectedAtendente}: ${state.selectedSolicitacoes.length}`);
 }
@@ -339,9 +357,12 @@ document.getElementById('form-solicitacao').addEventListener('submit', async (ev
       } else {
         await api('/api/solicitacoes', {
           method: 'POST',
-          body: JSON.stringify(payload)
+          body: JSON.stringify({
+            ...payload,
+            atendenteNome: state.selectedAtendente
+          })
         });
-        console.log('[Admin] nova solicitação criada e mantida como pendente para atribuição manual');
+        console.log(`[Admin] nova solicitação criada e atribuída para ${state.selectedAtendente}`);
       }
 
       closeModal(modalSolicitacao);

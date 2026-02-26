@@ -37,7 +37,8 @@ const DEMANDS_HEADERS = [
   'Registrado por',
   'Finalizado por',
   'Atribuida para',
-  'Meta'
+  'Meta',
+  'Meta registro siga'
 ];
 
 const STATUS = {

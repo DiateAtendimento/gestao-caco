@@ -27,6 +27,7 @@ function mapDemanda(row) {
     id: row.ID,
     area: row.Assunto,
     descricao: row['Descrição'],
+    dataRegistro: row['Data do Registro'],
     finalizado: row.Finalizado,
     meta: parseMeta(row.Meta),
     registradoPor: getRegisteredBy(row),
@@ -44,7 +45,7 @@ async function hasSigaPermission(nome) {
 
 function isSigaQueueItem(row) {
   const finalizado = normalizeText(row.Finalizado);
-  return !isBrDate(finalizado);
+  return !isConcluidoValue(finalizado);
 }
 
 router.get('/', async (req, res) => {
@@ -129,7 +130,8 @@ router.post('/registro-whatsapp', async (req, res) => {
       'Registrador por': req.user.nome,
       'Finalizado por': '',
       'Atribuida para': '',
-      Meta: '0.5'
+      Meta: '0.5',
+      'Meta registro siga': '0.5'
     });
 
     await appendMappedRow(DEMANDS_SHEET, row);

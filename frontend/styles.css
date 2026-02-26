@@ -426,6 +426,41 @@ img {
   font-weight: 700;
 }
 
+.mood-badge {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+}
+
+.mood-leve {
+  background: rgba(255, 255, 255, 0.22);
+  color: #eafff0;
+}
+
+.mood-bom {
+  background: rgba(140, 218, 152, 0.26);
+  color: #ecffef;
+}
+
+.mood-atencao {
+  background: rgba(255, 210, 114, 0.28);
+  color: #fff6dc;
+}
+
+.mood-limite {
+  background: rgba(255, 152, 99, 0.32);
+  color: #fff0e8;
+}
+
+.mood-critico {
+  background: rgba(244, 90, 88, 0.35);
+  color: #ffecec;
+}
+
 .colab-icon-actions {
   position: absolute;
   right: 10px;
@@ -464,6 +499,13 @@ img {
   font-size: 16px;
   font-weight: 700;
   color: #20456c;
+}
+
+.card-limit-warning {
+  margin-top: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff2be;
 }
 
 .colab-body {
