@@ -40,6 +40,7 @@ function candidates(name) {
   const norm = clean.toLowerCase();
   if (norm.includes('wagner')) manualAliases.push('Wagner', 'wagner');
   if (norm.includes('cobertura')) manualAliases.push('cobertura', 'Cobertura');
+  if (norm.includes('thayna')) manualAliases.push('Thayna', 'thayna', 'Thayná', 'thayná');
 
   const list = [];
   [...vars, ...manualAliases].forEach((v) => {
