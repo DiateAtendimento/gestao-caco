@@ -3,19 +3,46 @@ function sanitizeName(name) {
     .trim()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
-    .replace(/\s+/g, '');
+    .replace(/[^\w\s-]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 function candidates(name) {
   const raw = String(name || '').trim();
   const clean = sanitizeName(raw);
-  const title = clean ? `${clean.charAt(0).toUpperCase()}${clean.slice(1).toLowerCase()}` : '';
+  const firstRaw = raw.split(/\s+/)[0] || '';
+  const firstClean = clean.split(/\s+/)[0] || '';
+  const compact = clean.replace(/\s+/g, '');
+  const compactFirst = firstClean.replace(/\s+/g, '');
+  const title = compact ? `${compact.charAt(0).toUpperCase()}${compact.slice(1).toLowerCase()}` : '';
+  const titleFirst = compactFirst ? `${compactFirst.charAt(0).toUpperCase()}${compactFirst.slice(1).toLowerCase()}` : '';
   const base = ['img'];
   const exts = ['png', 'jpg', 'jpeg', 'webp', 'svg'];
-  const vars = [...new Set([raw, clean, raw.toLowerCase(), clean.toLowerCase(), title])];
+  const vars = [...new Set([
+    raw,
+    clean,
+    firstRaw,
+    firstClean,
+    compact,
+    compactFirst,
+    raw.toLowerCase(),
+    clean.toLowerCase(),
+    firstRaw.toLowerCase(),
+    firstClean.toLowerCase(),
+    compact.toLowerCase(),
+    compactFirst.toLowerCase(),
+    title,
+    titleFirst
+  ])];
+
+  const manualAliases = [];
+  const norm = clean.toLowerCase();
+  if (norm.includes('wagner')) manualAliases.push('Wagner', 'wagner');
+  if (norm.includes('cobertura')) manualAliases.push('cobertura', 'Cobertura');
 
   const list = [];
-  vars.forEach((v) => {
+  [...vars, ...manualAliases].forEach((v) => {
     if (!v) return;
     exts.forEach((ext) => {
       list.push(`${base[0]}/${v}.${ext}`);
