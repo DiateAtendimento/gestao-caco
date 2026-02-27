@@ -52,8 +52,10 @@ function isSigaQueueItem(row) {
   const finalizado = normalizeText(row.Finalizado);
   const atribuidaPara = normalizeText(row['Atribuida para']);
   const registradoPor = normalizeText(getRegisteredBy(row));
+  const origem = normalizeText(row.Origem).toLowerCase();
   if (isConcluidoValue(finalizado)) return false;
   if (atribuidaPara) return false;
+  if (origem && origem !== 'whatsapp') return false;
   if (!registradoPor) return false;
   if (registradoPor.toLowerCase() === 'admin') return false;
   return true;
@@ -167,7 +169,8 @@ router.post('/registro-whatsapp', async (req, res) => {
       'Medidas adotadas': '',
       'Demanda reaberta qtd': '0',
       'Motivo reabertura': '',
-      'Resposta final': ''
+      'Resposta final': '',
+      Origem: 'whatsapp'
     });
 
     await appendMappedRow(DEMANDS_SHEET, row);

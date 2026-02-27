@@ -10,6 +10,7 @@ async function ensureDemandsMetaColumn() {
   await ensureColumn(DEMANDS_SHEET, 'Demanda reaberta qtd');
   await ensureColumn(DEMANDS_SHEET, 'Motivo reabertura');
   await ensureColumn(DEMANDS_SHEET, 'Resposta final');
+  await ensureColumn(DEMANDS_SHEET, 'Origem');
 }
 
 function normalizeIdText(value) {

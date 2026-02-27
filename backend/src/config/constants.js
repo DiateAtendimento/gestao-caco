@@ -44,7 +44,8 @@ const DEMANDS_HEADERS = [
   'Medidas adotadas',
   'Demanda reaberta qtd',
   'Motivo reabertura',
-  'Resposta final'
+  'Resposta final',
+  'Origem'
 ];
 
 const STATUS = {

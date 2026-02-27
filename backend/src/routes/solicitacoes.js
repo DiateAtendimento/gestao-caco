@@ -24,7 +24,8 @@ function mapSolicitacao(row) {
     medidasAdotadas: row['Medidas adotadas'] || '',
     demandaReabertaQtd: Number(row['Demanda reaberta qtd'] || 0),
     motivoReabertura: row['Motivo reabertura'] || '',
-    respostaFinal: row['Resposta final'] || ''
+    respostaFinal: row['Resposta final'] || '',
+    origem: row.Origem || ''
   };
 }
 
@@ -123,7 +124,8 @@ router.post('/', async (req, res) => {
       'Medidas adotadas': '',
       'Demanda reaberta qtd': '0',
       'Motivo reabertura': '',
-      'Resposta final': ''
+      'Resposta final': '',
+      Origem: 'demanda'
     });
 
     await appendMappedRow(DEMANDS_SHEET, row, DEMANDS_HEADERS);
