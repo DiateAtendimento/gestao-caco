@@ -252,11 +252,11 @@ async function updateStatus(id, status) {
     respostaFinal = resposta;
   }
 
-  if (status === 'Concluído' && !String(medidasAdotadas).trim()) {
+  if (isConcluding && !isReopened && !String(medidasAdotadas).trim()) {
     await showStatus('erro', 'Medidas adotadas é obrigatório para concluir');
     return;
   }
-  if (status === 'Concluído' && Number(demanda?.demandaReabertaQtd || 0) >= 1 && !String(respostaFinal).trim()) {
+  if (isConcluding && isReopened && !String(respostaFinal).trim()) {
     await showStatus('erro', 'Resposta final é obrigatória para demanda reaberta');
     return;
   }

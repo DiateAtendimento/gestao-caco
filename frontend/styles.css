@@ -290,6 +290,19 @@ img {
   font-size: 15px;
 }
 
+.theme-switch.icon-only {
+  border: 0;
+  background: transparent;
+  height: auto;
+  width: 100%;
+  padding: 0;
+  box-shadow: none;
+}
+
+.theme-switch.icon-only i {
+  font-size: 24px;
+}
+
 /* Admin */
 .admin-user-mini {
   border: 1px solid var(--line);
