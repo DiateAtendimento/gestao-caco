@@ -9,7 +9,7 @@ const LOTTIES = {
   erro: 'assets/lotties/Error.json',
   sem_atividade: 'assets/lotties/sem-atividade.json',
   sem_atribuicao: 'assets/lotties/sem-atribuicao.json',
-  atribuicao_recebida: 'assets/lotties/atribuicao-recebida.json'
+  atribuicao_recebida: 'assets/lotties/Rocket Lunch.json'
 };
 
 let lottieReadyPromise = null;

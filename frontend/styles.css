@@ -772,6 +772,11 @@ img {
   padding: 10px;
 }
 
+.admin-main {
+  position: relative;
+  padding-bottom: 92px;
+}
+
 .me-main {
   position: relative;
   padding-bottom: 92px;
@@ -1433,6 +1438,10 @@ img {
   }
 
   .me-main {
+    padding-bottom: 10px;
+  }
+
+  .admin-main {
     padding-bottom: 10px;
   }
 

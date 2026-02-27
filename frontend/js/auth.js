@@ -19,8 +19,14 @@ export function clearSession() {
   sessionStorage.removeItem('user');
 }
 
+function themeStorageKey() {
+  const user = getUser();
+  const userName = String(user?.nome || '').trim().toLowerCase();
+  return userName ? `theme:${userName}` : 'theme:guest';
+}
+
 export function applyTheme() {
-  const theme = localStorage.getItem('theme') || 'light';
+  const theme = localStorage.getItem(themeStorageKey()) || 'light';
   document.documentElement.setAttribute('data-theme', theme);
 }
 
@@ -42,7 +48,7 @@ function refreshThemeToggleIcon(btn) {
 export function toggleTheme() {
   const current = document.documentElement.getAttribute('data-theme') || 'light';
   const next = current === 'light' ? 'dark' : 'light';
-  localStorage.setItem('theme', next);
+  localStorage.setItem(themeStorageKey(), next);
   applyTheme();
   refreshThemeToggleIcon(document.getElementById('theme-toggle'));
 }

@@ -14,21 +14,17 @@
       <section class="admin-user-mini">
         <img id="admin-avatar" src="./img/admin.png?v=20260226" alt="Admin" />
         <div class="sidebar-user-name">Administrador</div>
-        <button id="btn-logout" class="me-logout">Sair</button>
       </section>
 
       <div class="sidebar-footer">
-        <button id="theme-toggle" class="theme-switch" type="button" aria-label="Alternar tema">
+        <button id="theme-toggle" class="theme-switch icon-only dynamic-theme-label" type="button" aria-label="Alternar tema">
           <i class="bi bi-moon-stars-fill"></i>
-          <span>Modo escuro</span>
+          <span>Ativar modo escuro</span>
         </button>
-        <div class="caco-badge">
-          <img src="./assets/icons/logo.svg" alt="CACO" />
-        </div>
       </div>
     </aside>
 
-    <section class="app-content">
+    <section class="app-content admin-main">
       <header class="topbar">
         <div class="topbar-brand">
           <img src="./assets/icons/logo.svg" alt="Gestão" />
@@ -41,6 +37,10 @@
 
       <p id="msg" class="msg-area"></p>
       <section id="cards" class="admin-cards"></section>
+      <button id="btn-logout" class="me-logout floating" type="button" aria-label="Sair">
+        <i class="bi bi-power"></i>
+        <span>Sair</span>
+      </button>
     </section>
   </main>
 
