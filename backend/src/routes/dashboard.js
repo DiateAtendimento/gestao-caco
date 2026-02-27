@@ -34,7 +34,13 @@ function isOlderThan48h(value) {
 }
 
 function isSigaQueueItem(row) {
-  return !isConcluido(row.Finalizado);
+  const atribuidaPara = normalizeText(row['Atribuida para']);
+  const registradoPor = normalizeText(getRegisteredBy(row));
+  if (isConcluido(row.Finalizado)) return false;
+  if (atribuidaPara) return false;
+  if (!registradoPor) return false;
+  if (registradoPor.toLowerCase() === 'admin') return false;
+  return true;
 }
 
 function getRegisteredBy(row) {

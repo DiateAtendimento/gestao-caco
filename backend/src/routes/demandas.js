@@ -50,7 +50,13 @@ async function hasSigaPermission(nome) {
 
 function isSigaQueueItem(row) {
   const finalizado = normalizeText(row.Finalizado);
-  return !isConcluidoValue(finalizado);
+  const atribuidaPara = normalizeText(row['Atribuida para']);
+  const registradoPor = normalizeText(getRegisteredBy(row));
+  if (isConcluidoValue(finalizado)) return false;
+  if (atribuidaPara) return false;
+  if (!registradoPor) return false;
+  if (registradoPor.toLowerCase() === 'admin') return false;
+  return true;
 }
 
 router.get('/', async (req, res) => {
@@ -196,6 +202,9 @@ router.post('/registros-siga/:id/registrado', async (req, res) => {
     const item = rows.find((row) => row.ID === id);
     if (!item) {
       return res.status(404).json({ error: 'Registro não encontrado' });
+    }
+    if (!isSigaQueueItem(item)) {
+      return res.status(400).json({ error: 'Este item não pertence à fila de Registro SIGA' });
     }
 
     item.Finalizado = toBrDate();
