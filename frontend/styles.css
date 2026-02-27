@@ -618,7 +618,7 @@ img {
 .sidebar-activities h4 {
   margin: 0 0 10px;
   color: var(--ink);
-  font-size: 35px;
+  font-size: 22px;
   font-weight: 700;
 }
 
@@ -626,6 +626,20 @@ img {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px 8px;
+  align-items: start;
+}
+
+.sidebar-activity-grid.count-1 {
+  grid-template-columns: 1fr;
+  justify-items: center;
+}
+
+.sidebar-activity-grid.count-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.sidebar-activity-grid.count-3plus {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .sidebar-activity-grid .activity-chip {
@@ -771,14 +785,22 @@ img {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 14px;
+  padding: 7px 12px;
   border-radius: 14px;
-  font-size: 30px;
+  font-size: 24px;
+  background: transparent;
+  border: 2px solid #e84b4b;
+  color: #e84b4b;
 }
 
 .me-logout.floating i {
-  font-size: 35px;
+  font-size: 26px;
   line-height: 1;
+}
+
+[data-theme='dark'] .me-logout.floating {
+  border-color: #ff6f6f;
+  color: #ff6f6f;
 }
 
 #siga-block .demand-table {
@@ -1293,16 +1315,22 @@ img {
     grid-template-columns: 1fr;
     border-radius: 24px;
     margin: 10px auto;
+    min-height: auto;
+    height: auto;
+    overflow: visible;
   }
 
   .app-sidebar {
     border-right: 0;
     border-bottom: 1px solid var(--line);
     padding: 12px;
+    gap: 12px;
   }
 
   .app-content {
     padding: 10px;
+    overflow: visible;
+    min-width: 0;
   }
 
   .topbar {
@@ -1369,6 +1397,20 @@ img {
     overflow-x: auto;
   }
 
+  #siga-block .demand-table {
+    max-height: none;
+  }
+
+  .table-shell {
+    padding: 6px;
+  }
+
+  .table th,
+  .table td {
+    font-size: 12px;
+    padding: 8px 6px;
+  }
+
   .theme-switch {
     font-size: 14px;
     height: 40px;
@@ -1402,6 +1444,38 @@ img {
 
   .me-logout.floating i {
     font-size: 22px;
+  }
+}
+
+@media (max-width: 560px) {
+  .section-title {
+    font-size: 18px;
+    padding: 7px 8px;
+  }
+
+  .whatsapp-pane {
+    gap: 10px;
+  }
+
+  .whatsapp-icon-box img {
+    width: 56px;
+  }
+
+  .profile-head h3 {
+    font-size: 24px;
+  }
+
+  .profile-body {
+    font-size: 13px;
+  }
+
+  .sidebar-activity-grid .activity-chip img {
+    width: 44px;
+    height: 44px;
+  }
+
+  .sidebar-activity-grid .activity-chip div {
+    font-size: 12px;
   }
 }
 

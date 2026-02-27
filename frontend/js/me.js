@@ -94,6 +94,7 @@ async function runAction(actionName, loadingText, successType, successText, fn) 
 
 function renderAtividades() {
   atividadesEl.innerHTML = '';
+  atividadesEl.classList.remove('count-1', 'count-2', 'count-3plus');
 
   if (!state.profile?.atividades?.length) {
     const box = document.createElement('div');
@@ -105,6 +106,15 @@ function renderAtividades() {
     atividadesEl.appendChild(box);
     mountInlineLottie('lottie-sem-atividade', 'sem_atividade', true);
     return;
+  }
+
+  const totalAtividades = state.profile.atividades.length;
+  if (totalAtividades === 1) {
+    atividadesEl.classList.add('count-1');
+  } else if (totalAtividades === 2) {
+    atividadesEl.classList.add('count-2');
+  } else {
+    atividadesEl.classList.add('count-3plus');
   }
 
   state.profile.atividades.forEach((key) => {
