@@ -34,11 +34,9 @@ function isOlderThan48h(value) {
 }
 
 function isSigaQueueItem(row) {
-  const atribuidaPara = normalizeText(row['Atribuida para']);
   const registradoPor = normalizeText(getRegisteredBy(row));
   const origem = normalizeText(row.Origem).toLowerCase();
   if (isConcluido(row.Finalizado)) return false;
-  if (atribuidaPara) return false;
   if (origem && origem !== 'whatsapp') return false;
   if (!registradoPor) return false;
   if (registradoPor.toLowerCase() === 'admin') return false;
