@@ -50,8 +50,10 @@ async function hasSigaPermission(nome) {
 
 function isSigaQueueItem(row) {
   const finalizado = normalizeText(row.Finalizado);
+  const atribuidaPara = normalizeText(row['Atribuida para']);
   const registradoPor = normalizeText(getRegisteredBy(row));
   if (isConcluidoValue(finalizado)) return false;
+  if (atribuidaPara) return false;
   if (!registradoPor) return false;
   if (registradoPor.toLowerCase() === 'admin') return false;
   return true;
