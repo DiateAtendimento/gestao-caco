@@ -1024,6 +1024,51 @@ img {
   z-index: 1250;
 }
 
+.feedback-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.38);
+  z-index: 1260;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+
+.feedback-dialog {
+  width: min(460px, 95vw);
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  box-shadow: 0 20px 36px rgba(5, 20, 38, 0.24);
+  padding: 18px;
+}
+
+.feedback-dialog h3 {
+  margin: 0 0 10px;
+  color: var(--ink);
+}
+
+.feedback-dialog p {
+  margin: 0 0 14px;
+  color: var(--muted);
+}
+
+#feedback-dialog-input {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--field);
+  color: var(--ink);
+  padding: 10px 12px;
+  margin-bottom: 14px;
+}
+
+.feedback-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
 .feedback-card {
   width: min(280px, 85vw);
   background: transparent;

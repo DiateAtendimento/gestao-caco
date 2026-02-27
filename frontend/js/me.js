@@ -1,6 +1,6 @@
 ﻿import { api, requireAuth, clearSession, initThemeIcon } from './auth.js';
 import { ACTIVITIES } from './data.js';
-import { showLoading, showStatus, mountInlineLottie, showAtribuicaoRecebida } from './feedback.js';
+import { showLoading, showStatus, mountInlineLottie, showAtribuicaoRecebida, showMessageDialog, promptText } from './feedback.js';
 import { attachAvatar } from './avatar.js';
 
 const user = requireAuth('colaborador');
@@ -19,6 +19,8 @@ const sigaBodyEl = document.getElementById('registros-siga-body');
 const sigaBlockEl = document.getElementById('siga-block');
 const msgEl = document.getElementById('msg');
 const seenDemandasKey = `seenDemandas:${user.nome}`;
+const SILENT_REFRESH_MS = 3000;
+let refreshInFlight = false;
 const WHATSAPP_ASSUNTOS = [
   'Atendimento',
   'Atuária',
@@ -166,10 +168,14 @@ function renderDemandas() {
     btn.addEventListener('click', () => updateStatus(btn.dataset.done, 'Concluído'));
   });
   demandasEl.querySelectorAll('[data-note]').forEach((btn) => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
       const demanda = abertas.find((d) => d.id === btn.dataset.note);
       if (!demanda) return;
-      window.alert(`Motivo da reabertura:\n\n${demanda.motivoReabertura}`);
+      await showMessageDialog({
+        title: 'Motivo da reabertura',
+        message: demanda.motivoReabertura,
+        closeLabel: 'Fechar'
+      });
     });
   });
 }
@@ -217,12 +223,34 @@ function renderRegistrosSiga() {
 
 async function updateStatus(id, status) {
   const demanda = state.demandas.find((d) => d.id === id);
-  const medidasAdotadas = status === 'Concluído'
-    ? window.prompt('Informe as medidas adotadas para concluir:') || ''
-    : '';
-  const respostaFinal = status === 'Concluído' && Number(demanda?.demandaReabertaQtd || 0) >= 1
-    ? window.prompt('Informe a resposta final da demanda reaberta:') || ''
-    : '';
+  const isConcluding = status === 'Concluído';
+  const isReopened = Number(demanda?.demandaReabertaQtd || 0) >= 1;
+  let medidasAdotadas = '';
+  let respostaFinal = '';
+
+  if (isConcluding) {
+    const medidas = await promptText({
+      title: 'Concluir demanda',
+      message: 'Informe as medidas adotadas para concluir:',
+      placeholder: 'Descreva as medidas adotadas',
+      required: true,
+      confirmLabel: 'Confirmar'
+    });
+    if (medidas === null) return;
+    medidasAdotadas = medidas;
+  }
+
+  if (isConcluding && isReopened) {
+    const resposta = await promptText({
+      title: 'Resposta final',
+      message: 'Informe a resposta final da demanda reaberta:',
+      placeholder: 'Digite a resposta final',
+      required: true,
+      confirmLabel: 'Confirmar'
+    });
+    if (resposta === null) return;
+    respostaFinal = resposta;
+  }
 
   if (status === 'Concluído' && !String(medidasAdotadas).trim()) {
     await showStatus('erro', 'Medidas adotadas é obrigatório para concluir');
@@ -340,6 +368,8 @@ document.getElementById('btn-logout').addEventListener('click', async () => {
 
 
 async function refreshSilently() {
+  if (document.hidden || refreshInFlight) return;
+  refreshInFlight = true;
   try {
     await loadData();
     renderAtividades();
@@ -347,6 +377,8 @@ async function refreshSilently() {
     renderRegistrosSiga();
   } catch (error) {
     console.error('[Colaborador] polling erro:', error.message);
+  } finally {
+    refreshInFlight = false;
   }
 }
 
@@ -360,9 +392,16 @@ async function refreshSilently() {
       setupWhatsapp();
     });
 
-    setInterval(refreshSilently, 60000);
+    setInterval(() => {
+      void refreshSilently();
+    }, SILENT_REFRESH_MS);
     document.addEventListener('visibilitychange', () => {
-      if (!document.hidden) refreshSilently();
+      if (!document.hidden) {
+        void refreshSilently();
+      }
+    });
+    window.addEventListener('focus', () => {
+      void refreshSilently();
     });
   } catch (_e) {}
 })();

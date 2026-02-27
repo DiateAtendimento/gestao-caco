@@ -14,6 +14,7 @@ const LOTTIES = {
 
 let lottieReadyPromise = null;
 let uiMounted = false;
+let dialogMounted = false;
 let loadingAnimation = null;
 let toastAnimation = null;
 
@@ -43,6 +44,28 @@ function ensureUi() {
   document.body.appendChild(overlay);
   document.body.appendChild(toast);
   uiMounted = true;
+}
+
+function ensureDialogUi() {
+  if (dialogMounted) return;
+
+  const overlay = document.createElement('div');
+  overlay.id = 'feedback-dialog-overlay';
+  overlay.className = 'feedback-dialog-overlay hidden';
+  overlay.innerHTML = `
+    <div class="feedback-dialog">
+      <h3 id="feedback-dialog-title"></h3>
+      <p id="feedback-dialog-message"></p>
+      <input id="feedback-dialog-input" class="hidden" type="text" />
+      <div class="feedback-dialog-actions">
+        <button id="feedback-dialog-cancel" type="button" class="btn-danger">Cancelar</button>
+        <button id="feedback-dialog-confirm" type="button" class="btn-main">Confirmar</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+  dialogMounted = true;
 }
 
 function ensureLottieLoaded() {
@@ -79,6 +102,56 @@ async function playAnimation(container, path, loop = false) {
 
 function lottiePath(type) {
   return LOTTIES[type] || LOTTIES.erro;
+}
+
+function waitDialogResult(setup) {
+  ensureDialogUi();
+  const overlay = document.getElementById('feedback-dialog-overlay');
+  const titleEl = document.getElementById('feedback-dialog-title');
+  const messageEl = document.getElementById('feedback-dialog-message');
+  const inputEl = document.getElementById('feedback-dialog-input');
+  const cancelBtn = document.getElementById('feedback-dialog-cancel');
+  const confirmBtn = document.getElementById('feedback-dialog-confirm');
+
+  return new Promise((resolve) => {
+    const cleanup = () => {
+      overlay.classList.add('hidden');
+      cancelBtn.removeEventListener('click', onCancel);
+      confirmBtn.removeEventListener('click', onConfirm);
+      overlay.removeEventListener('click', onBackdrop);
+      document.removeEventListener('keydown', onKeyDown);
+      inputEl.oninput = null;
+      confirmBtn.disabled = false;
+      cancelBtn.classList.remove('hidden');
+    };
+
+    const onCancel = () => {
+      cleanup();
+      resolve({ confirmed: false, value: null });
+    };
+
+    const onConfirm = () => {
+      const value = inputEl.classList.contains('hidden') ? null : inputEl.value;
+      cleanup();
+      resolve({ confirmed: true, value });
+    };
+
+    const onBackdrop = (event) => {
+      if (event.target === overlay) onCancel();
+    };
+
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') onCancel();
+      if (event.key === 'Enter' && !confirmBtn.disabled) onConfirm();
+    };
+
+    setup({ titleEl, messageEl, inputEl, cancelBtn, confirmBtn });
+    overlay.classList.remove('hidden');
+    cancelBtn.addEventListener('click', onCancel);
+    confirmBtn.addEventListener('click', onConfirm);
+    overlay.addEventListener('click', onBackdrop);
+    document.addEventListener('keydown', onKeyDown);
+  });
 }
 
 export async function mountLoginLottie(containerId) {
@@ -187,7 +260,7 @@ export async function showAtribuicaoRecebida(nomeUsuario, duration = 5000) {
     document.body.appendChild(bubble);
   }
 
-  bubble.querySelector('.atrib-bubble-text').textContent = `${nomeUsuario}, você recebeu uma nova atribuição`;
+  bubble.querySelector('.atrib-bubble-text').textContent = `${nomeUsuario}, voce recebeu uma nova atribuicao`;
   bubble.classList.remove('hidden');
 
   await mountInlineLottie(bubble.querySelector('.atrib-bubble-lottie'), 'atribuicao_recebida', true);
@@ -195,4 +268,54 @@ export async function showAtribuicaoRecebida(nomeUsuario, duration = 5000) {
   window.setTimeout(() => {
     bubble.classList.add('hidden');
   }, duration);
+}
+
+export async function promptText(options = {}) {
+  const {
+    title = 'Confirmacao',
+    message = '',
+    placeholder = '',
+    defaultValue = '',
+    required = false,
+    confirmLabel = 'Confirmar',
+    cancelLabel = 'Cancelar'
+  } = options;
+
+  const result = await waitDialogResult(({ titleEl, messageEl, inputEl, cancelBtn, confirmBtn }) => {
+    titleEl.textContent = title;
+    messageEl.textContent = message;
+    inputEl.classList.remove('hidden');
+    inputEl.placeholder = placeholder;
+    inputEl.value = defaultValue;
+    cancelBtn.textContent = cancelLabel;
+    confirmBtn.textContent = confirmLabel;
+    confirmBtn.disabled = required && !String(inputEl.value || '').trim();
+    inputEl.focus();
+    inputEl.select();
+    inputEl.oninput = () => {
+      confirmBtn.disabled = required && !String(inputEl.value || '').trim();
+    };
+  });
+
+  if (!result.confirmed) return null;
+  return String(result.value || '').trim();
+}
+
+export async function showMessageDialog(options = {}) {
+  const {
+    title = 'Mensagem',
+    message = '',
+    closeLabel = 'Fechar'
+  } = options;
+
+  await waitDialogResult(({ titleEl, messageEl, inputEl, cancelBtn, confirmBtn }) => {
+    titleEl.textContent = title;
+    messageEl.textContent = message;
+    inputEl.classList.add('hidden');
+    inputEl.value = '';
+    cancelBtn.classList.add('hidden');
+    confirmBtn.textContent = closeLabel;
+    confirmBtn.disabled = false;
+    confirmBtn.focus();
+  });
 }

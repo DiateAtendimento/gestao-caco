@@ -1,6 +1,6 @@
 ﻿import { api, requireAuth, clearSession, initThemeIcon } from './auth.js';
 import { ACTIVITIES, AREA_OPTIONS, META_OPTIONS, CATEGORY_OPTIONS } from './data.js';
-import { showLoading, showStatus } from './feedback.js';
+import { showLoading, showStatus, promptText } from './feedback.js';
 import { attachAvatar } from './avatar.js';
 
 const user = requireAuth('admin');
@@ -25,6 +25,8 @@ const modalSolicitacao = document.getElementById('modal-solicitacao');
 const modalNovoColab = document.getElementById('modal-novo-colab');
 const modalConfirmDelete = document.getElementById('modal-confirm-delete');
 const ADMIN_AVATAR_SRC = './img/admin.png?v=20260226';
+const SILENT_REFRESH_MS = 3000;
+let refreshInFlight = false;
 const adminAvatar = document.getElementById('admin-avatar');
 if (adminAvatar) {
   adminAvatar.src = ADMIN_AVATAR_SRC;
@@ -395,7 +397,13 @@ function renderHistoricoSelecionado() {
   });
 
   body.querySelectorAll('[data-reopen]').forEach((btn) => btn.addEventListener('click', async () => {
-    const motivo = window.prompt('Informe o motivo da reabertura:');
+    const motivo = await promptText({
+      title: 'Reabrir demanda',
+      message: 'Informe o motivo da reabertura:',
+      placeholder: 'Digite o motivo',
+      required: true,
+      confirmLabel: 'Reabrir'
+    });
     if (!motivo || !motivo.trim()) return;
     try {
       await runAction('reabrir demanda', 'Reabrindo demanda...', 'salvo', 'Demanda reaberta', async () => {
@@ -448,17 +456,20 @@ async function loadAdminData() {
 }
 
 async function refreshSilently() {
+  if (document.hidden || refreshInFlight) return;
+  refreshInFlight = true;
   try {
     await loadAdminData();
     renderCards();
     if (state.selectedAtendente) {
-      await loadSelectedSolicitacoes();
-      await loadSelectedHistorico();
+      await Promise.all([loadSelectedSolicitacoes(), loadSelectedHistorico()]);
       renderSolicitacoesSelecionado();
       renderHistoricoSelecionado();
     }
   } catch (error) {
     console.error('[Admin] polling erro:', error.message);
+  } finally {
+    refreshInFlight = false;
   }
 }
 
@@ -608,9 +619,16 @@ setupSolicitacaoForm();
       await loadAdminData();
       renderCards();
     });
-    setInterval(refreshSilently, 60000);
+    setInterval(() => {
+      void refreshSilently();
+    }, SILENT_REFRESH_MS);
     document.addEventListener('visibilitychange', () => {
-      if (!document.hidden) refreshSilently();
+      if (!document.hidden) {
+        void refreshSilently();
+      }
+    });
+    window.addEventListener('focus', () => {
+      void refreshSilently();
     });
   } catch (_e) {}
 })();

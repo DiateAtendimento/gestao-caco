@@ -84,6 +84,7 @@ export async function api(path, options = {}) {
     response = await fetch(`${API_BASE_URL}${path}`, {
       ...options,
       headers,
+      cache: 'no-store',
       signal: controller.signal
     });
   } catch (error) {
