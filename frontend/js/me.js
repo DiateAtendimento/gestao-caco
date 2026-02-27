@@ -228,7 +228,7 @@ async function updateStatus(id, status) {
   let medidasAdotadas = '';
   let respostaFinal = '';
 
-  if (isConcluding) {
+  if (isConcluding && !isReopened) {
     const medidas = await promptText({
       title: 'Concluir demanda',
       message: 'Informe as medidas adotadas para concluir:',

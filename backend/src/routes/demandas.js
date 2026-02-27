@@ -98,15 +98,21 @@ router.post('/:id/status', async (req, res) => {
     }
 
     if (statusInput === STATUS.CONCLUIDO) {
-      if (!medidasAdotadas) {
+      const isReopened = Number(item['Demanda reaberta qtd'] || 0) >= 1;
+      if (!isReopened && !medidasAdotadas) {
         return res.status(400).json({ error: 'Medidas adotadas é obrigatório para concluir' });
       }
-      if (Number(item['Demanda reaberta qtd'] || 0) >= 1 && !respostaFinal) {
+      if (isReopened && !respostaFinal) {
         return res.status(400).json({ error: 'Resposta final é obrigatória para demanda reaberta' });
       }
-      item['Medidas adotadas'] = medidasAdotadas;
-      if (Number(item['Demanda reaberta qtd'] || 0) >= 1) {
+
+      if (!isReopened || medidasAdotadas) {
+        item['Medidas adotadas'] = medidasAdotadas;
+      }
+      if (isReopened) {
         item['Resposta final'] = respostaFinal;
+      } else {
+        item['Resposta final'] = '';
       }
       item.Finalizado = toBrDate();
       item['Finalizado por'] = req.user.nome;
