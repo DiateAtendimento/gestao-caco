@@ -846,6 +846,28 @@ img {
   resize: vertical;
 }
 
+[data-theme='dark'] .form-row select {
+  color: #142f50;
+  background: #e8eef7;
+}
+
+[data-theme='dark'] .form-row select option {
+  color: #142f50;
+  background: #e8eef7;
+}
+
+[data-theme='dark'] .form-row input,
+[data-theme='dark'] .form-row textarea {
+  color: #142f50;
+  background: #e8eef7;
+}
+
+[data-theme='dark'] .form-row input::placeholder,
+[data-theme='dark'] .form-row textarea::placeholder,
+[data-theme='dark'] .form-row select:invalid {
+  color: #60738f;
+}
+
 .form-actions {
   display: flex;
   justify-content: flex-end;
