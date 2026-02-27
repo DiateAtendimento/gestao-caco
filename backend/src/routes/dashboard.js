@@ -37,6 +37,14 @@ function isSigaQueueItem(row) {
   return !isConcluido(row.Finalizado);
 }
 
+function getRegisteredBy(row) {
+  return normalizeText(row['Registrado por'] || row['Registrador por']);
+}
+
+function isSim(value) {
+  return normalizeText(value).toLowerCase() === 'sim';
+}
+
 function parseSigaMeta(value) {
   const normalized = normalizeText(value).replace('%', '').replace(',', '.');
   const number = Number(normalized);
@@ -70,7 +78,19 @@ router.get('/admin', async (_req, res) => {
         return !st || st === STATUS.NAO_INICIADA;
       }).length;
 
-      if (normalizeText(col.Registrosiga).toLowerCase() === 'sim') {
+      if (isSim(col.Whatsapp)) {
+        const whatsappPendentes = demandas.filter((d) =>
+          !normalizeText(d['Atribuida para']) &&
+          getRegisteredBy(d) === normalizeText(col.Atendente) &&
+          !isConcluido(d.Finalizado)
+        );
+        const whatsappCarga = whatsappPendentes.reduce((acc, d) => acc + parseSigaMeta(d['Meta registro siga']), 0);
+        percentual += whatsappCarga;
+        naoIniciadas += whatsappPendentes.length;
+        staleCount += whatsappPendentes.filter((d) => isOlderThan48h(d['Data do Registro'])).length;
+      }
+
+      if (isSim(col.Registrosiga)) {
         percentual += pendingSigaMeta;
         naoIniciadas += pendingSigaCount;
         staleCount += pendingSiga.filter((d) => isOlderThan48h(d['Data do Registro'])).length;
