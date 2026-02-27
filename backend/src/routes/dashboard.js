@@ -34,8 +34,10 @@ function isOlderThan48h(value) {
 }
 
 function isSigaQueueItem(row) {
+  const atribuidaPara = normalizeText(row['Atribuida para']);
   const registradoPor = normalizeText(getRegisteredBy(row));
   if (isConcluido(row.Finalizado)) return false;
+  if (atribuidaPara) return false;
   if (!registradoPor) return false;
   if (registradoPor.toLowerCase() === 'admin') return false;
   return true;
@@ -83,6 +85,7 @@ router.get('/admin', async (_req, res) => {
 
       if (isSim(col.Whatsapp)) {
         const whatsappPendentes = demandas.filter((d) =>
+          !normalizeText(d['Atribuida para']) &&
           getRegisteredBy(d) === normalizeText(col.Atendente) &&
           !isConcluido(d.Finalizado)
         );
