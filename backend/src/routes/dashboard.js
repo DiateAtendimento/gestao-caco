@@ -3,7 +3,7 @@ const { authMiddleware, requireRole } = require('../middleware/auth');
 const { PROFILE_SHEET, DEMANDS_SHEET, STATUS, ACTIVITY_COLUMNS, DASHBOARD_URL } = require('../config/constants');
 const { readSheet } = require('../services/sheetsService');
 const { parseMeta } = require('../services/demandService');
-const { normalizeText } = require('../utils/text');
+const { normalizeText, equalsIgnoreCase } = require('../utils/text');
 
 const router = express.Router();
 router.use(authMiddleware, requireRole('admin'));
@@ -34,12 +34,11 @@ function isOlderThan48h(value) {
 }
 
 function isSigaQueueItem(row) {
-  const registradoPor = normalizeText(getRegisteredBy(row));
   const origem = normalizeText(row.Origem).toLowerCase();
+  const assunto = normalizeText(row.Assunto).toLowerCase();
+  const isWhatsapp = origem === 'whatsapp' || assunto.startsWith('registro whatsapp:');
   if (isConcluido(row.Finalizado)) return false;
-  if (origem && origem !== 'whatsapp') return false;
-  if (!registradoPor) return false;
-  if (registradoPor.toLowerCase() === 'admin') return false;
+  if (!isWhatsapp) return false;
   return true;
 }
 
@@ -72,7 +71,7 @@ router.get('/admin', async (_req, res) => {
     const pendingSigaCount = pendingSiga.length;
     const pendingSigaMeta = pendingSiga.reduce((acc, row) => acc + parseSigaMeta(row['Meta registro siga']), 0);
     const cards = colaboradores.map((col) => {
-      const minhas = demandas.filter((d) => normalizeText(d['Atribuida para']) === normalizeText(col.Atendente));
+      const minhas = demandas.filter((d) => equalsIgnoreCase(d['Atribuida para'], col.Atendente));
       const abertas = minhas.filter((d) => !isConcluido(d.Finalizado));
       let staleCount = abertas.filter((d) => isOlderThan48h(d['Data do Registro'])).length;
 
@@ -86,7 +85,7 @@ router.get('/admin', async (_req, res) => {
       if (isSim(col.Whatsapp)) {
         const whatsappPendentes = demandas.filter((d) =>
           isSigaQueueItem(d) &&
-          getRegisteredBy(d) === normalizeText(col.Atendente) &&
+          equalsIgnoreCase(getRegisteredBy(d), col.Atendente) &&
           !isConcluido(d.Finalizado)
         );
         const whatsappCarga = whatsappPendentes.reduce((acc, d) => acc + parseSigaMeta(d['Meta registro siga']), 0);

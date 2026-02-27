@@ -50,12 +50,11 @@ async function hasSigaPermission(nome) {
 
 function isSigaQueueItem(row) {
   const finalizado = normalizeText(row.Finalizado);
-  const registradoPor = normalizeText(getRegisteredBy(row));
   const origem = normalizeText(row.Origem).toLowerCase();
+  const assunto = normalizeText(row.Assunto).toLowerCase();
+  const isWhatsapp = origem === 'whatsapp' || assunto.startsWith('registro whatsapp:');
   if (isConcluidoValue(finalizado)) return false;
-  if (origem && origem !== 'whatsapp') return false;
-  if (!registradoPor) return false;
-  if (registradoPor.toLowerCase() === 'admin') return false;
+  if (!isWhatsapp) return false;
   return true;
 }
 
@@ -66,13 +65,13 @@ router.get('/', async (req, res) => {
       return res.status(400).json({ error: 'atendente é obrigatório' });
     }
 
-    if (req.user.role === 'colaborador' && atendente !== req.user.nome) {
+    if (req.user.role === 'colaborador' && !equalsIgnoreCase(atendente, req.user.nome)) {
       return res.status(403).json({ error: 'Colaborador só pode ver as próprias demandas' });
     }
 
     const { rows } = await readSheet(DEMANDS_SHEET);
     const demandas = rows
-      .filter((row) => normalizeText(row['Atribuida para']) === atendente)
+      .filter((row) => equalsIgnoreCase(row['Atribuida para'], atendente))
       .map(mapDemanda);
 
     return res.json({ demandas });
@@ -99,7 +98,7 @@ router.post('/:id/status', async (req, res) => {
     }
 
     const dono = normalizeText(item['Atribuida para']);
-    if (req.user.role === 'colaborador' && dono !== req.user.nome) {
+    if (req.user.role === 'colaborador' && !equalsIgnoreCase(dono, req.user.nome)) {
       return res.status(403).json({ error: 'Acesso negado para esta demanda' });
     }
 
