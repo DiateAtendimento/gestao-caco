@@ -65,7 +65,6 @@ router.get('/admin', async (_req, res) => {
     const pendingSiga = demandas.filter(isSigaQueueItem);
     const pendingSigaCount = pendingSiga.length;
     const pendingSigaMeta = pendingSiga.reduce((acc, row) => acc + parseSigaMeta(row['Meta registro siga']), 0);
-
     const cards = colaboradores.map((col) => {
       const minhas = demandas.filter((d) => normalizeText(d['Atribuida para']) === normalizeText(col.Atendente));
       const abertas = minhas.filter((d) => !isConcluido(d.Finalizado));
