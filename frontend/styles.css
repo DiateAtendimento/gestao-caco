@@ -297,6 +297,7 @@ img {
   width: 100%;
   padding: 0;
   box-shadow: none;
+  justify-content: flex-start;
 }
 
 .theme-switch.icon-only i {
@@ -614,6 +615,39 @@ img {
   gap: 14px;
 }
 
+.sidebar-activities h4 {
+  margin: 0 0 10px;
+  color: var(--ink);
+  font-size: 35px;
+  font-weight: 700;
+}
+
+.sidebar-activity-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px 8px;
+}
+
+.sidebar-activity-grid .activity-chip {
+  min-width: 0;
+}
+
+.sidebar-activity-grid .activity-chip img {
+  width: 52px;
+  height: 52px;
+}
+
+.sidebar-activity-grid .activity-chip div {
+  margin-top: 4px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.sidebar-activity-grid .empty-state-box {
+  grid-column: 1 / -1;
+  padding: 6px 0;
+}
+
 .profile-card {
   border: 1px solid var(--line);
   border-radius: 20px;
@@ -722,6 +756,29 @@ img {
 
 .demand-table {
   padding: 10px;
+}
+
+.me-main {
+  position: relative;
+  padding-bottom: 92px;
+}
+
+.me-logout.floating {
+  position: absolute;
+  right: 16px;
+  bottom: 12px;
+  width: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 14px;
+  font-size: 30px;
+}
+
+.me-logout.floating i {
+  font-size: 35px;
+  line-height: 1;
 }
 
 #siga-block .demand-table {
@@ -1327,6 +1384,24 @@ img {
 
   .me-logout {
     font-size: 20px;
+  }
+
+  .sidebar-activities h4 {
+    font-size: 24px;
+  }
+
+  .me-main {
+    padding-bottom: 10px;
+  }
+
+  .me-logout.floating {
+    position: static;
+    margin-top: 10px;
+    font-size: 20px;
+  }
+
+  .me-logout.floating i {
+    font-size: 22px;
   }
 }
 

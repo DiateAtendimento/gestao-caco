@@ -21,11 +21,14 @@
           <div id="profile-ramal"></div>
         </div>
       </article>
-      <button id="btn-logout" class="me-logout">Sair</button>
+      <section class="sidebar-activities">
+        <h4>Atividades</h4>
+        <div id="atividades" class="sidebar-activity-grid"></div>
+      </section>
       <p id="msg" class="msg-area"></p>
 
       <div class="sidebar-footer">
-        <button id="theme-toggle" class="theme-switch icon-only" type="button" aria-label="Alternar tema">
+        <button id="theme-toggle" class="theme-switch icon-only dynamic-theme-label" type="button" aria-label="Alternar tema">
           <i class="bi bi-moon-stars-fill"></i>
           <span>Ativar modo escuro</span>
         </button>
@@ -78,13 +81,6 @@
       </article>
 
       <article class="section-shell">
-        <div class="section-title">Minhas Atividades</div>
-        <div class="section-content">
-          <div id="atividades" class="activity-row"></div>
-        </div>
-      </article>
-
-      <article class="section-shell">
         <div class="section-title">Demandas Atribuídas</div>
         <div class="section-content">
           <div class="table-shell demand-table">
@@ -103,6 +99,10 @@
           </div>
         </div>
       </article>
+      <button id="btn-logout" class="me-logout floating" type="button" aria-label="Sair">
+        <i class="bi bi-power"></i>
+        <span>Sair</span>
+      </button>
     </section>
   </main>
 

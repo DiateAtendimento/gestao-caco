@@ -28,10 +28,14 @@ function refreshThemeToggleIcon(btn) {
   if (!btn) return;
   const isDark = (document.documentElement.getAttribute('data-theme') || 'light') === 'dark';
   const icon = btn.querySelector('i');
+  const text = btn.querySelector('span');
   if (icon) {
     icon.className = `bi ${isDark ? 'bi-sun-fill' : 'bi-moon-stars-fill'}`;
   } else {
     btn.textContent = isDark ? '☀' : '🌙';
+  }
+  if (text && btn.classList.contains('dynamic-theme-label')) {
+    text.textContent = isDark ? 'Desativar modo escuro' : 'Ativar modo escuro';
   }
 }
 
