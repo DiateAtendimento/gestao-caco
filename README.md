@@ -1,107 +1,87 @@
-﻿# Gestão CACO
+# Gestao CACO
 
-Sistema web fullstack para gestão de colaboradores e demandas da CACO, com Google Sheets como base oficial de dados.
+Sistema web para gestao de equipe, distribuicao de atividades e acompanhamento de demandas operacionais.
 
-## Estrutura
+## Visao Geral
 
-- `backend/`: API Node.js + Express + JWT + Google Sheets API
-- `frontend/`: interface web em HTML/CSS/JavaScript puro
-- `render.yaml`: sugestão de deploy no Render
-- `frontend/netlify.toml`: roteamento para Netlify
+O projeto atende dois perfis:
 
-## Decisões de implementação
+- `admin`: gerencia colaboradores, atividades, atribuicoes e visao consolidada da equipe.
+- `colaborador`: acompanha demandas recebidas, atualiza status e registra operacoes permitidas.
 
-- Meta das solicitações: **Opção 1 aplicada**. O backend garante a coluna `Meta` na aba `Registro de Demandas` e lê/grava esse valor diretamente nessa aba.
-- Registro WhatsApp: salvo na **mesma aba `Registro de Demandas`** como tipo especial (`Assunto` prefixado com `Registro WhatsApp:`), com `Meta = 0`.
-- Exclusão de solicitação: implementada como **remoção física da linha** na aba `Registro de Demandas`.
-- Campo `Número da solicitação`: salvo com a **parte numérica** do ID (ex.: `000001` para `S000001/2026`).
+O foco da plataforma e apoiar organizacao de rotina, cobertura de ferias e equilibrio de carga de trabalho.
+
+## Principais Funcionalidades
+
+- Autenticacao com JWT
+- Cadastro e desativacao de colaboradores
+- Controle de atividades por colaborador
+- Criacao, edicao, atribuicao e exclusao de solicitacoes
+- Atualizacao de status de demandas
+- Reabertura controlada de demandas concluidas
+- Painel com indicadores de carga (ex.: leve, medio, sobrecarregado)
+
+## Arquitetura
+
+- `frontend/`: HTML, CSS e JavaScript
+- `backend/`: Node.js + Express
+- Camada de dados: Google Sheets (integracao via API)
+
+## Estrutura do Repositorio
+
+```text
+.
+|-- backend/
+|   |-- src/
+|   `-- package.json
+|-- frontend/
+|   |-- js/
+|   |-- assets/
+|   `-- *.html
+|-- render.yaml
+`-- README.md
+```
 
 ## Requisitos
 
 - Node.js 18+
-- Conta Google Cloud com API do Google Sheets habilitada
-- Service Account com acesso de edição à planilha:
-  `16k4heNHfta1LBhSjbmeskHQY-NPAo41pqHwyZT8nSbM`
+- Projeto Google Cloud com API Google Sheets habilitada
+- Conta de servico com permissao de leitura e escrita na planilha utilizada pelo projeto
 
-## Configuração do backend
+## Configuracao Local
 
-1. Entre em `backend/`.
-2. Instale dependências:
-   - `npm install`
-3. Copie `.env.example` para `.env` e preencha:
+1. Backend
+- Entre em `backend/`
+- Instale dependencias: `npm install`
+- Crie `.env` com base em `.env.example`
+- Execute: `npm run dev`
 
-```env
-PORT=3000
-JWT_SECRET=seu_segredo
-GOOGLE_SHEET_ID=16k4heNHfta1LBhSjbmeskHQY-NPAo41pqHwyZT8nSbM
-GOOGLE_SERVICE_ACCOUNT_EMAIL=service-account@projeto.iam.gserviceaccount.com
-GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
-FRONTEND_URL=https://gestao-caco.netlify.app
-```
+2. Frontend
+- Publique a pasta `frontend/` como site estatico
+- Configure a URL base da API via variavel global ou `localStorage`
 
-4. Rode:
-   - `npm run dev`
+## Variaveis de Ambiente (backend)
 
-## Configuração do frontend
+Defina no arquivo `.env`:
 
-1. Publicar `frontend/` como site estático (Netlify).
-2. Ajustar base da API:
-   - opção A: definir `window.GESTAO_API_URL` antes dos scripts
-   - opção B: salvar no browser: `localStorage.setItem('apiBaseUrl', 'https://gestao-caco-backend.onrender.com')`
+- `PORT`
+- `JWT_SECRET`
+- `GOOGLE_SHEET_ID`
+- `GOOGLE_SERVICE_ACCOUNT_EMAIL`
+- `GOOGLE_PRIVATE_KEY`
+- `FRONTEND_URL`
 
-Rotas públicas esperadas:
-- `/login`
-- `/admin`
-- `/me`
+## Seguranca
 
-## Deploy no Render (backend)
+- Nao versionar `.env`, chaves privadas ou tokens.
+- Limitar `FRONTEND_URL` aos dominios oficiais.
+- Restringir o acesso da planilha apenas a contas autorizadas.
 
-1. Criar Web Service apontando para pasta `backend`.
-2. Build command: `npm install`
-3. Start command: `npm start`
-4. Configurar variáveis de ambiente conforme `.env.example`.
-5. Definir `FRONTEND_URL` com domínio do Netlify.
+## Scripts (backend)
 
-## Deploy no Netlify (frontend)
+- `npm run dev`: ambiente de desenvolvimento
+- `npm start`: ambiente de producao
 
-1. Publicar pasta `frontend`.
-2. Build command: vazio (site estático).
-3. Publish directory: `frontend`.
-4. O arquivo `netlify.toml` já roteia `/login`, `/admin`, `/me`.
+## Observacoes
 
-## Fluxos implementados
-
-- Login por nome + senha na aba `Perfil` com validação `Ativo = Sim`, `Senha` e JWT.
-- Admin:
-  - Lista de colaboradores ativos (`role=colaborador`)
-  - Criação/desativação de colaborador (senha inicial = `ramal` se não for enviada no cadastro)
-  - Modal de configurações com toggle de atividades
-  - Gestão de solicitações pendentes (criar, editar, excluir, atribuir)
-  - Link `Dashboard` abre diretamente a planilha do Google Sheets
-  - Cálculo de percentual por meta de demandas não concluídas
-- Colaborador:
-  - Visualiza apenas atividades habilitadas
-  - Lista demandas atribuídas e altera status para `Em andamento`/`Concluído`
-  - Registro WhatsApp condicionado a `Whatsapp = Sim`
-
-## Endpoints principais
-
-- `POST /api/auth/login` body: `{ "nome": "...", "senha": "..." }`
-- `GET /api/profile/me`
-- `GET /api/users`
-- `POST /api/users`
-- `PUT /api/users/:nome/atividades`
-- `DELETE /api/users/:nome`
-- `GET /api/solicitacoes?pendentes=true&atendente=Nome`
-- `POST /api/solicitacoes`
-- `PUT /api/solicitacoes/:id`
-- `DELETE /api/solicitacoes/:id`
-- `POST /api/solicitacoes/:id/atribuir`
-- `GET /api/demandas?atendente=Nome`
-- `POST /api/demandas/:id/status`
-- `POST /api/demandas/registro-whatsapp`
-- `GET /api/dashboard/admin`
-
-## Observação
-
-A máquina atual não possui `node` no PATH, então a validação de execução local não pôde ser feita aqui. A estrutura e o código foram entregues completos para rodar após instalar Node.js.
+Este repositorio e de uso interno. Informacoes de infraestrutura, IDs de recursos, URLs de producao e detalhes operacionais sensiveis devem ficar fora da documentacao publica.
