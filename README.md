@@ -82,6 +82,3 @@ Defina no arquivo `.env`:
 - `npm run dev`: ambiente de desenvolvimento
 - `npm start`: ambiente de producao
 
-## Observacoes
-
-Este repositorio e de uso interno. Informacoes de infraestrutura, IDs de recursos, URLs de producao e detalhes operacionais sensiveis devem ficar fora da documentacao publica.
