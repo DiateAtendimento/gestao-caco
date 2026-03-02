@@ -201,7 +201,7 @@ function renderRegistrosSiga() {
   if (!state.sigaRegistros.length) {
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td colspan="6">
+      <td colspan="7">
         <div class="empty-state-table">
           <div id="lottie-sem-siga"></div>
           <p>Nenhum registro pendente no SIGA.</p>
@@ -214,10 +214,13 @@ function renderRegistrosSiga() {
   }
 
   state.sigaRegistros.forEach((d, index) => {
+    const origem = String(d.origem || '').toLowerCase();
+    const origemLabel = origem === 'webconferencia' ? 'Webconferência' : 'WhatsApp';
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${index + 1}</td>
       <td>${d.id}</td>
+      <td>${origemLabel}</td>
       <td>${d.area}</td>
       <td>${d.dataRegistro || '-'}</td>
       <td>${d.descricao}</td>

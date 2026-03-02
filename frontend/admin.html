@@ -15,6 +15,10 @@
         <img id="admin-avatar" src="./img/admin.png?v=20260226" alt="Admin" />
         <div class="sidebar-user-name">Administrador</div>
       </section>
+      <button id="btn-open-demandas-registros" class="sidebar-action-btn" type="button">
+        <img src="./assets/icons/historico-pesquisa.svg" alt="Demandas e Registros" />
+        <span>Demandas e Registros</span>
+      </button>
 
       <div class="sidebar-footer">
         <button id="theme-toggle" class="theme-switch icon-only dynamic-theme-label" type="button" aria-label="Alternar tema">
@@ -87,7 +91,15 @@
         </section>
 
         <section id="tab-historico" class="tab-content">
-          <h3>Histórico de demandas</h3>
+          <div class="tab-title-row">
+            <h3>Histórico de demandas</h3>
+            <button id="btn-toggle-historico-search" class="icon-search-toggle" type="button" title="Pesquisar histórico">
+              <img src="./assets/icons/lupa-pesquisa.svg" alt="Pesquisar" />
+            </button>
+          </div>
+          <div id="historico-search-wrap" class="search-inline-wrap hidden">
+            <input id="historico-search-input" type="text" placeholder="Pesquisar por ID, área, palavra-chave ou data de conclusão" />
+          </div>
           <div class="table-shell">
             <table class="table">
               <thead>
@@ -99,6 +111,7 @@
                   <th>Medidas adotadas</th>
                   <th>Motivo da reabertura</th>
                   <th>Resposta final</th>
+                  <th>Data da atribuição</th>
                   <th>Data da conclusão</th>
                 </tr>
               </thead>
@@ -163,6 +176,49 @@
         <p><strong id="confirm-delete-name"></strong></p>
         <div class="form-actions">
           <button id="btn-confirm-delete" class="btn-danger" type="button">Confirmar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-demandas-registros" class="modal-overlay">
+    <div class="modal">
+      <header class="modal-header">Demandas e Registros
+        <button id="btn-close-demandas-registros" class="modal-close-x">×</button>
+      </header>
+      <div class="modal-content">
+        <div class="search-toolbar">
+          <button id="btn-toggle-data-search" class="icon-search-toggle" type="button" title="Pesquisar por data ou período">
+            <img src="./assets/icons/pesquisar-data.svg" alt="Pesquisar por data" />
+          </button>
+          <div id="data-search-wrap" class="search-inline-wrap hidden">
+            <input id="data-search-start" type="date" />
+            <input id="data-search-end" type="date" />
+          </div>
+          <button id="btn-toggle-text-search" class="icon-search-toggle" type="button" title="Pesquisar por texto">
+            <img src="./assets/icons/lupa-pesquisa.svg" alt="Pesquisar por texto" />
+          </button>
+          <div id="text-search-wrap" class="search-inline-wrap hidden">
+            <input id="text-search-input" type="text" placeholder="Palavra-chave, assunto, ID, etc..." />
+          </div>
+        </div>
+        <div class="table-shell">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Assunto</th>
+                <th>Descrição</th>
+                <th>Data do Registro</th>
+                <th>Finalizado</th>
+                <th>Atribuída para</th>
+                <th>Registrador por</th>
+                <th>Finalizado por</th>
+                <th>Origem</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-demandas-registros"></tbody>
+          </table>
         </div>
       </div>
     </div>

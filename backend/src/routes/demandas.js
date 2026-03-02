@@ -38,6 +38,7 @@ function mapDemanda(row) {
     demandaReabertaQtd: Number(row['Demanda reaberta qtd'] || 0),
     motivoReabertura: row['Motivo reabertura'] || '',
     respostaFinal: row['Resposta final'] || '',
+    origem: normalizeText(row.Origem).toLowerCase(),
     concluido: isConcluidoValue(row.Finalizado)
   };
 }
@@ -51,10 +52,9 @@ async function hasSigaPermission(nome) {
 function isSigaQueueItem(row) {
   const finalizado = normalizeText(row.Finalizado);
   const origem = normalizeText(row.Origem).toLowerCase();
-  const assunto = normalizeText(row.Assunto).toLowerCase();
-  const isWhatsapp = origem === 'whatsapp' || assunto.startsWith('registro whatsapp:');
+  const isSigaOrigin = origem === 'whatsapp' || origem === 'webconferencia';
   if (isConcluidoValue(finalizado)) return false;
-  if (!isWhatsapp) return false;
+  if (!isSigaOrigin) return false;
   return true;
 }
 

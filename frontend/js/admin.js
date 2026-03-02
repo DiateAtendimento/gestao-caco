@@ -11,11 +11,18 @@ const state = {
   cards: [],
   selectedSolicitacoes: [],
   selectedHistorico: [],
+  demandasRegistros: [],
   draftSolicitacoesByAtendente: {},
   recentlyAssignedByAtendente: {},
   selectedAtendente: null,
   dashboardUrl: 'https://docs.google.com/spreadsheets/d/16k4heNHfta1LBhSjbmeskHQY-NPAo41pqHwyZT8nSbM/edit?gid=0#gid=0',
-  editingId: null
+  editingId: null,
+  historicoSearch: '',
+  demandasRegistrosFilters: {
+    dataInicio: '',
+    dataFim: '',
+    texto: ''
+  }
 };
 
 const cardsEl = document.getElementById('cards');
@@ -24,6 +31,15 @@ const modalConfig = document.getElementById('modal-config');
 const modalSolicitacao = document.getElementById('modal-solicitacao');
 const modalNovoColab = document.getElementById('modal-novo-colab');
 const modalConfirmDelete = document.getElementById('modal-confirm-delete');
+const modalDemandasRegistros = document.getElementById('modal-demandas-registros');
+const demandasRegistrosBody = document.getElementById('tbody-demandas-registros');
+const historicoSearchWrap = document.getElementById('historico-search-wrap');
+const historicoSearchInput = document.getElementById('historico-search-input');
+const dataSearchWrap = document.getElementById('data-search-wrap');
+const textSearchWrap = document.getElementById('text-search-wrap');
+const dataSearchStart = document.getElementById('data-search-start');
+const dataSearchEnd = document.getElementById('data-search-end');
+const textSearchInput = document.getElementById('text-search-input');
 const ADMIN_AVATAR_SRC = './img/admin.png?v=20260226';
 const SILENT_REFRESH_MS = 3000;
 let refreshInFlight = false;
@@ -39,6 +55,32 @@ function showMsg(text) {
 
 function openModal(el) { el.classList.add('open'); }
 function closeModal(el) { el.classList.remove('open'); }
+
+function normalizeText(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
+function parseBrDate(value) {
+  const text = String(value || '').trim();
+  const match = text.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!match) return null;
+  const day = Number(match[1]);
+  const month = Number(match[2]) - 1;
+  const year = Number(match[3]);
+  const date = new Date(year, month, day);
+  if (Number.isNaN(date.getTime())) return null;
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+function parseInputDate(value) {
+  const text = String(value || '').trim();
+  if (!text) return null;
+  const date = new Date(`${text}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return null;
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
 
 function getDraftsForSelected() {
   return state.draftSolicitacoesByAtendente[state.selectedAtendente] || [];
@@ -375,12 +417,26 @@ async function loadSelectedSolicitacoes() {
 function renderHistoricoSelecionado() {
   const body = document.getElementById('tbody-historico');
   body.innerHTML = '';
-  if (!state.selectedHistorico.length) {
-    body.innerHTML = '<tr><td colspan="8">Nenhuma demanda concluída para este atendente.</td></tr>';
+  const termo = normalizeText(state.historicoSearch);
+  const historico = !termo
+    ? state.selectedHistorico
+    : state.selectedHistorico.filter((row) => {
+      const bag = [
+        row.id,
+        row.area,
+        row.descricao,
+        row.finalizado,
+        row.dataRegistro
+      ].map(normalizeText).join(' ');
+      return bag.includes(termo);
+    });
+
+  if (!historico.length) {
+    body.innerHTML = '<tr><td colspan="9">Nenhuma demanda concluída para este atendente.</td></tr>';
     return;
   }
 
-  state.selectedHistorico.forEach((row) => {
+  historico.forEach((row) => {
     const canReopen = Number(row.demandaReabertaQtd || 0) < 1;
     const tr = document.createElement('tr');
     tr.innerHTML = `
@@ -391,6 +447,7 @@ function renderHistoricoSelecionado() {
       <td>${row.medidasAdotadas || '-'}</td>
       <td>${row.motivoReabertura || '-'}</td>
       <td>${row.respostaFinal || '-'}</td>
+      <td>${row.dataRegistro || '-'}</td>
       <td>${row.finalizado || '-'}</td>
     `;
     body.appendChild(tr);
@@ -429,8 +486,101 @@ async function loadSelectedHistorico() {
   state.selectedHistorico = data.solicitacoes || [];
 }
 
+function isWithinDateRange(dataBr, inicioIso, fimIso) {
+  const data = parseBrDate(dataBr);
+  if (!data) return false;
+  const inicio = parseInputDate(inicioIso);
+  const fim = parseInputDate(fimIso);
+  if (inicio && data < inicio) return false;
+  if (fim && data > fim) return false;
+  return true;
+}
+
+function renderDemandasRegistros() {
+  if (!demandasRegistrosBody) return;
+  const { dataInicio, dataFim, texto } = state.demandasRegistrosFilters;
+  const termo = normalizeText(texto);
+  const filtered = state.demandasRegistros.filter((row) => {
+    if ((dataInicio || dataFim) && !isWithinDateRange(row.dataRegistro, dataInicio, dataFim)) {
+      return false;
+    }
+    if (!termo) {
+      return true;
+    }
+    const bag = [
+      row.id,
+      row.assunto,
+      row.descricao,
+      row.dataRegistro,
+      row.finalizado,
+      row.atribuidaPara,
+      row.registradorPor,
+      row.finalizadoPor,
+      row.origem
+    ].map(normalizeText).join(' ');
+    return bag.includes(termo);
+  });
+
+  demandasRegistrosBody.innerHTML = '';
+  if (!filtered.length) {
+    demandasRegistrosBody.innerHTML = '<tr><td colspan="9">Nenhum registro encontrado.</td></tr>';
+    return;
+  }
+
+  filtered.forEach((row) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${row.id || '-'}</td>
+      <td>${row.assunto || '-'}</td>
+      <td>${row.descricao || '-'}</td>
+      <td>${row.dataRegistro || '-'}</td>
+      <td>${row.finalizado || '-'}</td>
+      <td>${row.atribuidaPara || '-'}</td>
+      <td>${row.registradorPor || '-'}</td>
+      <td>${row.finalizadoPor || '-'}</td>
+      <td>${row.origem || '-'}</td>
+    `;
+    demandasRegistrosBody.appendChild(tr);
+  });
+}
+
+async function loadDemandasRegistros() {
+  const data = await api('/api/solicitacoes');
+  state.demandasRegistros = (data.solicitacoes || []).map((row) => ({
+    id: row.id,
+    assunto: row.area,
+    descricao: row.descricao,
+    dataRegistro: row.dataRegistro,
+    finalizado: row.finalizado,
+    atribuidaPara: row.atribuidaPara,
+    registradorPor: row.registradoPor,
+    finalizadoPor: row.finalizadoPor,
+    origem: row.origem
+  }));
+}
+
+async function openDemandasRegistros() {
+  state.demandasRegistrosFilters = { dataInicio: '', dataFim: '', texto: '' };
+  if (dataSearchStart) dataSearchStart.value = '';
+  if (dataSearchEnd) dataSearchEnd.value = '';
+  if (textSearchInput) textSearchInput.value = '';
+  if (dataSearchWrap) dataSearchWrap.classList.add('hidden');
+  if (textSearchWrap) textSearchWrap.classList.add('hidden');
+
+  try {
+    await runAction('carregar demandas e registros', 'Carregando demandas e registros...', null, null, async () => {
+      await loadDemandasRegistros();
+      renderDemandasRegistros();
+      openModal(modalDemandasRegistros);
+    });
+  } catch (_e) {}
+}
+
 async function openConfig(nome) {
   state.selectedAtendente = nome;
+  state.historicoSearch = '';
+  historicoSearchInput.value = '';
+  historicoSearchWrap.classList.add('hidden');
   document.getElementById('cfg-user-name').textContent = nome;
 
   try {
@@ -485,6 +635,41 @@ document.getElementById('btn-close-config').addEventListener('click', () => clos
 document.getElementById('btn-close-sol').addEventListener('click', () => closeModal(modalSolicitacao));
 document.getElementById('btn-close-colab').addEventListener('click', () => closeModal(modalNovoColab));
 document.getElementById('btn-close-delete').addEventListener('click', () => closeModal(modalConfirmDelete));
+document.getElementById('btn-open-demandas-registros').addEventListener('click', () => {
+  void openDemandasRegistros();
+});
+document.getElementById('btn-close-demandas-registros').addEventListener('click', () => closeModal(modalDemandasRegistros));
+document.getElementById('btn-toggle-historico-search').addEventListener('click', () => {
+  historicoSearchWrap.classList.toggle('hidden');
+  if (!historicoSearchWrap.classList.contains('hidden')) {
+    historicoSearchInput.focus();
+  }
+});
+historicoSearchInput.addEventListener('input', () => {
+  state.historicoSearch = historicoSearchInput.value || '';
+  renderHistoricoSelecionado();
+});
+document.getElementById('btn-toggle-data-search').addEventListener('click', () => {
+  dataSearchWrap.classList.toggle('hidden');
+});
+document.getElementById('btn-toggle-text-search').addEventListener('click', () => {
+  textSearchWrap.classList.toggle('hidden');
+  if (!textSearchWrap.classList.contains('hidden')) {
+    textSearchInput.focus();
+  }
+});
+dataSearchStart.addEventListener('change', () => {
+  state.demandasRegistrosFilters.dataInicio = dataSearchStart.value || '';
+  renderDemandasRegistros();
+});
+dataSearchEnd.addEventListener('change', () => {
+  state.demandasRegistrosFilters.dataFim = dataSearchEnd.value || '';
+  renderDemandasRegistros();
+});
+textSearchInput.addEventListener('input', () => {
+  state.demandasRegistrosFilters.texto = textSearchInput.value || '';
+  renderDemandasRegistros();
+});
 
 document.querySelectorAll('[data-tab]').forEach((btn) => btn.addEventListener('click', () => {
   document.querySelectorAll('.tab-content').forEach((el) => el.classList.remove('active'));
