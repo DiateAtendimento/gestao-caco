@@ -188,18 +188,28 @@
       </header>
       <div class="modal-content">
         <div class="search-toolbar">
-          <button id="btn-toggle-data-search" class="icon-search-toggle" type="button" title="Pesquisar por data ou período">
-            <img src="./assets/icons/pesquisar-data.svg" alt="Pesquisar por data" />
-          </button>
-          <div id="data-search-wrap" class="search-inline-wrap hidden">
-            <input id="data-search-start" type="date" />
-            <input id="data-search-end" type="date" />
+          <div id="slot-data-search" class="search-slot">
+            <div class="search-slot-bar">
+              <span>Pesquisa por data ou período</span>
+              <button id="btn-toggle-data-search" class="icon-search-toggle" type="button" title="Pesquisar por data ou período">
+                <img src="./assets/icons/pesquisar-data.svg" alt="Pesquisar por data" />
+              </button>
+            </div>
+            <div id="data-search-wrap" class="search-inline-wrap search-expand">
+              <input id="data-search-start" type="text" placeholder="Início" />
+              <input id="data-search-end" type="text" placeholder="Fim" />
+            </div>
           </div>
-          <button id="btn-toggle-text-search" class="icon-search-toggle" type="button" title="Pesquisar por texto">
-            <img src="./assets/icons/lupa-pesquisa.svg" alt="Pesquisar por texto" />
-          </button>
-          <div id="text-search-wrap" class="search-inline-wrap hidden">
-            <input id="text-search-input" type="text" placeholder="Palavra-chave, assunto, ID, etc..." />
+          <div id="slot-text-search" class="search-slot">
+            <div class="search-slot-bar">
+              <span>Palavra chave, assunto, ID, etc...</span>
+              <button id="btn-toggle-text-search" class="icon-search-toggle" type="button" title="Pesquisar por texto">
+                <img src="./assets/icons/lupa-pesquisa.svg" alt="Pesquisar por texto" />
+              </button>
+            </div>
+            <div id="text-search-wrap" class="search-inline-wrap search-expand">
+              <input id="text-search-input" type="text" placeholder="Palavra chave, assunto, ID, etc..." />
+            </div>
           </div>
         </div>
         <div class="table-shell">

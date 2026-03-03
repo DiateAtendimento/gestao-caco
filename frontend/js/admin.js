@@ -38,6 +38,8 @@ const historicoSearchWrap = document.getElementById('historico-search-wrap');
 const historicoSearchInput = document.getElementById('historico-search-input');
 const dataSearchWrap = document.getElementById('data-search-wrap');
 const textSearchWrap = document.getElementById('text-search-wrap');
+const slotDataSearch = document.getElementById('slot-data-search');
+const slotTextSearch = document.getElementById('slot-text-search');
 const dataSearchStart = document.getElementById('data-search-start');
 const dataSearchEnd = document.getElementById('data-search-end');
 const textSearchInput = document.getElementById('text-search-input');
@@ -77,10 +79,30 @@ function parseBrDate(value) {
 function parseInputDate(value) {
   const text = String(value || '').trim();
   if (!text) return null;
-  const date = new Date(`${text}T00:00:00`);
-  if (Number.isNaN(date.getTime())) return null;
-  date.setHours(0, 0, 0, 0);
-  return date;
+
+  const br = text.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (br) {
+    const day = Number(br[1]);
+    const month = Number(br[2]) - 1;
+    const year = Number(br[3]);
+    const date = new Date(year, month, day);
+    if (Number.isNaN(date.getTime())) return null;
+    date.setHours(0, 0, 0, 0);
+    return date;
+  }
+
+  const iso = text.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (iso) {
+    const year = Number(iso[1]);
+    const month = Number(iso[2]) - 1;
+    const day = Number(iso[3]);
+    const date = new Date(year, month, day);
+    if (Number.isNaN(date.getTime())) return null;
+    date.setHours(0, 0, 0, 0);
+    return date;
+  }
+
+  return null;
 }
 
 function getDraftsForSelected() {
@@ -487,13 +509,20 @@ async function loadSelectedHistorico() {
   state.selectedHistorico = data.solicitacoes || [];
 }
 
-function isWithinDateRange(dataBr, inicioIso, fimIso) {
-  const data = parseBrDate(dataBr);
-  if (!data) return false;
-  const inicio = parseInputDate(inicioIso);
-  const fim = parseInputDate(fimIso);
-  if (inicio && data < inicio) return false;
-  if (fim && data > fim) return false;
+function isWithinDateRange(dataRegistroBr, finalizadoBr, inicioInput, fimInput) {
+  const inicio = parseInputDate(inicioInput);
+  const fim = parseInputDate(fimInput);
+  const dataRegistro = parseBrDate(dataRegistroBr);
+  const dataFinalizado = parseBrDate(finalizadoBr);
+
+  if (inicio) {
+    if (!dataRegistro) return false;
+    if (dataRegistro < inicio) return false;
+  }
+  if (fim) {
+    if (!dataFinalizado) return false;
+    if (dataFinalizado > fim) return false;
+  }
   return true;
 }
 
@@ -508,7 +537,7 @@ function renderDemandasRegistros() {
 
   const termo = normalizeText(texto);
   const filtered = state.demandasRegistros.filter((row) => {
-    if ((dataInicio || dataFim) && !isWithinDateRange(row.dataRegistro, dataInicio, dataFim)) {
+    if ((dataInicio || dataFim) && !isWithinDateRange(row.dataRegistro, row.finalizado, dataInicio, dataFim)) {
       return false;
     }
     if (!termo) {
@@ -573,8 +602,10 @@ async function openDemandasRegistros() {
   if (dataSearchStart) dataSearchStart.value = '';
   if (dataSearchEnd) dataSearchEnd.value = '';
   if (textSearchInput) textSearchInput.value = '';
-  if (dataSearchWrap) dataSearchWrap.classList.add('hidden');
-  if (textSearchWrap) textSearchWrap.classList.add('hidden');
+  if (dataSearchWrap) dataSearchWrap.classList.remove('open');
+  if (textSearchWrap) textSearchWrap.classList.remove('open');
+  if (slotDataSearch) slotDataSearch.classList.remove('is-open');
+  if (slotTextSearch) slotTextSearch.classList.remove('is-open');
 
   try {
     renderDemandasRegistros();
@@ -589,6 +620,14 @@ async function applyDemandasRegistrosSearch() {
     renderDemandasRegistros();
     return;
   }
+
+  const inicioInvalido = String(dataInicio || '').trim() && !parseInputDate(dataInicio);
+  const fimInvalido = String(dataFim || '').trim() && !parseInputDate(dataFim);
+  if (inicioInvalido || fimInvalido) {
+    demandasRegistrosBody.innerHTML = '<tr><td colspan="9">Data inválida. Use o formato dd/mm/aaaa.</td></tr>';
+    return;
+  }
+
   if (!state.demandasRegistrosLoaded) {
     state.demandasRegistrosLoaded = true;
     try {
@@ -677,11 +716,16 @@ historicoSearchInput.addEventListener('input', () => {
   renderHistoricoSelecionado();
 });
 document.getElementById('btn-toggle-data-search').addEventListener('click', () => {
-  dataSearchWrap.classList.toggle('hidden');
+  dataSearchWrap.classList.toggle('open');
+  slotDataSearch.classList.toggle('is-open');
+  if (dataSearchWrap.classList.contains('open')) {
+    dataSearchStart.focus();
+  }
 });
 document.getElementById('btn-toggle-text-search').addEventListener('click', () => {
-  textSearchWrap.classList.toggle('hidden');
-  if (!textSearchWrap.classList.contains('hidden')) {
+  textSearchWrap.classList.toggle('open');
+  slotTextSearch.classList.toggle('is-open');
+  if (textSearchWrap.classList.contains('open')) {
     textSearchInput.focus();
   }
 });
@@ -690,6 +734,14 @@ dataSearchStart.addEventListener('change', () => {
   void applyDemandasRegistrosSearch();
 });
 dataSearchEnd.addEventListener('change', () => {
+  state.demandasRegistrosFilters.dataFim = dataSearchEnd.value || '';
+  void applyDemandasRegistrosSearch();
+});
+dataSearchStart.addEventListener('input', () => {
+  state.demandasRegistrosFilters.dataInicio = dataSearchStart.value || '';
+  void applyDemandasRegistrosSearch();
+});
+dataSearchEnd.addEventListener('input', () => {
   state.demandasRegistrosFilters.dataFim = dataSearchEnd.value || '';
   void applyDemandasRegistrosSearch();
 });
