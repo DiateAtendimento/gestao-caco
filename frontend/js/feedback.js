@@ -282,9 +282,15 @@ export async function promptText(options = {}) {
   } = options;
 
   const result = await waitDialogResult(({ titleEl, messageEl, inputEl, cancelBtn, confirmBtn }) => {
+    const noHistorySuffix = String(Date.now());
     titleEl.textContent = title;
     messageEl.textContent = message;
     inputEl.classList.remove('hidden');
+    inputEl.setAttribute('name', `feedback_input_${noHistorySuffix}`);
+    inputEl.setAttribute('autocomplete', 'off');
+    inputEl.setAttribute('autocorrect', 'off');
+    inputEl.setAttribute('autocapitalize', 'off');
+    inputEl.setAttribute('spellcheck', 'false');
     inputEl.placeholder = placeholder;
     inputEl.value = defaultValue;
     cancelBtn.textContent = cancelLabel;

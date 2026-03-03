@@ -10,17 +10,30 @@ initThemeIcon();
 const state = {
   profile: null,
   demandas: [],
-  sigaRegistros: []
+  sigaRegistros: [],
+  webconfRegistros: [],
+  webconfDraft: {
+    qualWebconferencia: '',
+    data: '',
+    horario: '',
+    enteNaoCompareceu: '',
+    participants: []
+  }
 };
 
 const atividadesEl = document.getElementById('atividades');
 const demandasEl = document.getElementById('demandas');
 const sigaBodyEl = document.getElementById('registros-siga-body');
 const sigaBlockEl = document.getElementById('siga-block');
+const webconfBlockEl = document.getElementById('webconf-block');
+const webconfBodyEl = document.getElementById('webconf-body');
+const modalWebconfWizard = document.getElementById('modal-webconf-wizard');
+const modalWebconfParticipantes = document.getElementById('modal-webconf-participantes');
 const msgEl = document.getElementById('msg');
 const seenDemandasKey = `seenDemandas:${user.nome}`;
 const SILENT_REFRESH_MS = 3000;
 let refreshInFlight = false;
+let webconfStep = 1;
 const WHATSAPP_ASSUNTOS = [
   'Atendimento',
   'Atuária',
@@ -64,6 +77,14 @@ const WHATSAPP_ASSUNTOS = [
 
 function showMsg(text) {
   msgEl.textContent = text || '';
+}
+
+function openModal(el) {
+  if (el) el.classList.add('open');
+}
+
+function closeModal(el) {
+  if (el) el.classList.remove('open');
 }
 
 function isEnabled(value) {
@@ -234,6 +255,135 @@ function renderRegistrosSiga() {
   });
 }
 
+function renderWebconfRegistros() {
+  if (!webconfBlockEl || !webconfBodyEl) return;
+  if (!isEnabled(state.profile?.flags?.Webconferencia)) {
+    webconfBlockEl.classList.add('hidden');
+    return;
+  }
+
+  webconfBlockEl.classList.remove('hidden');
+  webconfBodyEl.innerHTML = '';
+  if (!state.webconfRegistros.length) {
+    webconfBodyEl.innerHTML = '<tr><td colspan=\"8\">Nenhum registro de webconferência encontrado.</td></tr>';
+    return;
+  }
+
+  state.webconfRegistros.forEach((row) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${row.id || '-'}</td>
+      <td>${row.qualWebconferencia || '-'}</td>
+      <td>${row.data || '-'}</td>
+      <td>${row.horario || '-'}</td>
+      <td>
+        <div class=\"webconf-attendente\">
+          <img data-webconf-avatar=\"${row.atendente || ''}\" alt=\"${row.atendente || 'Atendente'}\" />
+          <span>${row.atendente || '-'}</span>
+        </div>
+      </td>
+      <td>${row.enteNaoCompareceu || '-'}</td>
+      <td>${Number(row.quantidadeAtendida || 0)}</td>
+      <td><button class=\"btn-soft\" data-webconf-participantes=\"${row.id}\">Ver</button></td>
+    `;
+    webconfBodyEl.appendChild(tr);
+  });
+
+  webconfBodyEl.querySelectorAll('[data-webconf-avatar]').forEach((img) => {
+    attachAvatar(img, img.dataset.webconfAvatar || '');
+  });
+
+  webconfBodyEl.querySelectorAll('[data-webconf-participantes]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const row = state.webconfRegistros.find((r) => r.id === btn.dataset.webconfParticipantes);
+      document.getElementById('webconf-participantes-preview').textContent = row?.participantes || 'Sem participantes';
+      openModal(modalWebconfParticipantes);
+    });
+  });
+}
+
+function resetWebconfDraft() {
+  state.webconfDraft = {
+    qualWebconferencia: '',
+    data: '',
+    horario: '',
+    enteNaoCompareceu: '',
+    participants: []
+  };
+}
+
+function syncWebconfParticipantTable() {
+  const body = document.getElementById('webconf-participantes-body');
+  body.innerHTML = '';
+  if (!state.webconfDraft.participants.length) {
+    body.innerHTML = '<tr><td colspan=\"5\">Nenhum participante adicionado.</td></tr>';
+    return;
+  }
+
+  state.webconfDraft.participants.forEach((p, idx) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${idx + 1}</td>
+      <td>${p.nome || '-'}</td>
+      <td>${p.cpf || '-'}</td>
+      <td>${p.municipio || '-'}</td>
+      <td>${p.uf || '-'}</td>
+    `;
+    body.appendChild(tr);
+  });
+}
+
+function setWebconfStep(step) {
+  webconfStep = step;
+  [1, 2, 3].forEach((n) => {
+    const el = document.getElementById(`webconf-step-${n}`);
+    if (!el) return;
+    el.classList.toggle('hidden', n !== step);
+  });
+}
+
+function toDigits(value) {
+  return String(value || '').replace(/\D/g, '');
+}
+
+function openWebconfWizard() {
+  resetWebconfDraft();
+  setWebconfStep(1);
+  document.getElementById('webconf-qual').value = '';
+  document.getElementById('webconf-data').value = '';
+  document.getElementById('webconf-horario').value = '';
+  document.getElementById('webconf-atendente').value = user.nome;
+  attachAvatar(document.getElementById('webconf-atendente-avatar'), user.nome);
+  document.getElementById('webconf-ente').value = '';
+  document.getElementById('webconf-p-nome').value = '';
+  document.getElementById('webconf-p-cpf').value = '';
+  document.getElementById('webconf-p-municipio').value = '';
+  document.getElementById('webconf-p-uf').value = '';
+  document.getElementById('webconf-p-descricao').value = '';
+  const noHistorySuffix = String(Date.now());
+  [
+    { id: 'webconf-qual', name: `webconf_qual_${noHistorySuffix}` },
+    { id: 'webconf-data', name: `webconf_data_${noHistorySuffix}` },
+    { id: 'webconf-horario', name: `webconf_horario_${noHistorySuffix}` },
+    { id: 'webconf-ente', name: `webconf_ente_${noHistorySuffix}` },
+    { id: 'webconf-p-nome', name: `webconf_part_nome_${noHistorySuffix}` },
+    { id: 'webconf-p-cpf', name: `webconf_part_cpf_${noHistorySuffix}` },
+    { id: 'webconf-p-municipio', name: `webconf_part_municipio_${noHistorySuffix}` },
+    { id: 'webconf-p-uf', name: `webconf_part_uf_${noHistorySuffix}` },
+    { id: 'webconf-p-descricao', name: `webconf_part_descricao_${noHistorySuffix}` }
+  ].forEach(({ id, name }) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.setAttribute('name', name);
+    el.setAttribute('autocomplete', 'off');
+    el.setAttribute('autocorrect', 'off');
+    el.setAttribute('autocapitalize', 'off');
+    el.setAttribute('spellcheck', 'false');
+  });
+  syncWebconfParticipantTable();
+  openModal(modalWebconfWizard);
+}
+
 async function updateStatus(id, status, rowIndex) {
   const demanda = state.demandas.find((d) => d.id === id);
   const isConcluding = status === 'Concluído';
@@ -354,18 +504,94 @@ function setupWhatsapp() {
   });
 }
 
+function setupWebconfWizard() {
+  const openBtn = document.getElementById('btn-open-webconf-modal');
+  const closeBtn = document.getElementById('btn-close-webconf-modal');
+  const closeParticipantesBtn = document.getElementById('btn-close-webconf-participantes');
+  if (!openBtn || !closeBtn || !closeParticipantesBtn) return;
+
+  openBtn.addEventListener('click', () => openWebconfWizard());
+  closeBtn.addEventListener('click', () => closeModal(modalWebconfWizard));
+  closeParticipantesBtn.addEventListener('click', () => closeModal(modalWebconfParticipantes));
+  modalWebconfWizard.addEventListener('click', (event) => {
+    if (event.target === modalWebconfWizard) closeModal(modalWebconfWizard);
+  });
+  modalWebconfParticipantes.addEventListener('click', (event) => {
+    if (event.target === modalWebconfParticipantes) closeModal(modalWebconfParticipantes);
+  });
+
+  document.getElementById('webconf-next-1').addEventListener('click', () => {
+    state.webconfDraft.qualWebconferencia = document.getElementById('webconf-qual').value.trim();
+    setWebconfStep(2);
+  });
+  document.getElementById('webconf-back-2').addEventListener('click', () => setWebconfStep(1));
+  document.getElementById('webconf-next-2').addEventListener('click', () => {
+    state.webconfDraft.data = document.getElementById('webconf-data').value.trim();
+    state.webconfDraft.horario = document.getElementById('webconf-horario').value.trim();
+    state.webconfDraft.enteNaoCompareceu = document.getElementById('webconf-ente').value.trim();
+    setWebconfStep(3);
+  });
+  document.getElementById('webconf-back-3').addEventListener('click', () => setWebconfStep(2));
+
+  document.getElementById('webconf-add-participante').addEventListener('click', () => {
+    state.webconfDraft.participants.push({
+      nome: document.getElementById('webconf-p-nome').value.trim(),
+      cpf: toDigits(document.getElementById('webconf-p-cpf').value),
+      municipio: document.getElementById('webconf-p-municipio').value.trim(),
+      uf: document.getElementById('webconf-p-uf').value.trim().toUpperCase(),
+      descricao: document.getElementById('webconf-p-descricao').value.trim()
+    });
+    document.getElementById('webconf-p-nome').value = '';
+    document.getElementById('webconf-p-cpf').value = '';
+    document.getElementById('webconf-p-municipio').value = '';
+    document.getElementById('webconf-p-uf').value = '';
+    document.getElementById('webconf-p-descricao').value = '';
+    syncWebconfParticipantTable();
+  });
+
+  document.getElementById('webconf-save').addEventListener('click', async () => {
+    state.webconfDraft.qualWebconferencia = document.getElementById('webconf-qual').value.trim();
+    state.webconfDraft.data = document.getElementById('webconf-data').value.trim();
+    state.webconfDraft.horario = document.getElementById('webconf-horario').value.trim();
+    state.webconfDraft.enteNaoCompareceu = document.getElementById('webconf-ente').value.trim();
+
+    try {
+      await runAction('registrar webconferência', 'Salvando registro...', 'salvo', 'Registro de webconferência salvo', async () => {
+        await api('/api/webconferencia/registros', {
+          method: 'POST',
+          body: JSON.stringify({
+            qualWebconferencia: state.webconfDraft.qualWebconferencia,
+            data: state.webconfDraft.data,
+            horario: state.webconfDraft.horario,
+            enteNaoCompareceu: state.webconfDraft.enteNaoCompareceu,
+            participants: state.webconfDraft.participants
+          })
+        });
+        closeModal(modalWebconfWizard);
+        await loadData();
+        renderWebconfRegistros();
+        renderRegistrosSiga();
+      });
+    } catch (_e) {}
+  });
+}
+
 async function loadData() {
   const started = performance.now();
   const profile = await api('/api/profile/me');
-  const requests = [api(`/api/demandas?atendente=${encodeURIComponent(user.nome)}`)];
-  if (isEnabled(profile?.flags?.Registrosiga)) {
-    requests.push(api('/api/demandas/registros-siga'));
-  }
-  const [demandas, siga] = await Promise.all(requests);
+  const demandasPromise = api(`/api/demandas?atendente=${encodeURIComponent(user.nome)}`);
+  const sigaPromise = isEnabled(profile?.flags?.Registrosiga)
+    ? api('/api/demandas/registros-siga')
+    : Promise.resolve({ registros: [] });
+  const webconfPromise = isEnabled(profile?.flags?.Webconferencia)
+    ? api('/api/webconferencia/registros')
+    : Promise.resolve({ registros: [] });
+  const [demandas, siga, webconf] = await Promise.all([demandasPromise, sigaPromise, webconfPromise]);
 
   state.profile = profile;
   state.demandas = demandas.demandas || [];
   state.sigaRegistros = siga?.registros || [];
+  state.webconfRegistros = webconf?.registros || [];
 
   const currentIds = state.demandas.map((d) => d.id);
   const previousRaw = localStorage.getItem(seenDemandasKey);
@@ -401,6 +627,7 @@ async function refreshSilently() {
     renderAtividades();
     renderDemandas();
     renderRegistrosSiga();
+    renderWebconfRegistros();
   } catch (error) {
     console.error('[Colaborador] polling erro:', error.message);
   } finally {
@@ -415,7 +642,9 @@ async function refreshSilently() {
       renderAtividades();
       renderDemandas();
       renderRegistrosSiga();
+      renderWebconfRegistros();
       setupWhatsapp();
+      setupWebconfWizard();
     });
 
     setInterval(() => {

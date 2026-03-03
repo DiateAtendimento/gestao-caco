@@ -1366,6 +1366,28 @@ img {
   opacity: 0.44;
 }
 
+.webconf-attendente {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.webconf-attendente img {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.webconf-preview {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
 /* Feedback and lotties */
 .status-dot {
   display: inline-block;

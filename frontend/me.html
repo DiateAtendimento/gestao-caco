@@ -82,6 +82,32 @@
         </div>
       </article>
 
+      <article id="webconf-block" class="section-shell hidden">
+        <div class="section-title">Registros Webconferência</div>
+        <div class="section-content">
+          <div class="table-shell demand-table">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Qual a Webconferência</th>
+                  <th>Data</th>
+                  <th>Horário</th>
+                  <th>Atendente</th>
+                  <th>Ente não compareceu ao agendamento</th>
+                  <th>Quantidade atendida</th>
+                  <th>Participantes</th>
+                </tr>
+              </thead>
+              <tbody id="webconf-body"></tbody>
+            </table>
+          </div>
+          <div class="form-actions">
+            <button id="btn-open-webconf-modal" class="btn-main" type="button">Criar novo registro</button>
+          </div>
+        </div>
+      </article>
+
       <article class="section-shell">
         <div class="section-title">Demandas Atribuídas</div>
         <div class="section-content">
@@ -107,6 +133,81 @@
       </button>
     </section>
   </main>
+
+  <div id="modal-webconf-wizard" class="modal-overlay">
+    <div class="modal">
+      <header class="modal-header">Registros Webconferência
+        <button id="btn-close-webconf-modal" class="modal-close-x" type="button">×</button>
+      </header>
+      <div class="modal-content">
+        <section id="webconf-step-1" class="webconf-step">
+          <h3>Qual a Webconferência?</h3>
+          <div class="form-row">
+            <input id="webconf-qual" placeholder="Digite o assunto da webconferência" autocomplete="off" />
+          </div>
+          <div class="form-actions">
+            <button id="webconf-next-1" class="btn-main" type="button">Próximo</button>
+          </div>
+        </section>
+
+        <section id="webconf-step-2" class="webconf-step hidden">
+          <h3>Dados gerais</h3>
+          <div class="form-row"><input id="webconf-data" placeholder="Data (dd/mm/aaaa)" autocomplete="off" /></div>
+          <div class="form-row"><input id="webconf-horario" placeholder="Horário (hh:mm)" autocomplete="off" /></div>
+          <div class="webconf-attendente">
+            <img id="webconf-atendente-avatar" alt="Atendente" />
+            <input id="webconf-atendente" readonly />
+          </div>
+          <div class="form-row"><textarea id="webconf-ente" placeholder="Ente não compareceu ao agendamento"></textarea></div>
+          <div class="form-actions">
+            <button id="webconf-back-2" class="btn-soft" type="button">Voltar</button>
+            <button id="webconf-next-2" class="btn-main" type="button">Próximo</button>
+          </div>
+        </section>
+
+        <section id="webconf-step-3" class="webconf-step hidden">
+          <h3>Quantidade atendida</h3>
+          <div class="form-row"><input id="webconf-p-nome" placeholder="Nome" autocomplete="off" /></div>
+          <div class="form-row"><input id="webconf-p-cpf" placeholder="CPF (somente números)" autocomplete="off" /></div>
+          <div class="form-row"><input id="webconf-p-municipio" placeholder="Município" autocomplete="off" /></div>
+          <div class="form-row"><input id="webconf-p-uf" placeholder="UF" autocomplete="off" /></div>
+          <div class="form-row"><textarea id="webconf-p-descricao" placeholder="Descrição (opcional)" autocomplete="off"></textarea></div>
+          <div class="form-actions">
+            <button id="webconf-add-participante" class="btn-soft" type="button">Adicionar participante</button>
+          </div>
+          <div class="table-shell">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Nome</th>
+                  <th>CPF</th>
+                  <th>Município</th>
+                  <th>UF</th>
+                </tr>
+              </thead>
+              <tbody id="webconf-participantes-body"></tbody>
+            </table>
+          </div>
+          <div class="form-actions">
+            <button id="webconf-back-3" class="btn-soft" type="button">Voltar</button>
+            <button id="webconf-save" class="btn-main" type="button">Registrar</button>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-webconf-participantes" class="modal-overlay">
+    <div class="modal small">
+      <header class="modal-header">Participantes
+        <button id="btn-close-webconf-participantes" class="modal-close-x" type="button">×</button>
+      </header>
+      <div class="modal-content">
+        <pre id="webconf-participantes-preview" class="webconf-preview"></pre>
+      </div>
+    </div>
+  </div>
 
   <script type="module" src="./js/me.js"></script>
 </body>

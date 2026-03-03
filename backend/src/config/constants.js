@@ -1,5 +1,6 @@
 ﻿const PROFILE_SHEET = 'Perfil';
 const DEMANDS_SHEET = 'Registro de Demandas';
+const WEBCONF_SHEET = 'Reg webconferencia';
 
 const PROFILE_HEADERS = [
   'Atendente',
@@ -48,6 +49,17 @@ const DEMANDS_HEADERS = [
   'Origem'
 ];
 
+const WEBCONF_HEADERS = [
+  'ID',
+  'Qual a Webconferencia',
+  'Data',
+  'Horário',
+  'Atendente',
+  'Ente não compareceu ao agendamento',
+  'Quantidade atendida',
+  'Participantes'
+];
+
 const STATUS = {
   NAO_INICIADA: 'Não iniciada',
   EM_ANDAMENTO: 'Em andamento',
@@ -59,10 +71,13 @@ const DASHBOARD_URL = 'https://docs.google.com/spreadsheets/d/16k4heNHfta1LBhSjb
 module.exports = {
   PROFILE_SHEET,
   DEMANDS_SHEET,
+  WEBCONF_SHEET,
   PROFILE_HEADERS,
   PROFILE_NON_ACTIVITY_HEADERS,
   ACTIVITY_COLUMNS,
   DEMANDS_HEADERS,
+  WEBCONF_HEADERS,
   STATUS,
   DASHBOARD_URL
 };
+
