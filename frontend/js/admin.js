@@ -603,13 +603,12 @@ function renderDemandasRegistros() {
   }
 
   const termo = normalizeText(texto);
+  const hasDateFilter = !!(String(dataInicio || '').trim() || String(dataFim || '').trim());
+  const hasTextFilter = !!termo;
+
   const filtered = state.demandasRegistros.filter((row) => {
-    if ((dataInicio || dataFim) && !isWithinDateRange(row.dataRegistro, row.finalizado, dataInicio, dataFim)) {
-      return false;
-    }
-    if (!termo) {
-      return true;
-    }
+    const matchesDate = !hasDateFilter || isWithinDateRange(row.dataRegistro, row.finalizado, dataInicio, dataFim);
+
     const bag = [
       row.id,
       row.assunto,
@@ -621,7 +620,10 @@ function renderDemandasRegistros() {
       row.finalizadoPor,
       row.origem
     ].map(normalizeText).join(' ');
-    return bag.includes(termo);
+    const matchesText = !hasTextFilter || bag.includes(termo);
+
+    // Se ambos forem informados, os dois precisam casar.
+    return matchesDate && matchesText;
   });
 
   demandasRegistrosBody.innerHTML = '';
