@@ -70,6 +70,27 @@ function normalizeText(value) {
   return String(value || '').trim().toLowerCase();
 }
 
+function escapeHtml(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function escapeRegex(value) {
+  return String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function highlightMatch(value, term) {
+  const raw = String(value ?? '');
+  const cleanTerm = String(term || '').trim();
+  if (!cleanTerm) return escapeHtml(raw || '-');
+  const pattern = new RegExp(`(${escapeRegex(cleanTerm)})`, 'gi');
+  return escapeHtml(raw || '-').replace(pattern, '<mark class="search-hit">$1</mark>');
+}
+
 function parseBrDate(value) {
   const text = String(value || '').trim();
   const match = text.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
@@ -81,6 +102,33 @@ function parseBrDate(value) {
   if (Number.isNaN(date.getTime())) return null;
   date.setHours(0, 0, 0, 0);
   return date;
+}
+
+function formatDateBr(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return '-';
+
+  const br = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (br) {
+    const day = String(Number(br[1])).padStart(2, '0');
+    const month = String(Number(br[2])).padStart(2, '0');
+    return `${day}/${month}/${br[3]}`;
+  }
+
+  const iso = raw.match(/^(\d{4})-(\d{2})-(\d{2})(?:T.*)?$/);
+  if (iso) {
+    return `${iso[3]}/${iso[2]}/${iso[1]}`;
+  }
+
+  const parsed = new Date(raw);
+  if (!Number.isNaN(parsed.getTime())) {
+    const day = String(parsed.getDate()).padStart(2, '0');
+    const month = String(parsed.getMonth() + 1).padStart(2, '0');
+    const year = parsed.getFullYear();
+    return `${day}/${month}/${year}`;
+  }
+
+  return raw;
 }
 
 function parseInputDate(value) {
@@ -468,6 +516,8 @@ function renderHistoricoSelecionado() {
 
   historico.forEach((row) => {
     const canReopen = Number(row.demandaReabertaQtd || 0) < 1;
+    const dataAtribuicao = formatDateBr(row.dataRegistro);
+    const dataConclusao = parseBrDate(row.finalizado) ? formatDateBr(row.finalizado) : (row.finalizado || '-');
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${row.id}</td>
@@ -477,8 +527,8 @@ function renderHistoricoSelecionado() {
       <td>${row.medidasAdotadas || '-'}</td>
       <td>${row.motivoReabertura || '-'}</td>
       <td>${row.respostaFinal || '-'}</td>
-      <td>${row.dataRegistro || '-'}</td>
-      <td>${row.finalizado || '-'}</td>
+      <td>${dataAtribuicao}</td>
+      <td>${dataConclusao}</td>
     `;
     body.appendChild(tr);
   });
@@ -571,17 +621,19 @@ function renderDemandasRegistros() {
   }
 
   filtered.forEach((row) => {
+    const dataRegistro = formatDateBr(row.dataRegistro);
+    const finalizado = parseBrDate(row.finalizado) ? formatDateBr(row.finalizado) : (row.finalizado || '-');
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td>${row.id || '-'}</td>
-      <td>${row.assunto || '-'}</td>
-      <td>${row.descricao || '-'}</td>
-      <td>${row.dataRegistro || '-'}</td>
-      <td>${row.finalizado || '-'}</td>
-      <td>${row.atribuidaPara || '-'}</td>
-      <td>${row.registradorPor || '-'}</td>
-      <td>${row.finalizadoPor || '-'}</td>
-      <td>${row.origem || '-'}</td>
+      <td>${highlightMatch(row.id || '-', termo)}</td>
+      <td>${highlightMatch(row.assunto || '-', termo)}</td>
+      <td>${highlightMatch(row.descricao || '-', termo)}</td>
+      <td>${highlightMatch(dataRegistro, termo)}</td>
+      <td>${highlightMatch(finalizado, termo)}</td>
+      <td>${highlightMatch(row.atribuidaPara || '-', termo)}</td>
+      <td>${highlightMatch(row.registradorPor || '-', termo)}</td>
+      <td>${highlightMatch(row.finalizadoPor || '-', termo)}</td>
+      <td>${highlightMatch(row.origem || '-', termo)}</td>
     `;
     demandasRegistrosBody.appendChild(tr);
   });

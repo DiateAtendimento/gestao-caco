@@ -1267,6 +1267,13 @@ img {
   color: #5f7490;
 }
 
+.search-hit {
+  background: #ffe66b;
+  color: #2d2d2d;
+  padding: 0 2px;
+  border-radius: 3px;
+}
+
 #data-search-wrap {
   display: grid;
   grid-template-columns: 1fr 1fr;
