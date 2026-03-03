@@ -11,7 +11,7 @@ const {
   readSheet,
   appendMappedRow,
   writeHeadersIfEmpty,
-  updateMappedRow
+  updateMappedRowsBatch
 } = require('../services/sheetsService');
 const { ensureDemandsMetaColumn, demandsRowTemplate } = require('../services/demandService');
 const { normalizeText, equalsIgnoreCase } = require('../utils/text');
@@ -124,12 +124,19 @@ router.get('/registros', async (req, res) => {
 
     await writeHeadersIfEmpty(WEBCONF_SHEET, WEBCONF_HEADERS);
     const { rows } = await readSheet(WEBCONF_SHEET);
+    const legacyRowsToPersist = [];
     for (const row of rows) {
       const currentId = String(row.ID || '').trim();
       if (currentId) continue;
       const legacyId = legacyWebconfId(row);
       row.ID = legacyId;
-      await updateMappedRow(WEBCONF_SHEET, row._rowIndex, row);
+      legacyRowsToPersist.push({
+        rowIndex: row._rowIndex,
+        data: row
+      });
+    }
+    if (legacyRowsToPersist.length) {
+      await updateMappedRowsBatch(WEBCONF_SHEET, legacyRowsToPersist);
     }
 
     const registros = rows

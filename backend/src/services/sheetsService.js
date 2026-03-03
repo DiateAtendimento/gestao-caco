@@ -112,6 +112,29 @@ async function updateMappedRow(sheetName, rowIndex, data) {
   invalidateSheetCache(sheetName);
 }
 
+async function updateMappedRowsBatch(sheetName, entries = []) {
+  if (!Array.isArray(entries) || !entries.length) return;
+
+  const { headers } = await readSheet(sheetName);
+  const data = entries
+    .filter((entry) => Number(entry?.rowIndex) >= 2 && entry?.data)
+    .map((entry) => ({
+      range: `${sheetName}!A${Number(entry.rowIndex)}`,
+      values: [headers.map((header) => entry.data[header] ?? '')]
+    }));
+
+  if (!data.length) return;
+
+  await sheets.spreadsheets.values.batchUpdate({
+    spreadsheetId: env.googleSheetId,
+    requestBody: {
+      valueInputOption: 'RAW',
+      data
+    }
+  });
+  invalidateSheetCache(sheetName);
+}
+
 async function deleteRow(sheetName, rowIndex) {
   const meta = await sheets.spreadsheets.get({
     spreadsheetId: env.googleSheetId
@@ -148,5 +171,6 @@ module.exports = {
   ensureColumn,
   appendMappedRow,
   updateMappedRow,
+  updateMappedRowsBatch,
   deleteRow
 };
