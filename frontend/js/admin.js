@@ -33,6 +33,7 @@ const modalNovoColab = document.getElementById('modal-novo-colab');
 const modalConfirmDelete = document.getElementById('modal-confirm-delete');
 const modalDemandasRegistros = document.getElementById('modal-demandas-registros');
 const demandasRegistrosBody = document.getElementById('tbody-demandas-registros');
+const demandasRegistrosCount = document.getElementById('demandas-registros-count');
 const dataSearchWrap = document.getElementById('data-search-wrap');
 const textSearchWrap = document.getElementById('text-search-wrap');
 const slotDataSearch = document.getElementById('slot-data-search');
@@ -68,6 +69,10 @@ function clearDemandasRegistrosInputs() {
   if (dataSearchStart) dataSearchStart.value = '';
   if (dataSearchEnd) dataSearchEnd.value = '';
   if (textSearchInput) textSearchInput.value = '';
+  if (demandasRegistrosCount) {
+    demandasRegistrosCount.textContent = '';
+    demandasRegistrosCount.classList.add('hidden');
+  }
   collapseDemandasRegistrosSearch();
 }
 
@@ -590,6 +595,10 @@ function renderDemandasRegistros() {
   const hasCriteria = !!(String(dataInicio || '').trim() || String(dataFim || '').trim() || String(texto || '').trim());
   if (!hasCriteria) {
     demandasRegistrosBody.innerHTML = '<tr><td colspan="9">Use a busca por data/período ou texto para listar resultados.</td></tr>';
+    if (demandasRegistrosCount) {
+      demandasRegistrosCount.textContent = '';
+      demandasRegistrosCount.classList.add('hidden');
+    }
     return;
   }
 
@@ -616,6 +625,16 @@ function renderDemandasRegistros() {
   });
 
   demandasRegistrosBody.innerHTML = '';
+  if (demandasRegistrosCount) {
+    if (termo) {
+      const total = filtered.length;
+      demandasRegistrosCount.textContent = `${total} resultado${total === 1 ? '' : 's'} encontrado${total === 1 ? '' : 's'}.`;
+      demandasRegistrosCount.classList.remove('hidden');
+    } else {
+      demandasRegistrosCount.textContent = '';
+      demandasRegistrosCount.classList.add('hidden');
+    }
+  }
   if (!filtered.length) {
     demandasRegistrosBody.innerHTML = '<tr><td colspan="9">Nenhum registro encontrado.</td></tr>';
     return;

@@ -1279,6 +1279,13 @@ img {
   border-radius: 3px;
 }
 
+.results-count {
+  margin: 4px 2px 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
 #data-search-wrap {
   display: grid;
   grid-template-columns: 1fr 1fr;
