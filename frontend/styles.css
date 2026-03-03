@@ -430,6 +430,7 @@ img {
   overflow: hidden;
   background: var(--card);
   box-shadow: 0 10px 22px rgba(52, 91, 152, 0.14);
+  cursor: pointer;
   transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 260ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
