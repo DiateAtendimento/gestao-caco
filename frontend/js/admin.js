@@ -59,6 +59,13 @@ function showMsg(text) {
 function openModal(el) { el.classList.add('open'); }
 function closeModal(el) { el.classList.remove('open'); }
 
+function collapseDemandasRegistrosSearch() {
+  if (dataSearchWrap) dataSearchWrap.classList.remove('open');
+  if (textSearchWrap) textSearchWrap.classList.remove('open');
+  if (slotDataSearch) slotDataSearch.classList.remove('is-open');
+  if (slotTextSearch) slotTextSearch.classList.remove('is-open');
+}
+
 function normalizeText(value) {
   return String(value || '').trim().toLowerCase();
 }
@@ -602,10 +609,7 @@ async function openDemandasRegistros() {
   if (dataSearchStart) dataSearchStart.value = '';
   if (dataSearchEnd) dataSearchEnd.value = '';
   if (textSearchInput) textSearchInput.value = '';
-  if (dataSearchWrap) dataSearchWrap.classList.remove('open');
-  if (textSearchWrap) textSearchWrap.classList.remove('open');
-  if (slotDataSearch) slotDataSearch.classList.remove('is-open');
-  if (slotTextSearch) slotTextSearch.classList.remove('is-open');
+  collapseDemandasRegistrosSearch();
 
   try {
     renderDemandasRegistros();
@@ -704,7 +708,15 @@ document.getElementById('btn-close-delete').addEventListener('click', () => clos
 document.getElementById('btn-open-demandas-registros').addEventListener('click', () => {
   void openDemandasRegistros();
 });
-document.getElementById('btn-close-demandas-registros').addEventListener('click', () => closeModal(modalDemandasRegistros));
+document.getElementById('btn-close-demandas-registros').addEventListener('click', () => {
+  collapseDemandasRegistrosSearch();
+  closeModal(modalDemandasRegistros);
+});
+modalDemandasRegistros.addEventListener('click', (event) => {
+  if (event.target === modalDemandasRegistros) {
+    collapseDemandasRegistrosSearch();
+  }
+});
 document.getElementById('btn-toggle-historico-search').addEventListener('click', () => {
   historicoSearchWrap.classList.toggle('hidden');
   if (!historicoSearchWrap.classList.contains('hidden')) {
