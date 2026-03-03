@@ -76,6 +76,22 @@ function clearDemandasRegistrosInputs() {
   collapseDemandasRegistrosSearch();
 }
 
+function applyNoHistoryToDemandasRegistrosInputs() {
+  const suffix = String(Date.now());
+  [
+    { el: dataSearchStart, name: `dr_inicio_${suffix}` },
+    { el: dataSearchEnd, name: `dr_fim_${suffix}` },
+    { el: textSearchInput, name: `dr_texto_${suffix}` }
+  ].forEach(({ el, name }) => {
+    if (!el) return;
+    el.setAttribute('name', name);
+    el.setAttribute('autocomplete', 'off');
+    el.setAttribute('autocorrect', 'off');
+    el.setAttribute('autocapitalize', 'off');
+    el.setAttribute('spellcheck', 'false');
+  });
+}
+
 function clearNovoColabInputs() {
   const form = document.getElementById('form-novo-colab');
   if (form) form.reset();
@@ -678,6 +694,7 @@ async function loadDemandasRegistros() {
 
 async function openDemandasRegistros() {
   clearDemandasRegistrosInputs();
+  applyNoHistoryToDemandasRegistrosInputs();
   state.demandasRegistros = [];
   state.demandasRegistrosLoaded = false;
 

@@ -315,6 +315,19 @@ function setupWhatsapp() {
   const wppForm = document.getElementById('form-whatsapp');
   if (wppForm) wppForm.reset();
   const assuntoSelect = document.getElementById('wpp-assunto');
+  const descricaoInput = document.getElementById('wpp-descricao');
+  const noHistorySuffix = String(Date.now());
+  if (assuntoSelect) {
+    assuntoSelect.setAttribute('name', `wpp_assunto_${noHistorySuffix}`);
+    assuntoSelect.setAttribute('autocomplete', 'off');
+  }
+  if (descricaoInput) {
+    descricaoInput.setAttribute('name', `wpp_descricao_${noHistorySuffix}`);
+    descricaoInput.setAttribute('autocomplete', 'off');
+    descricaoInput.setAttribute('autocorrect', 'off');
+    descricaoInput.setAttribute('autocapitalize', 'off');
+    descricaoInput.setAttribute('spellcheck', 'false');
+  }
   if (assuntoSelect && !assuntoSelect.dataset.ready) {
     assuntoSelect.innerHTML = `
       <option value="">Selecione o assunto</option>
