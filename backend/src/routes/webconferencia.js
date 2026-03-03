@@ -10,7 +10,8 @@ const {
 const {
   readSheet,
   appendMappedRow,
-  writeHeadersIfEmpty
+  writeHeadersIfEmpty,
+  updateMappedRow
 } = require('../services/sheetsService');
 const { ensureDemandsMetaColumn, demandsRowTemplate } = require('../services/demandService');
 const { normalizeText, equalsIgnoreCase } = require('../utils/text');
@@ -66,6 +67,49 @@ function nextSequenceByPrefix(rows, prefix) {
   }, 0);
 }
 
+function parseBrDate(value) {
+  const text = String(value || '').trim();
+  const match = text.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!match) return null;
+  const day = Number(match[1]);
+  const month = Number(match[2]) - 1;
+  const year = Number(match[3]);
+  const parsed = new Date(year, month, day, 0, 0, 0, 0);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed;
+}
+
+function getFirstFilled(row, keys) {
+  for (const key of keys) {
+    const value = String(row?.[key] || '').trim();
+    if (value) return value;
+  }
+  return '';
+}
+
+function simpleHashBase36(input) {
+  let hash = 0;
+  for (let i = 0; i < input.length; i += 1) {
+    hash = ((hash << 5) - hash) + input.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash).toString(36).toUpperCase();
+}
+
+function legacyWebconfId(row) {
+  const seed = [
+    row._rowIndex,
+    row.Data,
+    row.Atendente,
+    row['Qual a Webconferencia'],
+    row['Qual a Webconferência'],
+    row['Qual Webconferência']
+  ].join('|');
+  const hash = simpleHashBase36(seed).padStart(6, '0').slice(0, 6);
+  const rowPart = String(row._rowIndex || 0).padStart(4, '0');
+  return `LG${hash}${rowPart}`;
+}
+
 async function hasWebconferencePermission(nome) {
   const { rows } = await readSheet(PROFILE_SHEET);
   const user = rows.find((row) => equalsIgnoreCase(row.Atendente, nome));
@@ -80,17 +124,42 @@ router.get('/registros', async (req, res) => {
 
     await writeHeadersIfEmpty(WEBCONF_SHEET, WEBCONF_HEADERS);
     const { rows } = await readSheet(WEBCONF_SHEET);
+    for (const row of rows) {
+      const currentId = String(row.ID || '').trim();
+      if (currentId) continue;
+      const legacyId = legacyWebconfId(row);
+      row.ID = legacyId;
+      await updateMappedRow(WEBCONF_SHEET, row._rowIndex, row);
+    }
 
-    const registros = rows.map((row) => ({
-      id: row.ID,
-      qualWebconferencia: row['Qual a Webconferencia'] || '',
-      data: row.Data || '',
-      horario: row['Horário'] || '',
-      atendente: row.Atendente || '',
-      enteNaoCompareceu: row['Ente não compareceu ao agendamento'] || '',
-      quantidadeAtendida: Number(row['Quantidade atendida'] || 0),
-      participantes: row.Participantes || ''
-    }));
+    const registros = rows
+      .map((row) => ({
+        id: String(row.ID || '').trim() || legacyWebconfId(row),
+        qualWebconferencia: getFirstFilled(row, [
+          'Qual a Webconferencia',
+          'Qual a Webconferência',
+          'Qual Webconferência',
+          'Qual Webconferencia',
+          'Webconferência',
+          'Webconferencia'
+        ]),
+        data: row.Data || '',
+        horario: row['Horário'] || row.Horario || '',
+        atendente: row.Atendente || '',
+        enteNaoCompareceu: row['Ente não compareceu ao agendamento'] || row['Ente nao compareceu ao agendamento'] || '',
+        quantidadeAtendida: Number(row['Quantidade atendida'] || 0),
+        participantes: row.Participantes || '',
+        rowIndex: Number(row._rowIndex || 0) || 0
+      }))
+      .sort((a, b) => {
+        const db = parseBrDate(b.data);
+        const da = parseBrDate(a.data);
+        if (db && da && db.getTime() !== da.getTime()) return db - da;
+        if (db && !da) return -1;
+        if (!db && da) return 1;
+        return (b.rowIndex || 0) - (a.rowIndex || 0);
+      })
+      .map(({ rowIndex, ...item }) => item);
 
     return res.json({ registros });
   } catch (error) {

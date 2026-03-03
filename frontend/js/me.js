@@ -269,7 +269,8 @@ function renderWebconfRegistros() {
     return;
   }
 
-  state.webconfRegistros.forEach((row) => {
+  state.webconfRegistros.forEach((row, index) => {
+    const webconfKey = row.id || `legacy-${index}`;
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${row.id || '-'}</td>
@@ -284,8 +285,9 @@ function renderWebconfRegistros() {
       </td>
       <td>${row.enteNaoCompareceu || '-'}</td>
       <td>${Number(row.quantidadeAtendida || 0)}</td>
-      <td><button class=\"btn-soft\" data-webconf-participantes=\"${row.id}\">Ver</button></td>
+      <td><button class=\"btn-soft\" data-webconf-participantes=\"${webconfKey}\">Ver</button></td>
     `;
+    tr.dataset.webconfKey = webconfKey;
     webconfBodyEl.appendChild(tr);
   });
 
@@ -295,7 +297,9 @@ function renderWebconfRegistros() {
 
   webconfBodyEl.querySelectorAll('[data-webconf-participantes]').forEach((btn) => {
     btn.addEventListener('click', () => {
-      const row = state.webconfRegistros.find((r) => r.id === btn.dataset.webconfParticipantes);
+      const tr = btn.closest('tr');
+      const key = tr?.dataset.webconfKey || btn.dataset.webconfParticipantes;
+      const row = state.webconfRegistros.find((r, idx) => (r.id || `legacy-${idx}`) === key);
       document.getElementById('webconf-participantes-preview').textContent = row?.participantes || 'Sem participantes';
       openModal(modalWebconfParticipantes);
     });
@@ -588,10 +592,25 @@ async function loadData() {
     : Promise.resolve({ registros: [] });
   const [demandas, siga, webconf] = await Promise.all([demandasPromise, sigaPromise, webconfPromise]);
 
+  const toTime = (dateText) => {
+    const match = String(dateText || '').trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (!match) return null;
+    const parsed = new Date(Number(match[3]), Number(match[2]) - 1, Number(match[1]));
+    return Number.isNaN(parsed.getTime()) ? null : parsed.getTime();
+  };
+  const sortByRecent = (items, dateKey) => [...items].sort((a, b) => {
+    const tb = toTime(b?.[dateKey]);
+    const ta = toTime(a?.[dateKey]);
+    if (tb !== null && ta !== null && tb !== ta) return tb - ta;
+    if (tb !== null && ta === null) return -1;
+    if (tb === null && ta !== null) return 1;
+    return String(b?.id || '').localeCompare(String(a?.id || ''), 'pt-BR');
+  });
+
   state.profile = profile;
-  state.demandas = demandas.demandas || [];
-  state.sigaRegistros = siga?.registros || [];
-  state.webconfRegistros = webconf?.registros || [];
+  state.demandas = sortByRecent(demandas.demandas || [], 'dataRegistro');
+  state.sigaRegistros = sortByRecent(siga?.registros || [], 'dataRegistro');
+  state.webconfRegistros = sortByRecent(webconf?.registros || [], 'data');
 
   const currentIds = state.demandas.map((d) => d.id);
   const previousRaw = localStorage.getItem(seenDemandasKey);

@@ -70,6 +70,29 @@ function isSigaQueueItem(row) {
   return true;
 }
 
+function parseBrDate(value) {
+  const text = normalizeText(value);
+  const match = text.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!match) return null;
+  const day = Number(match[1]);
+  const month = Number(match[2]) - 1;
+  const year = Number(match[3]);
+  const parsed = new Date(year, month, day, 0, 0, 0, 0);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed;
+}
+
+function sortByMostRecent(rows) {
+  return [...rows].sort((a, b) => {
+    const db = parseBrDate(b['Data do Registro']);
+    const da = parseBrDate(a['Data do Registro']);
+    if (db && da && db.getTime() !== da.getTime()) return db - da;
+    if (db && !da) return -1;
+    if (!db && da) return 1;
+    return (Number(b._rowIndex || 0) || 0) - (Number(a._rowIndex || 0) || 0);
+  });
+}
+
 router.get('/', async (req, res) => {
   try {
     const atendente = normalizeText(req.query.atendente);
@@ -82,7 +105,7 @@ router.get('/', async (req, res) => {
     }
 
     const { rows } = await readSheet(DEMANDS_SHEET);
-    const demandas = rows
+    const demandas = sortByMostRecent(rows)
       .filter((row) => equalsIgnoreCase(row['Atribuida para'], atendente))
       .map(mapDemanda);
 
@@ -197,7 +220,7 @@ router.get('/registros-siga', async (req, res) => {
     }
 
     const { rows } = await readSheet(DEMANDS_SHEET);
-    const pendentes = rows.filter(isSigaQueueItem).map(mapDemanda);
+    const pendentes = sortByMostRecent(rows).filter(isSigaQueueItem).map(mapDemanda);
     return res.json({ registros: pendentes });
   } catch (error) {
     return res.status(500).json({ error: error.message });

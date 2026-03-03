@@ -1388,6 +1388,16 @@ img {
   line-height: 1.45;
 }
 
+#webconf-block .table-shell {
+  max-height: 390px;
+  overflow-y: auto;
+}
+
+#modal-webconf-wizard #webconf-step-3 .table-shell {
+  max-height: 340px;
+  overflow-y: auto;
+}
+
 /* Feedback and lotties */
 .status-dot {
   display: inline-block;

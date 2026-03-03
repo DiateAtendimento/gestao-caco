@@ -52,6 +52,29 @@ function categoriaFromMeta(meta) {
   return 'Baixo';
 }
 
+function parseBrDate(value) {
+  const text = String(value || '').trim();
+  const match = text.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!match) return null;
+  const day = Number(match[1]);
+  const month = Number(match[2]) - 1;
+  const year = Number(match[3]);
+  const parsed = new Date(year, month, day, 0, 0, 0, 0);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed;
+}
+
+function sortByMostRecent(rows) {
+  return [...rows].sort((a, b) => {
+    const db = parseBrDate(b['Data do Registro']);
+    const da = parseBrDate(a['Data do Registro']);
+    if (db && da && db.getTime() !== da.getTime()) return db - da;
+    if (db && !da) return -1;
+    if (!db && da) return 1;
+    return (Number(b._rowIndex || 0) || 0) - (Number(a._rowIndex || 0) || 0);
+  });
+}
+
 router.get('/', async (req, res) => {
   try {
     await writeHeadersIfEmpty(DEMANDS_SHEET, DEMANDS_HEADERS);
@@ -63,7 +86,7 @@ router.get('/', async (req, res) => {
     const minhas = req.query.minhas === 'true';
     const historico = req.query.historico === 'true';
 
-    let filtered = rows;
+    let filtered = sortByMostRecent(rows);
     if (pendentes) {
       filtered = filtered.filter((row) => !normalizeText(row['Atribuida para']) && !isConcluido(row.Finalizado));
     }
