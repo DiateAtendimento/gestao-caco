@@ -17,14 +17,14 @@
             <img class="login-logo" src="./assets/icons/logo.svg" alt="Gestão" />
             <p class="login-desc">Coordenação de Atendimento<br />Colaborativo - CACO</p>
 
-            <form id="login-form">
+            <form id="login-form" autocomplete="off">
               <div class="login-form-row field-with-icon">
                 <i class="bi bi-person-fill"></i>
-                <input class="login-input" id="nome" placeholder="Nome" required />
+                <input class="login-input" id="nome" placeholder="Nome" required autocomplete="off" />
               </div>
               <div class="login-form-row pwd-wrap field-with-icon">
                 <i class="bi bi-lock-fill"></i>
-                <input class="login-input pwd-input" id="senha" type="password" placeholder="Senha" required />
+                <input class="login-input pwd-input" id="senha" type="password" placeholder="Senha" required autocomplete="new-password" />
                 <button id="toggle-senha" class="pwd-eye" type="button" aria-label="Mostrar senha">
                   <i class="bi bi-eye-fill"></i>
                 </button>
@@ -53,15 +53,15 @@
         <button id="btn-close-primeiro-acesso" class="modal-close-x" type="button">×</button>
       </header>
       <div class="modal-content">
-        <form id="form-primeiro-acesso">
+        <form id="form-primeiro-acesso" autocomplete="off">
           <div class="form-row">
-            <input id="pa-nome" placeholder="Digite seu primeiro nome" required />
+            <input id="pa-nome" placeholder="Digite seu primeiro nome" required autocomplete="off" />
           </div>
           <div class="form-row">
-            <input id="pa-senha" type="password" placeholder="Digite sua senha" required />
+            <input id="pa-senha" type="password" placeholder="Digite sua senha" required autocomplete="new-password" />
           </div>
           <div class="form-row">
-            <input id="pa-senha2" type="password" placeholder="Digite sua senha novamente" required />
+            <input id="pa-senha2" type="password" placeholder="Digite sua senha novamente" required autocomplete="new-password" />
           </div>
           <div class="form-actions">
             <button class="btn-main" type="submit">Confirmar</button>

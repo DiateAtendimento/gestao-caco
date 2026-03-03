@@ -18,7 +18,6 @@ const state = {
   selectedAtendente: null,
   dashboardUrl: 'https://docs.google.com/spreadsheets/d/16k4heNHfta1LBhSjbmeskHQY-NPAo41pqHwyZT8nSbM/edit?gid=0#gid=0',
   editingId: null,
-  historicoSearch: '',
   demandasRegistrosFilters: {
     dataInicio: '',
     dataFim: '',
@@ -34,8 +33,6 @@ const modalNovoColab = document.getElementById('modal-novo-colab');
 const modalConfirmDelete = document.getElementById('modal-confirm-delete');
 const modalDemandasRegistros = document.getElementById('modal-demandas-registros');
 const demandasRegistrosBody = document.getElementById('tbody-demandas-registros');
-const historicoSearchWrap = document.getElementById('historico-search-wrap');
-const historicoSearchInput = document.getElementById('historico-search-input');
 const dataSearchWrap = document.getElementById('data-search-wrap');
 const textSearchWrap = document.getElementById('text-search-wrap');
 const slotDataSearch = document.getElementById('slot-data-search');
@@ -64,6 +61,24 @@ function collapseDemandasRegistrosSearch() {
   if (textSearchWrap) textSearchWrap.classList.remove('open');
   if (slotDataSearch) slotDataSearch.classList.remove('is-open');
   if (slotTextSearch) slotTextSearch.classList.remove('is-open');
+}
+
+function clearDemandasRegistrosInputs() {
+  state.demandasRegistrosFilters = { dataInicio: '', dataFim: '', texto: '' };
+  if (dataSearchStart) dataSearchStart.value = '';
+  if (dataSearchEnd) dataSearchEnd.value = '';
+  if (textSearchInput) textSearchInput.value = '';
+  collapseDemandasRegistrosSearch();
+}
+
+function clearNovoColabInputs() {
+  const form = document.getElementById('form-novo-colab');
+  if (form) form.reset();
+}
+
+function clearSolicitacaoInputs() {
+  const desc = document.getElementById('sol-descricao');
+  if (desc) desc.value = '';
 }
 
 function normalizeText(value) {
@@ -495,26 +510,12 @@ async function loadSelectedSolicitacoes() {
 function renderHistoricoSelecionado() {
   const body = document.getElementById('tbody-historico');
   body.innerHTML = '';
-  const termo = normalizeText(state.historicoSearch);
-  const historico = !termo
-    ? state.selectedHistorico
-    : state.selectedHistorico.filter((row) => {
-      const bag = [
-        row.id,
-        row.area,
-        row.descricao,
-        row.finalizado,
-        row.dataRegistro
-      ].map(normalizeText).join(' ');
-      return bag.includes(termo);
-    });
-
-  if (!historico.length) {
+  if (!state.selectedHistorico.length) {
     body.innerHTML = '<tr><td colspan="9">Nenhuma demanda concluída para este atendente.</td></tr>';
     return;
   }
 
-  historico.forEach((row) => {
+  state.selectedHistorico.forEach((row) => {
     const canReopen = Number(row.demandaReabertaQtd || 0) < 1;
     const dataAtribuicao = formatDateBr(row.dataRegistro);
     const dataConclusao = parseBrDate(row.finalizado) ? formatDateBr(row.finalizado) : (row.finalizado || '-');
@@ -655,13 +656,9 @@ async function loadDemandasRegistros() {
 }
 
 async function openDemandasRegistros() {
-  state.demandasRegistrosFilters = { dataInicio: '', dataFim: '', texto: '' };
+  clearDemandasRegistrosInputs();
   state.demandasRegistros = [];
   state.demandasRegistrosLoaded = false;
-  if (dataSearchStart) dataSearchStart.value = '';
-  if (dataSearchEnd) dataSearchEnd.value = '';
-  if (textSearchInput) textSearchInput.value = '';
-  collapseDemandasRegistrosSearch();
 
   try {
     renderDemandasRegistros();
@@ -700,9 +697,6 @@ async function applyDemandasRegistrosSearch() {
 
 async function openConfig(nome) {
   state.selectedAtendente = nome;
-  state.historicoSearch = '';
-  historicoSearchInput.value = '';
-  historicoSearchWrap.classList.add('hidden');
   document.getElementById('cfg-user-name').textContent = nome;
 
   try {
@@ -754,30 +748,26 @@ document.getElementById('btn-logout').addEventListener('click', async () => {
 });
 
 document.getElementById('btn-close-config').addEventListener('click', () => closeModal(modalConfig));
-document.getElementById('btn-close-sol').addEventListener('click', () => closeModal(modalSolicitacao));
-document.getElementById('btn-close-colab').addEventListener('click', () => closeModal(modalNovoColab));
+document.getElementById('btn-close-sol').addEventListener('click', () => {
+  clearSolicitacaoInputs();
+  closeModal(modalSolicitacao);
+});
+document.getElementById('btn-close-colab').addEventListener('click', () => {
+  clearNovoColabInputs();
+  closeModal(modalNovoColab);
+});
 document.getElementById('btn-close-delete').addEventListener('click', () => closeModal(modalConfirmDelete));
 document.getElementById('btn-open-demandas-registros').addEventListener('click', () => {
   void openDemandasRegistros();
 });
 document.getElementById('btn-close-demandas-registros').addEventListener('click', () => {
-  collapseDemandasRegistrosSearch();
+  clearDemandasRegistrosInputs();
   closeModal(modalDemandasRegistros);
 });
 modalDemandasRegistros.addEventListener('click', (event) => {
   if (event.target === modalDemandasRegistros) {
-    collapseDemandasRegistrosSearch();
+    clearDemandasRegistrosInputs();
   }
-});
-document.getElementById('btn-toggle-historico-search').addEventListener('click', () => {
-  historicoSearchWrap.classList.toggle('hidden');
-  if (!historicoSearchWrap.classList.contains('hidden')) {
-    historicoSearchInput.focus();
-  }
-});
-historicoSearchInput.addEventListener('input', () => {
-  state.historicoSearch = historicoSearchInput.value || '';
-  renderHistoricoSelecionado();
 });
 document.getElementById('btn-toggle-data-search').addEventListener('click', () => {
   dataSearchWrap.classList.toggle('open');

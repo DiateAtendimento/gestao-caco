@@ -12,11 +12,14 @@ function invalidateSheetCache(sheetName) {
   sheetReadCache.delete(cacheKey(sheetName));
 }
 
-async function readSheet(sheetName) {
+async function readSheet(sheetName, options = {}) {
+  const forceRefresh = !!options.forceRefresh;
   const key = cacheKey(sheetName);
-  const cached = sheetReadCache.get(key);
-  if (cached && cached.expiresAt > Date.now()) {
-    return cached.value;
+  if (!forceRefresh) {
+    const cached = sheetReadCache.get(key);
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.value;
+    }
   }
 
   const range = `${sheetName}!A1:ZZ`;

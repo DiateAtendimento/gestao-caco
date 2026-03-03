@@ -24,6 +24,7 @@ function isConcluidoValue(value) {
 
 function mapDemanda(row) {
   return {
+    rowIndex: Number(row._rowIndex || 0) || null,
     id: row.ID,
     area: row.Assunto,
     descricao: row['Descrição'],
@@ -41,6 +42,17 @@ function mapDemanda(row) {
     origem: normalizeText(row.Origem).toLowerCase(),
     concluido: isConcluidoValue(row.Finalizado)
   };
+}
+
+function resolveDemandRow(rows, id, rowIndexInput) {
+  const parsedRowIndex = Number(rowIndexInput || 0);
+  if (Number.isInteger(parsedRowIndex) && parsedRowIndex >= 2) {
+    const byRow = rows.find((row) => Number(row._rowIndex) === parsedRowIndex);
+    if (byRow) {
+      return byRow;
+    }
+  }
+  return rows.find((row) => row.ID === id);
 }
 
 async function hasSigaPermission(nome) {
@@ -83,6 +95,7 @@ router.get('/', async (req, res) => {
 router.post('/:id/status', async (req, res) => {
   try {
     const id = normalizeText(req.params.id);
+    const rowIndex = req.body?.rowIndex;
     const statusInput = normalizeText(req.body?.status);
     const medidasAdotadas = normalizeText(req.body?.medidasAdotadas);
     const respostaFinal = normalizeText(req.body?.respostaFinal);
@@ -92,7 +105,7 @@ router.post('/:id/status', async (req, res) => {
     }
 
     const { rows } = await readSheet(DEMANDS_SHEET);
-    const item = rows.find((row) => row.ID === id);
+    const item = resolveDemandRow(rows, id, rowIndex);
     if (!item) {
       return res.status(404).json({ error: 'Demanda não encontrada' });
     }
@@ -198,8 +211,9 @@ router.post('/registros-siga/:id/registrado', async (req, res) => {
     }
 
     const id = normalizeText(req.params.id);
+    const rowIndex = req.body?.rowIndex;
     const { rows } = await readSheet(DEMANDS_SHEET);
-    const item = rows.find((row) => row.ID === id);
+    const item = resolveDemandRow(rows, id, rowIndex);
     if (!item) {
       return res.status(404).json({ error: 'Registro não encontrado' });
     }

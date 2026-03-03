@@ -47,7 +47,7 @@ function parseMeta(value) {
 }
 
 async function generateNextSolicitacaoId(assunto) {
-  const { rows } = await readSheet(DEMANDS_SHEET);
+  const { rows } = await readSheet(DEMANDS_SHEET, { forceRefresh: true });
   const year = currentYear();
   const prefix = assuntoPrefix(assunto);
   const expectedStart = `${prefix}`;

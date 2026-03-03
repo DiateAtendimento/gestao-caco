@@ -66,7 +66,7 @@
 
         <section id="tab-solicitacoes" class="tab-content">
           <h3>Solicitação</h3>
-          <div class="table-shell">
+          <div class="table-shell config-scroll-shell">
             <table class="table">
               <thead>
                 <tr>
@@ -91,16 +91,8 @@
         </section>
 
         <section id="tab-historico" class="tab-content">
-          <div class="tab-title-row">
-            <h3>Histórico de demandas</h3>
-            <button id="btn-toggle-historico-search" class="icon-search-toggle" type="button" title="Pesquisar histórico">
-              <img src="./assets/icons/lupa-pesquisa.svg" alt="Pesquisar" />
-            </button>
-          </div>
-          <div id="historico-search-wrap" class="search-inline-wrap hidden">
-            <input id="historico-search-input" type="text" placeholder="Pesquisar por ID, área, palavra-chave ou data de conclusão" />
-          </div>
-          <div class="table-shell">
+          <h3>Histórico de demandas</h3>
+          <div class="table-shell config-scroll-shell">
             <table class="table">
               <thead>
                 <tr>
@@ -129,12 +121,12 @@
         <button id="btn-close-sol" class="modal-close-x">×</button>
       </header>
       <div class="modal-content">
-        <form id="form-solicitacao">
+        <form id="form-solicitacao" autocomplete="off">
           <div class="form-row"><input id="sol-id" readonly /></div>
-          <div class="form-row"><select id="sol-area"></select></div>
-          <div class="form-row"><select id="sol-categoria" required></select></div>
-          <div class="form-row"><select id="sol-meta"></select></div>
-          <div class="form-row"><textarea id="sol-descricao" placeholder="Descrição" required></textarea></div>
+          <div class="form-row"><select id="sol-area" autocomplete="off"></select></div>
+          <div class="form-row"><select id="sol-categoria" required autocomplete="off"></select></div>
+          <div class="form-row"><select id="sol-meta" autocomplete="off"></select></div>
+          <div class="form-row"><textarea id="sol-descricao" placeholder="Descrição" required autocomplete="off"></textarea></div>
           <div class="form-actions">
             <button class="btn-main" type="submit">Salvar</button>
           </div>
@@ -149,11 +141,11 @@
         <button id="btn-close-colab" class="modal-close-x">×</button>
       </header>
       <div class="modal-content">
-        <form id="form-novo-colab">
-          <div class="form-row"><input id="colab-nome" placeholder="Nome" required /></div>
-          <div class="form-row"><input id="colab-ramal" placeholder="Ramal" required /></div>
+        <form id="form-novo-colab" autocomplete="off">
+          <div class="form-row"><input id="colab-nome" placeholder="Nome" required autocomplete="off" /></div>
+          <div class="form-row"><input id="colab-ramal" placeholder="Ramal" required autocomplete="off" /></div>
           <div class="form-row">
-            <select id="colab-genero">
+            <select id="colab-genero" autocomplete="off">
               <option value="masculino">Masculino</option>
               <option value="feminino">Feminino</option>
             </select>
@@ -196,8 +188,8 @@
               </button>
             </div>
             <div id="data-search-wrap" class="search-inline-wrap search-expand">
-              <input id="data-search-start" type="text" placeholder="Início" />
-              <input id="data-search-end" type="text" placeholder="Fim" />
+              <input id="data-search-start" type="text" placeholder="Início" autocomplete="off" />
+              <input id="data-search-end" type="text" placeholder="Fim" autocomplete="off" />
             </div>
           </div>
           <div id="slot-text-search" class="search-slot">
@@ -208,7 +200,7 @@
               </button>
             </div>
             <div id="text-search-wrap" class="search-inline-wrap search-expand">
-              <input id="text-search-input" type="text" placeholder="Palavra chave, assunto, ID, etc..." />
+              <input id="text-search-input" type="text" placeholder="Palavra chave, assunto, ID, etc..." autocomplete="off" />
             </div>
           </div>
         </div>

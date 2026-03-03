@@ -9,8 +9,13 @@ function openPrimeiroAcesso() {
 }
 
 function closePrimeiroAcesso() {
+  const form = document.getElementById('form-primeiro-acesso');
+  if (form) form.reset();
   document.getElementById('modal-primeiro-acesso').classList.remove('open');
 }
+
+const loginForm = document.getElementById('login-form');
+if (loginForm) loginForm.reset();
 
 document.getElementById('toggle-senha').addEventListener('click', () => {
   const senha = document.getElementById('senha');

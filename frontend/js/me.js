@@ -163,8 +163,8 @@ function renderDemandas() {
       <td>
         <div class="status-actions">
           ${noteBtn}
-          <button class="btn-status andamento" data-start="${d.id}" type="button">Em andamento</button>
-          <button class="btn-status concluido" data-done="${d.id}" type="button">Concluído</button>
+          <button class="btn-status andamento" data-start="${d.id}" data-row-index="${d.rowIndex || ''}" type="button">Em andamento</button>
+          <button class="btn-status concluido" data-done="${d.id}" data-row-index="${d.rowIndex || ''}" type="button">Concluído</button>
         </div>
       </td>
     `;
@@ -172,10 +172,10 @@ function renderDemandas() {
   });
 
   demandasEl.querySelectorAll('[data-start]').forEach((btn) => {
-    btn.addEventListener('click', () => updateStatus(btn.dataset.start, 'Em andamento'));
+    btn.addEventListener('click', () => updateStatus(btn.dataset.start, 'Em andamento', btn.dataset.rowIndex));
   });
   demandasEl.querySelectorAll('[data-done]').forEach((btn) => {
-    btn.addEventListener('click', () => updateStatus(btn.dataset.done, 'Concluído'));
+    btn.addEventListener('click', () => updateStatus(btn.dataset.done, 'Concluído', btn.dataset.rowIndex));
   });
   demandasEl.querySelectorAll('[data-note]').forEach((btn) => {
     btn.addEventListener('click', async () => {
@@ -224,17 +224,17 @@ function renderRegistrosSiga() {
       <td>${d.area}</td>
       <td>${d.dataRegistro || '-'}</td>
       <td>${d.descricao}</td>
-      <td><button class="btn-status concluido" data-siga="${d.id}" type="button">Registrado</button></td>
+      <td><button class="btn-status concluido" data-siga="${d.id}" data-row-index="${d.rowIndex || ''}" type="button">Registrado</button></td>
     `;
     sigaBodyEl.appendChild(tr);
   });
 
   sigaBodyEl.querySelectorAll('[data-siga]').forEach((btn) => {
-    btn.addEventListener('click', () => registrarSiga(btn.dataset.siga));
+    btn.addEventListener('click', () => registrarSiga(btn.dataset.siga, btn.dataset.rowIndex));
   });
 }
 
-async function updateStatus(id, status) {
+async function updateStatus(id, status, rowIndex) {
   const demanda = state.demandas.find((d) => d.id === id);
   const isConcluding = status === 'Concluído';
   const isReopened = Number(demanda?.demandaReabertaQtd || 0) >= 1;
@@ -280,6 +280,7 @@ async function updateStatus(id, status) {
         method: 'POST',
         body: JSON.stringify({
           status,
+          rowIndex: Number(rowIndex || 0) || null,
           medidasAdotadas: String(medidasAdotadas).trim(),
           respostaFinal: String(respostaFinal).trim()
         })
@@ -290,11 +291,12 @@ async function updateStatus(id, status) {
   } catch (_e) {}
 }
 
-async function registrarSiga(id) {
+async function registrarSiga(id, rowIndex) {
   try {
     await runAction('registrar no SIGA', 'Finalizando registro...', 'salvo', 'Registro finalizado', async () => {
       await api(`/api/demandas/registros-siga/${encodeURIComponent(id)}/registrado`, {
-        method: 'POST'
+        method: 'POST',
+        body: JSON.stringify({ rowIndex: Number(rowIndex || 0) || null })
       });
       await loadData();
       renderRegistrosSiga();
@@ -310,6 +312,8 @@ function setupWhatsapp() {
   }
 
   block.classList.remove('hidden');
+  const wppForm = document.getElementById('form-whatsapp');
+  if (wppForm) wppForm.reset();
   const assuntoSelect = document.getElementById('wpp-assunto');
   if (assuntoSelect && !assuntoSelect.dataset.ready) {
     assuntoSelect.innerHTML = `
@@ -339,16 +343,12 @@ function setupWhatsapp() {
 
 async function loadData() {
   const started = performance.now();
-  const requests = [
-    api('/api/profile/me'),
-    api(`/api/demandas?atendente=${encodeURIComponent(user.nome)}`)
-  ];
-
-  if (isEnabled(state.profile?.flags?.Registrosiga) || !state.profile) {
-    requests.push(api('/api/demandas/registros-siga').catch(() => ({ registros: [] })));
+  const profile = await api('/api/profile/me');
+  const requests = [api(`/api/demandas?atendente=${encodeURIComponent(user.nome)}`)];
+  if (isEnabled(profile?.flags?.Registrosiga)) {
+    requests.push(api('/api/demandas/registros-siga'));
   }
-
-  const [profile, demandas, siga] = await Promise.all(requests);
+  const [demandas, siga] = await Promise.all(requests);
 
   state.profile = profile;
   state.demandas = demandas.demandas || [];

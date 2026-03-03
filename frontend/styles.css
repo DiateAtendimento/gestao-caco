@@ -840,6 +840,11 @@ img {
   padding: 8px;
 }
 
+#modal-config .config-scroll-shell {
+  max-height: 420px;
+  overflow-y: auto;
+}
+
 .table {
   width: 100%;
   border-collapse: collapse;
