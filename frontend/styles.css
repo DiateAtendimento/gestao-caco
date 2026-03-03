@@ -1198,6 +1198,25 @@ img {
   margin: 0;
 }
 
+#modal-demandas-registros .modal {
+  width: min(1280px, 96vw);
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+}
+
+#modal-demandas-registros .modal-content {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+#modal-demandas-registros .table-shell {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
 .activity-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
@@ -1546,6 +1565,11 @@ img {
 
   .search-toolbar {
     grid-template-columns: auto 1fr;
+  }
+
+  #modal-demandas-registros .modal {
+    width: min(96vw, 980px);
+    max-height: 90vh;
   }
 
   .me-logout {

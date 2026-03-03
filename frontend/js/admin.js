@@ -12,6 +12,7 @@ const state = {
   selectedSolicitacoes: [],
   selectedHistorico: [],
   demandasRegistros: [],
+  demandasRegistrosLoaded: false,
   draftSolicitacoesByAtendente: {},
   recentlyAssignedByAtendente: {},
   selectedAtendente: null,
@@ -499,6 +500,12 @@ function isWithinDateRange(dataBr, inicioIso, fimIso) {
 function renderDemandasRegistros() {
   if (!demandasRegistrosBody) return;
   const { dataInicio, dataFim, texto } = state.demandasRegistrosFilters;
+  const hasCriteria = !!(String(dataInicio || '').trim() || String(dataFim || '').trim() || String(texto || '').trim());
+  if (!hasCriteria) {
+    demandasRegistrosBody.innerHTML = '<tr><td colspan="9">Use a busca por data/período ou texto para listar resultados.</td></tr>';
+    return;
+  }
+
   const termo = normalizeText(texto);
   const filtered = state.demandasRegistros.filter((row) => {
     if ((dataInicio || dataFim) && !isWithinDateRange(row.dataRegistro, dataInicio, dataFim)) {
@@ -561,6 +568,8 @@ async function loadDemandasRegistros() {
 
 async function openDemandasRegistros() {
   state.demandasRegistrosFilters = { dataInicio: '', dataFim: '', texto: '' };
+  state.demandasRegistros = [];
+  state.demandasRegistrosLoaded = false;
   if (dataSearchStart) dataSearchStart.value = '';
   if (dataSearchEnd) dataSearchEnd.value = '';
   if (textSearchInput) textSearchInput.value = '';
@@ -568,12 +577,30 @@ async function openDemandasRegistros() {
   if (textSearchWrap) textSearchWrap.classList.add('hidden');
 
   try {
-    await runAction('carregar demandas e registros', 'Carregando demandas e registros...', null, null, async () => {
-      await loadDemandasRegistros();
-      renderDemandasRegistros();
-      openModal(modalDemandasRegistros);
-    });
+    renderDemandasRegistros();
+    openModal(modalDemandasRegistros);
   } catch (_e) {}
+}
+
+async function applyDemandasRegistrosSearch() {
+  const { dataInicio, dataFim, texto } = state.demandasRegistrosFilters;
+  const hasCriteria = !!(String(dataInicio || '').trim() || String(dataFim || '').trim() || String(texto || '').trim());
+  if (!hasCriteria) {
+    renderDemandasRegistros();
+    return;
+  }
+  if (!state.demandasRegistrosLoaded) {
+    state.demandasRegistrosLoaded = true;
+    try {
+      await loadDemandasRegistros();
+    } catch (error) {
+      state.demandasRegistrosLoaded = false;
+      showMsg(error.message || 'Falha ao carregar demandas e registros.');
+      demandasRegistrosBody.innerHTML = '<tr><td colspan="9">Falha ao carregar dados.</td></tr>';
+      return;
+    }
+  }
+  renderDemandasRegistros();
 }
 
 async function openConfig(nome) {
@@ -660,15 +687,15 @@ document.getElementById('btn-toggle-text-search').addEventListener('click', () =
 });
 dataSearchStart.addEventListener('change', () => {
   state.demandasRegistrosFilters.dataInicio = dataSearchStart.value || '';
-  renderDemandasRegistros();
+  void applyDemandasRegistrosSearch();
 });
 dataSearchEnd.addEventListener('change', () => {
   state.demandasRegistrosFilters.dataFim = dataSearchEnd.value || '';
-  renderDemandasRegistros();
+  void applyDemandasRegistrosSearch();
 });
 textSearchInput.addEventListener('input', () => {
   state.demandasRegistrosFilters.texto = textSearchInput.value || '';
-  renderDemandasRegistros();
+  void applyDemandasRegistrosSearch();
 });
 
 document.querySelectorAll('[data-tab]').forEach((btn) => btn.addEventListener('click', () => {
