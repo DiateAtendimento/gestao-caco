@@ -1401,6 +1401,46 @@ img {
   object-fit: cover;
 }
 
+#modal-webconf-wizard .webconf-attendente {
+  margin-top: 2px;
+  margin-bottom: 6px;
+  gap: 10px;
+}
+
+#modal-webconf-wizard .webconf-attendente img {
+  width: 52px;
+  height: 52px;
+  border: 2px solid rgba(155, 222, 182, 0.95);
+}
+
+#modal-webconf-wizard .webconf-attendente-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 4px;
+  margin-bottom: 12px;
+  width: 100%;
+}
+
+#modal-webconf-wizard .webconf-attendente-card img {
+  width: 78px;
+  height: 78px;
+}
+
+.webconf-attendente-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: #f2f8ff;
+  line-height: 1.2;
+  text-align: center;
+}
+
+[data-theme='dark'] .webconf-attendente-name {
+  color: #f2f8ff;
+}
+
 .webconf-preview {
   margin: 0;
   white-space: pre-wrap;

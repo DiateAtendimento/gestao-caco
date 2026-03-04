@@ -436,7 +436,7 @@ function openWebconfWizard() {
   document.getElementById('webconf-qual').value = '';
   document.getElementById('webconf-data').value = '';
   document.getElementById('webconf-horario').value = '';
-  document.getElementById('webconf-atendente').value = user.nome;
+  document.getElementById('webconf-atendente').textContent = user.nome;
   attachAvatar(document.getElementById('webconf-atendente-avatar'), user.nome);
   document.getElementById('webconf-p-nome').value = '';
   document.getElementById('webconf-p-cpf').value = '';
