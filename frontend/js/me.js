@@ -76,6 +76,14 @@ const WHATSAPP_ASSUNTOS = [
   'SIPREV',
   'SIRC - DATAPREV'
 ];
+const ACTIVITY_LINKS = {
+  Webconferencia: 'https://outlook.office.com/bookings/calendar',
+  Registrosiga: 'https://siga-rpps.sistema.gov.br/dashboard-mps/solicitacao/lista',
+  Sei: 'https://colaboragov.sei.gov.br/sip/modulos/MF/login_especial/login_especial.php?sigla_orgao_sistema=MGI&sigla_sistema=SEI',
+  Gescon: 'https://novogescon.previdencia.gov.br/gescon/',
+  Taxigov: 'https://auth.wexp.com.br/account/login?returnUrl=%2Fconnect%2Fauthorize%2Fcallback%3Fclient_id%3Dmvc%26redirect_uri%3Dhttps%253A%252F%252Fmobgov.wexp.com.br%252Fsignin-oidc%26response_type%3Dcode%2520id_token%26scope%3Dopenid%2520profile%2520wExpoPublicAPI%26response_mode%3Dform_post%26nonce%3D639082430395886225.MDc1YzM0Y2EtZmM3OC00ZGRhLWJkYTItZjU0ZjEwZTBjMTcwNjg3MTljMmMtNjQzMi00ZjdiLTljM2UtOWI3ZjMxNjMwNTUy%26state%3DCfDJ8OjS9ljEBdxDjFgdWE_ng_qA7trVo1hWSqhL_-8aV-Ix6SAnKNVBDh8AemhJgzDa0wCIlQB_f4PkkxPqJBlMDXFMIpydFB1MrJ8hqxpct1B1IGjjHYmc0regbOvrChKLLOb_r_PZk7h1FSQqHaJqN54JIZMuMldHGdOalaCPDwvSyF0RgjhOk7Tv6ClSz8RFkaSVX5rF6nygMeS8DtsCQ8ebVXIqV5JigloqU335r8EzTkSbRJBenWSQtnzDsVpixEmCFRPuD7tzhXGmvWF52b_tnTrUq9jwlmqLwfA4GbSfIrTzfTJH-NJvxLzaV56xBdiY8O_SU6HGkFtmDUh5EX0%26x-client-SKU%3DID_NETSTANDARD1_4%26x-client-ver%3D5.2.0.0',
+  Phplist: 'https://maillist-listas.trabalho.gov.br/lists/admin/?page=logout&err=1'
+};
 
 function showMsg(text) {
   msgEl.textContent = text || '';
@@ -142,12 +150,24 @@ function renderAtividades() {
 
   state.profile.atividades.forEach((key) => {
     const activity = ACTIVITIES.find((a) => a.key === key);
+    const link = ACTIVITY_LINKS[key] || '';
     const chip = document.createElement('div');
-    chip.className = 'activity-chip';
+    chip.className = `activity-chip ${link ? 'linked' : ''}`;
     chip.innerHTML = `
       <img src="${activity?.icon || 'assets/icons/ti.svg'}" alt="${activity?.label || key}" />
       <div>${activity?.label || key}</div>
     `;
+    if (link) {
+      chip.title = 'Abrir em nova aba';
+      chip.tabIndex = 0;
+      chip.addEventListener('click', () => window.open(link, '_blank', 'noopener,noreferrer'));
+      chip.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          window.open(link, '_blank', 'noopener,noreferrer');
+        }
+      });
+    }
     atividadesEl.appendChild(chip);
   });
 }

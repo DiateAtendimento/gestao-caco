@@ -766,6 +766,21 @@ img {
   font-size: 13px;
 }
 
+.activity-chip.linked {
+  cursor: pointer;
+  border-radius: 10px;
+  padding: 6px 4px;
+  transition: transform 180ms ease, background-color 180ms ease, box-shadow 180ms ease;
+}
+
+.activity-chip.linked:hover,
+.activity-chip.linked:focus-visible {
+  transform: translateY(-2px);
+  background: rgba(29, 136, 203, 0.15);
+  box-shadow: 0 8px 18px rgba(24, 102, 170, 0.2);
+  outline: none;
+}
+
 .whatsapp-pane {
   display: grid;
   grid-template-columns: 130px 1fr;

@@ -311,10 +311,15 @@ router.post('/registros', async (req, res) => {
     await appendMappedRow(WEBCONF_SHEET, {
       ID: webId,
       'Qual a Webconferencia': qualWebconferencia,
+      'Qual a Webconferência': qualWebconferencia,
+      'Qual Webconferencia': qualWebconferencia,
+      'Qual Webconferência': qualWebconferencia,
       Data: data,
       'Horário': horario,
+      Horario: horario,
       Atendente: req.user.nome,
       'Ente não compareceu ao agendamento': enteNaoCompareceu,
+      'Ente nao compareceu ao agendamento': enteNaoCompareceu,
       'Quantidade atendida': String(participants.length),
       Participantes: participantesTexto
     }, WEBCONF_HEADERS);
