@@ -29,11 +29,13 @@ const webconfBlockEl = document.getElementById('webconf-block');
 const webconfBodyEl = document.getElementById('webconf-body');
 const modalWebconfWizard = document.getElementById('modal-webconf-wizard');
 const modalWebconfParticipantes = document.getElementById('modal-webconf-participantes');
+const modalWebconfEditParticipante = document.getElementById('modal-webconf-edit-participante');
 const msgEl = document.getElementById('msg');
 const seenDemandasKey = `seenDemandas:${user.nome}`;
 const SILENT_REFRESH_MS = 3000;
 let refreshInFlight = false;
 let webconfStep = 1;
+let webconfEditIndex = -1;
 const WHATSAPP_ASSUNTOS = [
   'Atendimento',
   'Atuária',
@@ -311,7 +313,7 @@ function resetWebconfDraft() {
     qualWebconferencia: '',
     data: '',
     horario: '',
-    enteNaoCompareceu: '',
+    enteNaoCompareceu: 'Não',
     participants: []
   };
 }
@@ -320,7 +322,7 @@ function syncWebconfParticipantTable() {
   const body = document.getElementById('webconf-participantes-body');
   body.innerHTML = '';
   if (!state.webconfDraft.participants.length) {
-    body.innerHTML = '<tr><td colspan=\"5\">Nenhum participante adicionado.</td></tr>';
+    body.innerHTML = '<tr><td colspan=\"6\">Nenhum participante adicionado.</td></tr>';
     return;
   }
 
@@ -332,8 +334,37 @@ function syncWebconfParticipantTable() {
       <td>${p.cpf || '-'}</td>
       <td>${p.municipio || '-'}</td>
       <td>${p.uf || '-'}</td>
+      <td class="webconf-actions-cell">
+        <button class="btn-soft btn-mini" type="button" data-webconf-edit="${idx}">Editar</button>
+        <button class="btn-danger btn-mini" type="button" data-webconf-remove="${idx}">Remover</button>
+      </td>
     `;
     body.appendChild(tr);
+  });
+
+  body.querySelectorAll('[data-webconf-remove]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const idx = Number(btn.dataset.webconfRemove);
+      if (!Number.isInteger(idx) || idx < 0 || idx >= state.webconfDraft.participants.length) return;
+      state.webconfDraft.participants.splice(idx, 1);
+      syncWebconfParticipantTable();
+      await showStatus('excluido', 'Participante removido');
+    });
+  });
+
+  body.querySelectorAll('[data-webconf-edit]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const idx = Number(btn.dataset.webconfEdit);
+      const participant = state.webconfDraft.participants[idx];
+      if (!participant) return;
+      webconfEditIndex = idx;
+      document.getElementById('webconf-edit-nome').value = participant.nome || '';
+      document.getElementById('webconf-edit-cpf').value = participant.cpf || '';
+      document.getElementById('webconf-edit-municipio').value = participant.municipio || '';
+      document.getElementById('webconf-edit-uf').value = participant.uf || '';
+      document.getElementById('webconf-edit-descricao').value = participant.descricao || '';
+      openModal(modalWebconfEditParticipante);
+    });
   });
 }
 
@@ -350,31 +381,70 @@ function toDigits(value) {
   return String(value || '').replace(/\D/g, '');
 }
 
+function selectedEnteNaoCompareceuValue() {
+  const checked = document.querySelector('input[name="webconf-ente-nao"]:checked');
+  return checked?.value || 'Não';
+}
+
+async function fillWebconfAgendaDefaults(assunto) {
+  try {
+    const params = new URLSearchParams();
+    if (String(assunto || '').trim()) {
+      params.set('assunto', assunto.trim());
+    }
+    const query = params.toString() ? `?${params.toString()}` : '';
+    const data = await api(`/api/webconferencia/agenda${query}`);
+    if (data?.data) {
+      document.getElementById('webconf-data').value = data.data;
+      state.webconfDraft.data = data.data;
+    }
+    if (data?.horarioInicio) {
+      document.getElementById('webconf-horario').value = data.horarioInicio;
+      state.webconfDraft.horario = data.horarioInicio;
+    }
+  } catch (_error) {
+    const today = new Date();
+    const day = String(today.getDate()).padStart(2, '0');
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const year = today.getFullYear();
+    const fallback = `${day}/${month}/${year}`;
+    document.getElementById('webconf-data').value = fallback;
+    state.webconfDraft.data = fallback;
+  }
+}
+
 function openWebconfWizard() {
   resetWebconfDraft();
+  webconfEditIndex = -1;
   setWebconfStep(1);
   document.getElementById('webconf-qual').value = '';
   document.getElementById('webconf-data').value = '';
   document.getElementById('webconf-horario').value = '';
   document.getElementById('webconf-atendente').value = user.nome;
   attachAvatar(document.getElementById('webconf-atendente-avatar'), user.nome);
-  document.getElementById('webconf-ente').value = '';
   document.getElementById('webconf-p-nome').value = '';
   document.getElementById('webconf-p-cpf').value = '';
   document.getElementById('webconf-p-municipio').value = '';
   document.getElementById('webconf-p-uf').value = '';
   document.getElementById('webconf-p-descricao').value = '';
+  document.querySelectorAll('input[name="webconf-ente-nao"]').forEach((radio) => {
+    radio.checked = radio.value === 'Não';
+  });
   const noHistorySuffix = String(Date.now());
   [
     { id: 'webconf-qual', name: `webconf_qual_${noHistorySuffix}` },
     { id: 'webconf-data', name: `webconf_data_${noHistorySuffix}` },
     { id: 'webconf-horario', name: `webconf_horario_${noHistorySuffix}` },
-    { id: 'webconf-ente', name: `webconf_ente_${noHistorySuffix}` },
     { id: 'webconf-p-nome', name: `webconf_part_nome_${noHistorySuffix}` },
     { id: 'webconf-p-cpf', name: `webconf_part_cpf_${noHistorySuffix}` },
     { id: 'webconf-p-municipio', name: `webconf_part_municipio_${noHistorySuffix}` },
     { id: 'webconf-p-uf', name: `webconf_part_uf_${noHistorySuffix}` },
-    { id: 'webconf-p-descricao', name: `webconf_part_descricao_${noHistorySuffix}` }
+    { id: 'webconf-p-descricao', name: `webconf_part_descricao_${noHistorySuffix}` },
+    { id: 'webconf-edit-nome', name: `webconf_edit_nome_${noHistorySuffix}` },
+    { id: 'webconf-edit-cpf', name: `webconf_edit_cpf_${noHistorySuffix}` },
+    { id: 'webconf-edit-municipio', name: `webconf_edit_municipio_${noHistorySuffix}` },
+    { id: 'webconf-edit-uf', name: `webconf_edit_uf_${noHistorySuffix}` },
+    { id: 'webconf-edit-descricao', name: `webconf_edit_descricao_${noHistorySuffix}` }
   ].forEach(({ id, name }) => {
     const el = document.getElementById(id);
     if (!el) return;
@@ -512,27 +582,40 @@ function setupWebconfWizard() {
   const openBtn = document.getElementById('btn-open-webconf-modal');
   const closeBtn = document.getElementById('btn-close-webconf-modal');
   const closeParticipantesBtn = document.getElementById('btn-close-webconf-participantes');
-  if (!openBtn || !closeBtn || !closeParticipantesBtn) return;
+  const closeEditBtn = document.getElementById('btn-close-webconf-edit');
+  const saveEditBtn = document.getElementById('btn-save-webconf-edit');
+  if (!openBtn || !closeBtn || !closeParticipantesBtn || !closeEditBtn || !saveEditBtn) return;
 
   openBtn.addEventListener('click', () => openWebconfWizard());
   closeBtn.addEventListener('click', () => closeModal(modalWebconfWizard));
   closeParticipantesBtn.addEventListener('click', () => closeModal(modalWebconfParticipantes));
+  closeEditBtn.addEventListener('click', () => {
+    webconfEditIndex = -1;
+    closeModal(modalWebconfEditParticipante);
+  });
   modalWebconfWizard.addEventListener('click', (event) => {
     if (event.target === modalWebconfWizard) closeModal(modalWebconfWizard);
   });
   modalWebconfParticipantes.addEventListener('click', (event) => {
     if (event.target === modalWebconfParticipantes) closeModal(modalWebconfParticipantes);
   });
+  modalWebconfEditParticipante.addEventListener('click', (event) => {
+    if (event.target === modalWebconfEditParticipante) {
+      webconfEditIndex = -1;
+      closeModal(modalWebconfEditParticipante);
+    }
+  });
 
-  document.getElementById('webconf-next-1').addEventListener('click', () => {
+  document.getElementById('webconf-next-1').addEventListener('click', async () => {
     state.webconfDraft.qualWebconferencia = document.getElementById('webconf-qual').value.trim();
+    await fillWebconfAgendaDefaults(state.webconfDraft.qualWebconferencia);
     setWebconfStep(2);
   });
   document.getElementById('webconf-back-2').addEventListener('click', () => setWebconfStep(1));
   document.getElementById('webconf-next-2').addEventListener('click', () => {
     state.webconfDraft.data = document.getElementById('webconf-data').value.trim();
     state.webconfDraft.horario = document.getElementById('webconf-horario').value.trim();
-    state.webconfDraft.enteNaoCompareceu = document.getElementById('webconf-ente').value.trim();
+    state.webconfDraft.enteNaoCompareceu = selectedEnteNaoCompareceuValue();
     setWebconfStep(3);
   });
   document.getElementById('webconf-back-3').addEventListener('click', () => setWebconfStep(2));
@@ -553,11 +636,26 @@ function setupWebconfWizard() {
     syncWebconfParticipantTable();
   });
 
+  saveEditBtn.addEventListener('click', async () => {
+    if (webconfEditIndex < 0 || webconfEditIndex >= state.webconfDraft.participants.length) return;
+    state.webconfDraft.participants[webconfEditIndex] = {
+      nome: document.getElementById('webconf-edit-nome').value.trim(),
+      cpf: toDigits(document.getElementById('webconf-edit-cpf').value),
+      municipio: document.getElementById('webconf-edit-municipio').value.trim(),
+      uf: document.getElementById('webconf-edit-uf').value.trim().toUpperCase(),
+      descricao: document.getElementById('webconf-edit-descricao').value.trim()
+    };
+    syncWebconfParticipantTable();
+    webconfEditIndex = -1;
+    closeModal(modalWebconfEditParticipante);
+    await showStatus('salvo', 'Participante atualizado');
+  });
+
   document.getElementById('webconf-save').addEventListener('click', async () => {
     state.webconfDraft.qualWebconferencia = document.getElementById('webconf-qual').value.trim();
     state.webconfDraft.data = document.getElementById('webconf-data').value.trim();
     state.webconfDraft.horario = document.getElementById('webconf-horario').value.trim();
-    state.webconfDraft.enteNaoCompareceu = document.getElementById('webconf-ente').value.trim();
+    state.webconfDraft.enteNaoCompareceu = selectedEnteNaoCompareceuValue();
 
     try {
       await runAction('registrar webconferência', 'Salvando registro...', 'salvo', 'Registro de webconferência salvo', async () => {

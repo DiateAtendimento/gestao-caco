@@ -84,7 +84,7 @@
 
       <article id="webconf-block" class="section-shell hidden">
         <div class="section-title">Registros Webconferência</div>
-        <div class="section-content">
+        <div class="section-content webconf-panel">
           <div class="table-shell demand-table">
             <table class="table">
               <thead>
@@ -102,7 +102,7 @@
               <tbody id="webconf-body"></tbody>
             </table>
           </div>
-          <div class="form-actions">
+          <div class="form-actions webconf-create-actions">
             <button id="btn-open-webconf-modal" class="btn-main" type="button">Criar novo registro</button>
           </div>
         </div>
@@ -143,7 +143,24 @@
         <section id="webconf-step-1" class="webconf-step">
           <h3>Qual a Webconferência?</h3>
           <div class="form-row">
-            <input id="webconf-qual" placeholder="Digite o assunto da webconferência" autocomplete="off" />
+            <select id="webconf-qual" autocomplete="off">
+              <option value="">Selecione o assunto</option>
+              <option value="CADPREV">CADPREV</option>
+              <option value="GESCON">GESCON</option>
+              <option value="Plano de Custeio">Plano de Custeio</option>
+              <option value="CNIS e SIG-RPPS">CNIS e SIG-RPPS</option>
+              <option value="Termo de Adesão e Operacionalização do COMPREV">Termo de Adesão e Operacionalização do COMPREV</option>
+              <option value="Regime de Previdência Complementar">Regime de Previdência Complementar</option>
+              <option value="Pró-Gestão e Certificação Profissional">Pró-Gestão e Certificação Profissional</option>
+              <option value="Cadastro COMPREV">Cadastro COMPREV</option>
+              <option value="Reforma da Previdência">Reforma da Previdência</option>
+              <option value="COMPREV DATAPREV">COMPREV DATAPREV</option>
+              <option value="Repasse e Parcelamento - DIPR">Repasse e Parcelamento - DIPR</option>
+              <option value="eSocial">eSocial</option>
+              <option value="Atuária - DRAA, NTA">Atuária - DRAA, NTA</option>
+              <option value="Investimentos">Investimentos</option>
+              <option value="Contencioso">Contencioso</option>
+            </select>
           </div>
           <div class="form-actions">
             <button id="webconf-next-1" class="btn-main" type="button">Próximo</button>
@@ -158,7 +175,6 @@
             <img id="webconf-atendente-avatar" alt="Atendente" />
             <input id="webconf-atendente" readonly />
           </div>
-          <div class="form-row"><textarea id="webconf-ente" placeholder="Ente não compareceu ao agendamento"></textarea></div>
           <div class="form-actions">
             <button id="webconf-back-2" class="btn-soft" type="button">Voltar</button>
             <button id="webconf-next-2" class="btn-main" type="button">Próximo</button>
@@ -172,6 +188,11 @@
           <div class="form-row"><input id="webconf-p-municipio" placeholder="Município" autocomplete="off" /></div>
           <div class="form-row"><input id="webconf-p-uf" placeholder="UF" autocomplete="off" /></div>
           <div class="form-row"><textarea id="webconf-p-descricao" placeholder="Descrição (opcional)" autocomplete="off"></textarea></div>
+          <div class="webconf-radio-row">
+            <span>Ente não compareceu ao agendamento:</span>
+            <label><input type="radio" name="webconf-ente-nao" value="Sim" /> Sim</label>
+            <label><input type="radio" name="webconf-ente-nao" value="Não" checked /> Não</label>
+          </div>
           <div class="form-actions">
             <button id="webconf-add-participante" class="btn-soft" type="button">Adicionar participante</button>
           </div>
@@ -184,6 +205,7 @@
                   <th>CPF</th>
                   <th>Município</th>
                   <th>UF</th>
+                  <th>Ações</th>
                 </tr>
               </thead>
               <tbody id="webconf-participantes-body"></tbody>
@@ -205,6 +227,24 @@
       </header>
       <div class="modal-content">
         <pre id="webconf-participantes-preview" class="webconf-preview"></pre>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-webconf-edit-participante" class="modal-overlay">
+    <div class="modal small">
+      <header class="modal-header">Editar participante
+        <button id="btn-close-webconf-edit" class="modal-close-x" type="button">×</button>
+      </header>
+      <div class="modal-content">
+        <div class="form-row"><input id="webconf-edit-nome" placeholder="Nome" autocomplete="off" /></div>
+        <div class="form-row"><input id="webconf-edit-cpf" placeholder="CPF (somente números)" autocomplete="off" /></div>
+        <div class="form-row"><input id="webconf-edit-municipio" placeholder="Município" autocomplete="off" /></div>
+        <div class="form-row"><input id="webconf-edit-uf" placeholder="UF" autocomplete="off" /></div>
+        <div class="form-row"><textarea id="webconf-edit-descricao" placeholder="Descrição (opcional)" autocomplete="off"></textarea></div>
+        <div class="form-actions">
+          <button id="btn-save-webconf-edit" class="btn-main" type="button">Salvar</button>
+        </div>
       </div>
     </div>
   </div>

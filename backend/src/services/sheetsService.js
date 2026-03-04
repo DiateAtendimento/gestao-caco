@@ -49,6 +49,14 @@ async function readSheet(sheetName, options = {}) {
   return parsed;
 }
 
+async function readSheetValues(sheetName, range = 'A1:ZZ') {
+  const response = await sheets.spreadsheets.values.get({
+    spreadsheetId: env.googleSheetId,
+    range: `${sheetName}!${range}`
+  });
+  return response.data.values || [];
+}
+
 async function writeHeadersIfEmpty(sheetName, headers) {
   const current = await readSheet(sheetName);
   if (current.headers.length > 0) {
@@ -167,6 +175,7 @@ async function deleteRow(sheetName, rowIndex) {
 
 module.exports = {
   readSheet,
+  readSheetValues,
   writeHeadersIfEmpty,
   ensureColumn,
   appendMappedRow,

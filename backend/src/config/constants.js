@@ -1,6 +1,7 @@
-﻿const PROFILE_SHEET = 'Perfil';
+const PROFILE_SHEET = 'Perfil';
 const DEMANDS_SHEET = 'Registro de Demandas';
 const WEBCONF_SHEET = 'Reg webconferencia';
+const DAYS_WEBCONF_SHEET = 'Dias webconferencia';
 
 const PROFILE_HEADERS = [
   'Atendente',
@@ -72,6 +73,7 @@ module.exports = {
   PROFILE_SHEET,
   DEMANDS_SHEET,
   WEBCONF_SHEET,
+  DAYS_WEBCONF_SHEET,
   PROFILE_HEADERS,
   PROFILE_NON_ACTIVITY_HEADERS,
   ACTIVITY_COLUMNS,
@@ -80,4 +82,3 @@ module.exports = {
   STATUS,
   DASHBOARD_URL
 };
-

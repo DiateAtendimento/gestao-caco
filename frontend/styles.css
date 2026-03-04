@@ -1388,14 +1388,95 @@ img {
   line-height: 1.45;
 }
 
+#webconf-block .webconf-panel {
+  padding: 12px 14px 14px;
+}
+
 #webconf-block .table-shell {
   max-height: 390px;
   overflow-y: auto;
 }
 
+#webconf-block .webconf-create-actions {
+  margin-top: 14px;
+  padding-top: 4px;
+}
+
+#webconf-block #btn-open-webconf-modal {
+  min-width: 180px;
+  padding: 10px 18px;
+}
+
+#modal-webconf-wizard .modal {
+  width: min(980px, 96vw);
+}
+
+#modal-webconf-wizard .modal-content {
+  background: linear-gradient(180deg, rgba(16, 55, 96, 0.96), rgba(18, 61, 106, 0.98));
+  color: #f2f8ff;
+  padding: 16px 16px 18px;
+}
+
+#modal-webconf-wizard .webconf-step h3 {
+  margin: 4px 0 12px;
+  font-size: 33px;
+  color: #f2f8ff;
+}
+
+#modal-webconf-wizard .form-row input,
+#modal-webconf-wizard .form-row select,
+#modal-webconf-wizard .form-row textarea {
+  background: rgba(241, 247, 255, 0.9);
+  border-color: rgba(124, 167, 221, 0.5);
+  border-radius: 12px;
+}
+
+#modal-webconf-wizard .form-actions {
+  margin-top: 12px;
+  gap: 10px;
+}
+
 #modal-webconf-wizard #webconf-step-3 .table-shell {
   max-height: 340px;
   overflow-y: auto;
+}
+
+#modal-webconf-wizard .table-shell {
+  margin-top: 12px;
+}
+
+.webconf-radio-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin: 6px 0 2px;
+  color: #e7f2ff;
+  font-weight: 600;
+}
+
+.webconf-radio-row label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.webconf-radio-row input[type='radio'] {
+  accent-color: #34c766;
+}
+
+.webconf-actions-cell {
+  white-space: nowrap;
+}
+
+.btn-mini {
+  font-size: 11px;
+  padding: 5px 10px;
+  margin-right: 6px;
+}
+
+[data-theme='dark'] #modal-webconf-wizard .modal-content {
+  background: linear-gradient(180deg, rgba(12, 36, 64, 0.97), rgba(13, 43, 74, 0.98));
 }
 
 /* Feedback and lotties */
@@ -1776,6 +1857,15 @@ img {
 
   .profile-body {
     font-size: 13px;
+  }
+
+  #modal-webconf-wizard .webconf-step h3 {
+    font-size: 24px;
+  }
+
+  #webconf-block #btn-open-webconf-modal {
+    min-width: 0;
+    width: 100%;
   }
 
   .sidebar-activity-grid .activity-chip img {

@@ -5,10 +5,12 @@ const {
   DEMANDS_SHEET,
   DEMANDS_HEADERS,
   WEBCONF_SHEET,
-  WEBCONF_HEADERS
+  WEBCONF_HEADERS,
+  DAYS_WEBCONF_SHEET
 } = require('../config/constants');
 const {
   readSheet,
+  readSheetValues,
   appendMappedRow,
   writeHeadersIfEmpty,
   updateMappedRowsBatch
@@ -110,6 +112,50 @@ function legacyWebconfId(row) {
   return `LG${hash}${rowPart}`;
 }
 
+function normalizeComparableText(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+}
+
+function currentWeekdayConfig() {
+  const weekday = new Date().getDay();
+  if (weekday === 1) return { label: 'Segunda-Feira', assuntoCol: 0, inicioCol: 1 };
+  if (weekday === 2) return { label: 'Terça-Feira', assuntoCol: 3, inicioCol: 4 };
+  if (weekday === 3) return { label: 'Quarta-Feira', assuntoCol: 6, inicioCol: 7 };
+  if (weekday === 4) return { label: 'Quinta-Feira', assuntoCol: 9, inicioCol: 10 };
+  if (weekday === 5) return { label: 'Sexta-Feira', assuntoCol: 12, inicioCol: 13 };
+  return { label: 'Segunda-Feira', assuntoCol: 0, inicioCol: 1 };
+}
+
+function parseTimeToMinutes(text) {
+  const match = String(text || '').trim().match(/^(\d{1,2}):(\d{2})/);
+  if (!match) return Number.MAX_SAFE_INTEGER;
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+  if (!Number.isFinite(hour) || !Number.isFinite(minute)) return Number.MAX_SAFE_INTEGER;
+  return (hour * 60) + minute;
+}
+
+function toBrDateFrom(baseDate, daysAhead) {
+  const date = new Date(baseDate);
+  date.setDate(date.getDate() + daysAhead);
+  return toBrDate(date);
+}
+
+function weekdayLabelByJsDay(jsDay) {
+  if (jsDay === 1) return 'Segunda-Feira';
+  if (jsDay === 2) return 'Terça-Feira';
+  if (jsDay === 3) return 'Quarta-Feira';
+  if (jsDay === 4) return 'Quinta-Feira';
+  if (jsDay === 5) return 'Sexta-Feira';
+  return 'Segunda-Feira';
+}
+
 async function hasWebconferencePermission(nome) {
   const { rows } = await readSheet(PROFILE_SHEET);
   const user = rows.find((row) => equalsIgnoreCase(row.Atendente, nome));
@@ -169,6 +215,68 @@ router.get('/registros', async (req, res) => {
       .map(({ rowIndex, ...item }) => item);
 
     return res.json({ registros });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/agenda', async (req, res) => {
+  try {
+    if (!(await hasWebconferencePermission(req.user.nome))) {
+      return res.status(403).json({ error: 'Usuário sem permissão de Webconferencia' });
+    }
+
+    const assunto = normalizeComparableText(req.query?.assunto);
+    const now = new Date();
+    const currentJsDay = now.getDay();
+    const weekdayColumns = [
+      { jsDay: 1, assuntoCol: 0, inicioCol: 1 },
+      { jsDay: 2, assuntoCol: 3, inicioCol: 4 },
+      { jsDay: 3, assuntoCol: 6, inicioCol: 7 },
+      { jsDay: 4, assuntoCol: 9, inicioCol: 10 },
+      { jsDay: 5, assuntoCol: 12, inicioCol: 13 }
+    ];
+    const values = await readSheetValues(DAYS_WEBCONF_SHEET, 'A1:O100');
+    const rows = values.slice(1);
+    const candidates = [];
+
+    weekdayColumns.forEach((cfg) => {
+      const daysAhead = (cfg.jsDay - currentJsDay + 7) % 7;
+      rows.forEach((row) => {
+        const assuntoDia = normalizeComparableText(row[cfg.assuntoCol]);
+        const inicio = String(row[cfg.inicioCol] || '').trim();
+        if (!inicio) return;
+        if (assunto && assuntoDia !== assunto) return;
+        candidates.push({
+          jsDay: cfg.jsDay,
+          daysAhead,
+          inicio,
+          minutos: parseTimeToMinutes(inicio)
+        });
+      });
+    });
+
+    if (candidates.length) {
+      candidates.sort((a, b) => {
+        if (a.daysAhead !== b.daysAhead) return a.daysAhead - b.daysAhead;
+        return a.minutos - b.minutos;
+      });
+      const selected = candidates[0];
+      return res.json({
+        data: toBrDateFrom(now, selected.daysAhead),
+        horarioInicio: selected.inicio,
+        diaSemana: weekdayLabelByJsDay(selected.jsDay)
+      });
+    }
+
+    const fallbackDay = currentWeekdayConfig();
+    const fallbackRow = rows.find((row) => String(row[fallbackDay.inicioCol] || '').trim());
+    const fallbackHorario = fallbackRow ? String(fallbackRow[fallbackDay.inicioCol] || '').trim() : '';
+    return res.json({
+      data: toBrDate(now),
+      horarioInicio: fallbackHorario,
+      diaSemana: fallbackDay.label
+    });
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }
