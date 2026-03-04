@@ -169,8 +169,11 @@
 
         <section id="webconf-step-2" class="webconf-step hidden">
           <h3>Dados gerais</h3>
+          <label class="field-label" for="webconf-data">Data</label>
           <div class="form-row"><input id="webconf-data" placeholder="Data (dd/mm/aaaa)" autocomplete="off" /></div>
+          <label class="field-label" for="webconf-horario">Horário</label>
           <div class="form-row"><input id="webconf-horario" placeholder="Horário (hh:mm)" autocomplete="off" /></div>
+          <label class="field-label" for="webconf-atendente">Atendente</label>
           <div class="webconf-attendente">
             <img id="webconf-atendente-avatar" alt="Atendente" />
             <input id="webconf-atendente" readonly />
@@ -185,8 +188,9 @@
           <h3>Quantidade atendida</h3>
           <div class="form-row"><input id="webconf-p-nome" placeholder="Nome" autocomplete="off" /></div>
           <div class="form-row"><input id="webconf-p-cpf" placeholder="CPF (somente números)" autocomplete="off" /></div>
+          <small id="webconf-p-cpf-hint" class="field-hint">CPF deve ter 11 dígitos.</small>
           <div class="form-row"><input id="webconf-p-municipio" placeholder="Município" autocomplete="off" /></div>
-          <div class="form-row"><input id="webconf-p-uf" placeholder="UF" autocomplete="off" /></div>
+          <div class="form-row"><input id="webconf-p-uf" placeholder="UF" maxlength="2" autocomplete="off" /></div>
           <div class="form-row"><textarea id="webconf-p-descricao" placeholder="Descrição (opcional)" autocomplete="off"></textarea></div>
           <div class="webconf-radio-row">
             <span>Ente não compareceu ao agendamento:</span>
@@ -239,8 +243,9 @@
       <div class="modal-content">
         <div class="form-row"><input id="webconf-edit-nome" placeholder="Nome" autocomplete="off" /></div>
         <div class="form-row"><input id="webconf-edit-cpf" placeholder="CPF (somente números)" autocomplete="off" /></div>
+        <small id="webconf-edit-cpf-hint" class="field-hint">CPF deve ter 11 dígitos.</small>
         <div class="form-row"><input id="webconf-edit-municipio" placeholder="Município" autocomplete="off" /></div>
-        <div class="form-row"><input id="webconf-edit-uf" placeholder="UF" autocomplete="off" /></div>
+        <div class="form-row"><input id="webconf-edit-uf" placeholder="UF" maxlength="2" autocomplete="off" /></div>
         <div class="form-row"><textarea id="webconf-edit-descricao" placeholder="Descrição (opcional)" autocomplete="off"></textarea></div>
         <div class="form-actions">
           <button id="btn-save-webconf-edit" class="btn-main" type="button">Salvar</button>

@@ -363,6 +363,7 @@ function syncWebconfParticipantTable() {
       document.getElementById('webconf-edit-municipio').value = participant.municipio || '';
       document.getElementById('webconf-edit-uf').value = participant.uf || '';
       document.getElementById('webconf-edit-descricao').value = participant.descricao || '';
+      paintCpfHint(document.getElementById('webconf-edit-cpf-hint'), isCpfLengthValid(participant.cpf || ''));
       openModal(modalWebconfEditParticipante);
     });
   });
@@ -379,6 +380,21 @@ function setWebconfStep(step) {
 
 function toDigits(value) {
   return String(value || '').replace(/\D/g, '');
+}
+
+function toLetters(value) {
+  return String(value || '').replace(/[^A-Za-zÀ-ÿ\s]/g, '');
+}
+
+function isCpfLengthValid(value) {
+  return toDigits(value).length === 11;
+}
+
+function paintCpfHint(hintEl, isValid) {
+  if (!hintEl) return;
+  hintEl.textContent = isValid ? 'CPF com 11 dígitos.' : 'CPF deve ter 11 dígitos.';
+  hintEl.classList.toggle('ok', isValid);
+  hintEl.classList.toggle('error', !isValid);
 }
 
 function selectedEnteNaoCompareceuValue() {
@@ -430,6 +446,8 @@ function openWebconfWizard() {
   document.querySelectorAll('input[name="webconf-ente-nao"]').forEach((radio) => {
     radio.checked = radio.value === 'Não';
   });
+  paintCpfHint(document.getElementById('webconf-p-cpf-hint'), false);
+  paintCpfHint(document.getElementById('webconf-edit-cpf-hint'), false);
   const noHistorySuffix = String(Date.now());
   [
     { id: 'webconf-qual', name: `webconf_qual_${noHistorySuffix}` },
@@ -584,6 +602,16 @@ function setupWebconfWizard() {
   const closeParticipantesBtn = document.getElementById('btn-close-webconf-participantes');
   const closeEditBtn = document.getElementById('btn-close-webconf-edit');
   const saveEditBtn = document.getElementById('btn-save-webconf-edit');
+  const pNome = document.getElementById('webconf-p-nome');
+  const pCpf = document.getElementById('webconf-p-cpf');
+  const pMunicipio = document.getElementById('webconf-p-municipio');
+  const pUf = document.getElementById('webconf-p-uf');
+  const pCpfHint = document.getElementById('webconf-p-cpf-hint');
+  const editNome = document.getElementById('webconf-edit-nome');
+  const editCpf = document.getElementById('webconf-edit-cpf');
+  const editMunicipio = document.getElementById('webconf-edit-municipio');
+  const editUf = document.getElementById('webconf-edit-uf');
+  const editCpfHint = document.getElementById('webconf-edit-cpf-hint');
   if (!openBtn || !closeBtn || !closeParticipantesBtn || !closeEditBtn || !saveEditBtn) return;
 
   openBtn.addEventListener('click', () => openWebconfWizard());
@@ -593,18 +621,41 @@ function setupWebconfWizard() {
     webconfEditIndex = -1;
     closeModal(modalWebconfEditParticipante);
   });
-  modalWebconfWizard.addEventListener('click', (event) => {
-    if (event.target === modalWebconfWizard) closeModal(modalWebconfWizard);
-  });
-  modalWebconfParticipantes.addEventListener('click', (event) => {
-    if (event.target === modalWebconfParticipantes) closeModal(modalWebconfParticipantes);
-  });
-  modalWebconfEditParticipante.addEventListener('click', (event) => {
-    if (event.target === modalWebconfEditParticipante) {
-      webconfEditIndex = -1;
-      closeModal(modalWebconfEditParticipante);
-    }
-  });
+  // Não fechar ao clicar fora: fechamento somente no botão X.
+  modalWebconfWizard.addEventListener('click', () => {});
+  modalWebconfParticipantes.addEventListener('click', () => {});
+  modalWebconfEditParticipante.addEventListener('click', () => {});
+
+  if (pNome) {
+    pNome.addEventListener('input', () => { pNome.value = toLetters(pNome.value); });
+  }
+  if (pMunicipio) {
+    pMunicipio.addEventListener('input', () => { pMunicipio.value = toLetters(pMunicipio.value); });
+  }
+  if (pUf) {
+    pUf.addEventListener('input', () => { pUf.value = toLetters(pUf.value).toUpperCase().slice(0, 2); });
+  }
+  if (pCpf) {
+    pCpf.addEventListener('input', () => {
+      pCpf.value = toDigits(pCpf.value).slice(0, 11);
+      paintCpfHint(pCpfHint, isCpfLengthValid(pCpf.value));
+    });
+  }
+  if (editNome) {
+    editNome.addEventListener('input', () => { editNome.value = toLetters(editNome.value); });
+  }
+  if (editMunicipio) {
+    editMunicipio.addEventListener('input', () => { editMunicipio.value = toLetters(editMunicipio.value); });
+  }
+  if (editUf) {
+    editUf.addEventListener('input', () => { editUf.value = toLetters(editUf.value).toUpperCase().slice(0, 2); });
+  }
+  if (editCpf) {
+    editCpf.addEventListener('input', () => {
+      editCpf.value = toDigits(editCpf.value).slice(0, 11);
+      paintCpfHint(editCpfHint, isCpfLengthValid(editCpf.value));
+    });
+  }
 
   document.getElementById('webconf-next-1').addEventListener('click', async () => {
     state.webconfDraft.qualWebconferencia = document.getElementById('webconf-qual').value.trim();
@@ -621,11 +672,16 @@ function setupWebconfWizard() {
   document.getElementById('webconf-back-3').addEventListener('click', () => setWebconfStep(2));
 
   document.getElementById('webconf-add-participante').addEventListener('click', () => {
+    if (!isCpfLengthValid(pCpf?.value || '')) {
+      void showStatus('erro', 'CPF inválido: informe 11 dígitos');
+      paintCpfHint(pCpfHint, false);
+      return;
+    }
     state.webconfDraft.participants.push({
-      nome: document.getElementById('webconf-p-nome').value.trim(),
+      nome: toLetters(document.getElementById('webconf-p-nome').value).trim(),
       cpf: toDigits(document.getElementById('webconf-p-cpf').value),
-      municipio: document.getElementById('webconf-p-municipio').value.trim(),
-      uf: document.getElementById('webconf-p-uf').value.trim().toUpperCase(),
+      municipio: toLetters(document.getElementById('webconf-p-municipio').value).trim(),
+      uf: toLetters(document.getElementById('webconf-p-uf').value).trim().toUpperCase().slice(0, 2),
       descricao: document.getElementById('webconf-p-descricao').value.trim()
     });
     document.getElementById('webconf-p-nome').value = '';
@@ -633,16 +689,22 @@ function setupWebconfWizard() {
     document.getElementById('webconf-p-municipio').value = '';
     document.getElementById('webconf-p-uf').value = '';
     document.getElementById('webconf-p-descricao').value = '';
+    paintCpfHint(pCpfHint, false);
     syncWebconfParticipantTable();
   });
 
   saveEditBtn.addEventListener('click', async () => {
     if (webconfEditIndex < 0 || webconfEditIndex >= state.webconfDraft.participants.length) return;
+    if (!isCpfLengthValid(editCpf?.value || '')) {
+      await showStatus('erro', 'CPF inválido: informe 11 dígitos');
+      paintCpfHint(editCpfHint, false);
+      return;
+    }
     state.webconfDraft.participants[webconfEditIndex] = {
-      nome: document.getElementById('webconf-edit-nome').value.trim(),
+      nome: toLetters(document.getElementById('webconf-edit-nome').value).trim(),
       cpf: toDigits(document.getElementById('webconf-edit-cpf').value),
-      municipio: document.getElementById('webconf-edit-municipio').value.trim(),
-      uf: document.getElementById('webconf-edit-uf').value.trim().toUpperCase(),
+      municipio: toLetters(document.getElementById('webconf-edit-municipio').value).trim(),
+      uf: toLetters(document.getElementById('webconf-edit-uf').value).trim().toUpperCase().slice(0, 2),
       descricao: document.getElementById('webconf-edit-descricao').value.trim()
     };
     syncWebconfParticipantTable();
