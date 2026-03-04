@@ -282,8 +282,8 @@ function renderDemandas() {
     const tr = document.createElement('tr');
     const descricaoPreview = String(d.descricao || '').trim();
     const detalhamentoBtn = `
-      <button class="btn-soft btn-mini detail-inline-btn" data-detail="${d.id}" data-row-index="${d.rowIndex || ''}" type="button" title="Ver detalhamento">
-        <i class="bi bi-card-text"></i> Ver detalhamento
+      <button class="detail-inline-btn" data-detail="${d.id}" data-row-index="${d.rowIndex || ''}" type="button" title="Ver detalhamento">
+        <i class="bi bi-eye-fill" aria-hidden="true"></i>
       </button>
     `;
     tr.innerHTML = `

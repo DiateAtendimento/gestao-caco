@@ -913,7 +913,7 @@ img {
 .demand-desc-wrap {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .demand-desc-preview {
@@ -929,7 +929,31 @@ img {
   align-self: flex-end;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  width: 32px;
+  height: 28px;
+  border: 0;
+  border-radius: 999px;
+  background: #3f87db;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(16, 68, 132, 0.3);
+  transition: transform 160ms ease, filter 160ms ease;
+}
+
+.detail-inline-btn:hover,
+.detail-inline-btn:focus-visible {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
+  outline: none;
+}
+
+.detail-inline-btn i {
+  font-size: 14px;
+  line-height: 1;
+}
+
+[data-theme='dark'] .detail-inline-btn {
+  background: #5c98e3;
 }
 
 .btn-note {
