@@ -18,6 +18,11 @@ const state = {
     horario: '',
     enteNaoCompareceu: '',
     participants: []
+  },
+  webconfFilters: {
+    dataInicio: '',
+    dataFim: '',
+    texto: ''
   }
 };
 
@@ -30,6 +35,16 @@ const webconfBodyEl = document.getElementById('webconf-body');
 const modalWebconfWizard = document.getElementById('modal-webconf-wizard');
 const modalWebconfParticipantes = document.getElementById('modal-webconf-participantes');
 const modalWebconfEditParticipante = document.getElementById('modal-webconf-edit-participante');
+const modalDemandaDetalhe = document.getElementById('modal-demanda-detalhe');
+const demandaDetalheContent = document.getElementById('demanda-detalhe-content');
+const webconfRegistrosCountEl = document.getElementById('webconf-registros-count');
+const slotWebconfDataSearch = document.getElementById('slot-webconf-data-search');
+const slotWebconfTextSearch = document.getElementById('slot-webconf-text-search');
+const webconfDataSearchWrap = document.getElementById('webconf-data-search-wrap');
+const webconfTextSearchWrap = document.getElementById('webconf-text-search-wrap');
+const webconfDataSearchStart = document.getElementById('webconf-data-search-start');
+const webconfDataSearchEnd = document.getElementById('webconf-data-search-end');
+const webconfTextSearchInput = document.getElementById('webconf-text-search-input');
 const msgEl = document.getElementById('msg');
 const seenDemandasKey = `seenDemandas:${user.nome}`;
 const SILENT_REFRESH_MS = 3000;
@@ -99,6 +114,73 @@ function closeModal(el) {
 
 function isEnabled(value) {
   return String(value || '').trim().toLowerCase() === 'sim';
+}
+
+function normalizeTextValue(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
+function parseBrDate(value) {
+  const text = String(value || '').trim();
+  const match = text.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!match) return null;
+  const date = new Date(Number(match[3]), Number(match[2]) - 1, Number(match[1]));
+  if (Number.isNaN(date.getTime())) return null;
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+function parseInputDate(value) {
+  const text = String(value || '').trim();
+  if (!text) return null;
+  const br = text.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!br) return null;
+  const date = new Date(Number(br[3]), Number(br[2]) - 1, Number(br[1]));
+  if (Number.isNaN(date.getTime())) return null;
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+function webconfMatchesDateRange(dateText, startInput, endInput) {
+  const date = parseBrDate(dateText);
+  const start = parseInputDate(startInput);
+  const end = parseInputDate(endInput);
+  if (start) {
+    if (!date || date < start) return false;
+  }
+  if (end) {
+    if (!date || date > end) return false;
+  }
+  return true;
+}
+
+function getFilteredWebconfRegistros() {
+  const { dataInicio, dataFim, texto } = state.webconfFilters;
+  const term = normalizeTextValue(texto);
+  const hasDateFilter = !!(String(dataInicio || '').trim() || String(dataFim || '').trim());
+  const hasTextFilter = !!term;
+  const hasCriteria = hasDateFilter || hasTextFilter;
+
+  if (!hasCriteria) {
+    return { hasCriteria, filtered: state.webconfRegistros };
+  }
+
+  const filtered = state.webconfRegistros.filter((row) => {
+    const matchesDate = !hasDateFilter || webconfMatchesDateRange(row.data, dataInicio, dataFim);
+    const bag = [
+      row.id,
+      row.qualWebconferencia,
+      row.data,
+      row.horario,
+      row.atendente,
+      row.enteNaoCompareceu,
+      row.quantidadeAtendida,
+      row.participantes
+    ].map(normalizeTextValue).join(' ');
+    const matchesText = !hasTextFilter || bag.includes(term);
+    return matchesDate && matchesText;
+  });
+  return { hasCriteria, filtered };
 }
 
 async function runAction(actionName, loadingText, successType, successText, fn) {
@@ -198,11 +280,22 @@ function renderDemandas() {
       ? `<button class="btn-note" data-note="${d.id}" type="button" title="Motivo da reabertura">🗒</button>`
       : '';
     const tr = document.createElement('tr');
+    const descricaoPreview = String(d.descricao || '').trim();
+    const detalhamentoBtn = `
+      <button class="btn-soft btn-mini detail-inline-btn" data-detail="${d.id}" data-row-index="${d.rowIndex || ''}" type="button" title="Ver detalhamento">
+        <i class="bi bi-card-text"></i> Ver detalhamento
+      </button>
+    `;
     tr.innerHTML = `
       <td>${andamentoDot}${d.id}</td>
       <td>${d.area}</td>
       <td><span class="cat-badge ${categoriaClass}">${d.categoria || '-'}</span></td>
-      <td>${d.descricao}</td>
+      <td>
+        <div class="demand-desc-wrap">
+          <div class="demand-desc-preview">${descricaoPreview || '-'}</div>
+          ${detalhamentoBtn}
+        </div>
+      </td>
       <td>
         <div class="status-actions">
           ${noteBtn}
@@ -229,6 +322,30 @@ function renderDemandas() {
         message: demanda.motivoReabertura,
         closeLabel: 'Fechar'
       });
+    });
+  });
+  demandasEl.querySelectorAll('[data-detail]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.detail;
+      const rowIndex = Number(btn.dataset.rowIndex || 0) || null;
+      const demanda = abertas.find((d) => d.id === id && (rowIndex ? Number(d.rowIndex) === rowIndex : true))
+        || abertas.find((d) => d.id === id);
+      if (!demanda || !demandaDetalheContent) return;
+      const text = [
+        `ID: ${demanda.id || '-'}`,
+        `Área: ${demanda.area || '-'}`,
+        `Categoria: ${demanda.categoria || '-'}`,
+        `Data do Registro: ${demanda.dataRegistro || '-'}`,
+        `Status: ${demanda.finalizado || 'Não iniciada'}`,
+        `Atribuída para: ${demanda.atribuidaPara || '-'}`,
+        `Registrado por: ${demanda.registradoPor || '-'}`,
+        `Finalizado por: ${demanda.finalizadoPor || '-'}`,
+        '',
+        'Descrição completa:',
+        `${demanda.descricao || '-'}`
+      ].join('\n');
+      demandaDetalheContent.textContent = text;
+      openModal(modalDemandaDetalhe);
     });
   });
 }
@@ -286,12 +403,24 @@ function renderWebconfRegistros() {
 
   webconfBlockEl.classList.remove('hidden');
   webconfBodyEl.innerHTML = '';
-  if (!state.webconfRegistros.length) {
+  const { hasCriteria, filtered } = getFilteredWebconfRegistros();
+  if (webconfRegistrosCountEl) {
+    if (hasCriteria) {
+      const total = filtered.length;
+      webconfRegistrosCountEl.textContent = `${total} resultado${total === 1 ? '' : 's'} encontrado${total === 1 ? '' : 's'}.`;
+      webconfRegistrosCountEl.classList.remove('hidden');
+    } else {
+      webconfRegistrosCountEl.textContent = '';
+      webconfRegistrosCountEl.classList.add('hidden');
+    }
+  }
+
+  if (!filtered.length) {
     webconfBodyEl.innerHTML = '<tr><td colspan=\"8\">Nenhum registro de webconferência encontrado.</td></tr>';
     return;
   }
 
-  state.webconfRegistros.forEach((row, index) => {
+  filtered.forEach((row, index) => {
     const webconfKey = row.id || `legacy-${index}`;
     const tr = document.createElement('tr');
     tr.innerHTML = `
@@ -321,7 +450,7 @@ function renderWebconfRegistros() {
     btn.addEventListener('click', () => {
       const tr = btn.closest('tr');
       const key = tr?.dataset.webconfKey || btn.dataset.webconfParticipantes;
-      const row = state.webconfRegistros.find((r, idx) => (r.id || `legacy-${idx}`) === key);
+      const row = filtered.find((r, idx) => (r.id || `legacy-${idx}`) === key);
       document.getElementById('webconf-participantes-preview').textContent = row?.participantes || 'Sem participantes';
       openModal(modalWebconfParticipantes);
     });
@@ -616,6 +745,69 @@ function setupWhatsapp() {
   });
 }
 
+function setupWebconfSearch() {
+  if (!slotWebconfDataSearch || !slotWebconfTextSearch || !webconfDataSearchWrap || !webconfTextSearchWrap) return;
+
+  const noHistorySuffix = String(Date.now());
+  [
+    { el: webconfDataSearchStart, name: `webconf_inicio_${noHistorySuffix}` },
+    { el: webconfDataSearchEnd, name: `webconf_fim_${noHistorySuffix}` },
+    { el: webconfTextSearchInput, name: `webconf_texto_${noHistorySuffix}` }
+  ].forEach(({ el, name }) => {
+    if (!el) return;
+    el.setAttribute('name', name);
+    el.setAttribute('autocomplete', 'off');
+    el.setAttribute('autocorrect', 'off');
+    el.setAttribute('autocapitalize', 'off');
+    el.setAttribute('spellcheck', 'false');
+  });
+
+  const btnToggleDate = document.getElementById('btn-toggle-webconf-data-search');
+  const btnToggleText = document.getElementById('btn-toggle-webconf-text-search');
+  if (btnToggleDate && !btnToggleDate.dataset.bound) {
+    btnToggleDate.dataset.bound = 'true';
+    btnToggleDate.addEventListener('click', () => {
+      webconfDataSearchWrap.classList.toggle('open');
+      slotWebconfDataSearch.classList.toggle('is-open');
+      if (webconfDataSearchWrap.classList.contains('open')) {
+        webconfDataSearchStart?.focus();
+      }
+    });
+  }
+  if (btnToggleText && !btnToggleText.dataset.bound) {
+    btnToggleText.dataset.bound = 'true';
+    btnToggleText.addEventListener('click', () => {
+      webconfTextSearchWrap.classList.toggle('open');
+      slotWebconfTextSearch.classList.toggle('is-open');
+      if (webconfTextSearchWrap.classList.contains('open')) {
+        webconfTextSearchInput?.focus();
+      }
+    });
+  }
+
+  if (webconfDataSearchStart && !webconfDataSearchStart.dataset.bound) {
+    webconfDataSearchStart.dataset.bound = 'true';
+    webconfDataSearchStart.addEventListener('input', () => {
+      state.webconfFilters.dataInicio = webconfDataSearchStart.value || '';
+      renderWebconfRegistros();
+    });
+  }
+  if (webconfDataSearchEnd && !webconfDataSearchEnd.dataset.bound) {
+    webconfDataSearchEnd.dataset.bound = 'true';
+    webconfDataSearchEnd.addEventListener('input', () => {
+      state.webconfFilters.dataFim = webconfDataSearchEnd.value || '';
+      renderWebconfRegistros();
+    });
+  }
+  if (webconfTextSearchInput && !webconfTextSearchInput.dataset.bound) {
+    webconfTextSearchInput.dataset.bound = 'true';
+    webconfTextSearchInput.addEventListener('input', () => {
+      state.webconfFilters.texto = webconfTextSearchInput.value || '';
+      renderWebconfRegistros();
+    });
+  }
+}
+
 function setupWebconfWizard() {
   const openBtn = document.getElementById('btn-open-webconf-modal');
   const closeBtn = document.getElementById('btn-close-webconf-modal');
@@ -816,6 +1008,10 @@ document.getElementById('btn-logout').addEventListener('click', async () => {
   await showStatus('excluido', 'Sessão encerrada');
   window.location.href = 'login.html';
 });
+const btnCloseDemandaDetalhe = document.getElementById('btn-close-demanda-detalhe');
+if (btnCloseDemandaDetalhe) {
+  btnCloseDemandaDetalhe.addEventListener('click', () => closeModal(modalDemandaDetalhe));
+}
 
 
 async function refreshSilently() {
@@ -843,6 +1039,7 @@ async function refreshSilently() {
       renderRegistrosSiga();
       renderWebconfRegistros();
       setupWhatsapp();
+      setupWebconfSearch();
       setupWebconfWizard();
     });
 

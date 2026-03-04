@@ -85,6 +85,32 @@
       <article id="webconf-block" class="section-shell hidden">
         <div class="section-title">Registros Webconferência</div>
         <div class="section-content webconf-panel">
+          <div class="search-toolbar">
+            <div id="slot-webconf-data-search" class="search-slot">
+              <div class="search-slot-bar">
+                <span>Pesquisa por data ou período</span>
+                <button id="btn-toggle-webconf-data-search" class="icon-search-toggle" type="button" title="Pesquisar por data ou período">
+                  <img src="./assets/icons/pesquisar-data.svg" alt="Pesquisar por data" />
+                </button>
+              </div>
+              <div id="webconf-data-search-wrap" class="search-inline-wrap search-expand">
+                <input id="webconf-data-search-start" type="text" placeholder="Início" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+                <input id="webconf-data-search-end" type="text" placeholder="Fim" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+              </div>
+            </div>
+            <div id="slot-webconf-text-search" class="search-slot">
+              <div class="search-slot-bar">
+                <span>Palavra chave, ID, atendente, etc...</span>
+                <button id="btn-toggle-webconf-text-search" class="icon-search-toggle" type="button" title="Pesquisar por texto">
+                  <img src="./assets/icons/lupa-pesquisa.svg" alt="Pesquisar por texto" />
+                </button>
+              </div>
+              <div id="webconf-text-search-wrap" class="search-inline-wrap search-expand">
+                <input id="webconf-text-search-input" type="text" placeholder="Palavra chave, ID, atendente, etc..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+              </div>
+            </div>
+          </div>
+          <div id="webconf-registros-count" class="results-count hidden"></div>
           <div class="table-shell demand-table">
             <table class="table">
               <thead>
@@ -250,6 +276,17 @@
         <div class="form-actions">
           <button id="btn-save-webconf-edit" class="btn-main" type="button">Salvar</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-demanda-detalhe" class="modal-overlay">
+    <div class="modal small">
+      <header class="modal-header">Detalhamento da Demanda
+        <button id="btn-close-demanda-detalhe" class="modal-close-x" type="button">×</button>
+      </header>
+      <div class="modal-content">
+        <pre id="demanda-detalhe-content" class="webconf-preview"></pre>
       </div>
     </div>
   </div>
