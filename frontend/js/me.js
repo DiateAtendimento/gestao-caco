@@ -281,11 +281,6 @@ function renderDemandas() {
       : '';
     const tr = document.createElement('tr');
     const descricaoPreview = String(d.descricao || '').trim();
-    const detalhamentoBtn = `
-      <button class="detail-inline-btn" data-detail="${d.id}" data-row-index="${d.rowIndex || ''}" type="button" title="Ver detalhamento">
-        <i class="bi bi-eye-fill" aria-hidden="true"></i>
-      </button>
-    `;
     tr.innerHTML = `
       <td>${andamentoDot}${d.id}</td>
       <td>${d.area}</td>
@@ -293,11 +288,13 @@ function renderDemandas() {
       <td>
         <div class="demand-desc-wrap">
           <div class="demand-desc-preview">${descricaoPreview || '-'}</div>
-          ${detalhamentoBtn}
         </div>
       </td>
       <td>
         <div class="status-actions">
+          <button class="detail-inline-btn" data-detail="${d.id}" data-row-index="${d.rowIndex || ''}" type="button" title="Ver detalhamento">
+            <i class="bi bi-eye-fill" aria-hidden="true"></i>
+          </button>
           ${noteBtn}
           <button class="btn-status andamento" data-start="${d.id}" data-row-index="${d.rowIndex || ''}" type="button">Em andamento</button>
           <button class="btn-status concluido" data-done="${d.id}" data-row-index="${d.rowIndex || ''}" type="button">Concluído</button>
@@ -331,19 +328,7 @@ function renderDemandas() {
       const demanda = abertas.find((d) => d.id === id && (rowIndex ? Number(d.rowIndex) === rowIndex : true))
         || abertas.find((d) => d.id === id);
       if (!demanda || !demandaDetalheContent) return;
-      const text = [
-        `ID: ${demanda.id || '-'}`,
-        `Área: ${demanda.area || '-'}`,
-        `Categoria: ${demanda.categoria || '-'}`,
-        `Data do Registro: ${demanda.dataRegistro || '-'}`,
-        `Status: ${demanda.finalizado || 'Não iniciada'}`,
-        `Atribuída para: ${demanda.atribuidaPara || '-'}`,
-        `Registrado por: ${demanda.registradoPor || '-'}`,
-        `Finalizado por: ${demanda.finalizadoPor || '-'}`,
-        '',
-        'Descrição completa:',
-        `${demanda.descricao || '-'}`
-      ].join('\n');
+      const text = `${demanda.descricao || '-'}`;
       demandaDetalheContent.textContent = text;
       openModal(modalDemandaDetalhe);
     });
@@ -436,7 +421,11 @@ function renderWebconfRegistros() {
       </td>
       <td>${row.enteNaoCompareceu || '-'}</td>
       <td>${Number(row.quantidadeAtendida || 0)}</td>
-      <td><button class=\"btn-soft\" data-webconf-participantes=\"${webconfKey}\">Ver</button></td>
+      <td>
+        <button class=\"detail-inline-btn table-eye-btn\" data-webconf-participantes=\"${webconfKey}\" type=\"button\" title=\"Ver participantes\">
+          <i class=\"bi bi-eye-fill\" aria-hidden=\"true\"></i>
+        </button>
+      </td>
     `;
     tr.dataset.webconfKey = webconfKey;
     webconfBodyEl.appendChild(tr);

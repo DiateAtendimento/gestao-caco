@@ -908,6 +908,8 @@ img {
 .status-actions {
   display: flex;
   gap: 8px;
+  align-items: center;
+  flex-wrap: nowrap;
 }
 
 .demand-desc-wrap {
@@ -926,7 +928,7 @@ img {
 }
 
 .detail-inline-btn {
-  align-self: flex-end;
+  align-self: center;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -954,6 +956,10 @@ img {
 
 [data-theme='dark'] .detail-inline-btn {
   background: #5c98e3;
+}
+
+.table-eye-btn {
+  margin: 0 auto;
 }
 
 .btn-note {
