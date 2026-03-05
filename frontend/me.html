@@ -304,42 +304,22 @@
         <button id="btn-close-redir" class="modal-close-x" type="button">×</button>
       </header>
       <div class="modal-content">
-        <div class="tab-row">
-          <button id="redir-tab-recebidas" class="active" type="button">Demandas Redirecionadas</button>
-          <button id="redir-tab-enviadas" type="button">Demandas Repassadas</button>
-        </div>
-        <section id="redir-pane-recebidas" class="tab-content active">
           <div class="table-shell demand-table">
             <table class="table">
               <thead>
                 <tr>
+                  <th>Tipo</th>
                   <th>ID Demanda</th>
-                  <th>Área</th>
-                  <th>De colaborador</th>
+                  <th>Colaborador</th>
+                  <th>Status</th>
                   <th>Descrição</th>
+                  <th>Motivo devolução</th>
                   <th>Ação</th>
                 </tr>
               </thead>
-              <tbody id="redir-recebidas-body"></tbody>
+              <tbody id="redir-unificado-body"></tbody>
             </table>
           </div>
-        </section>
-        <section id="redir-pane-enviadas" class="tab-content">
-        <div class="table-shell demand-table">
-          <table class="table">
-            <thead>
-              <tr>
-                <th>ID Demanda</th>
-                <th>Para colaborador</th>
-                <th>Status</th>
-                <th>Motivo devolução</th>
-                <th>Ação</th>
-              </tr>
-            </thead>
-            <tbody id="redir-enviadas-body"></tbody>
-          </table>
-        </div>
-        </section>
       </div>
     </div>
   </div>

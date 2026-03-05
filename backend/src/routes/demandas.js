@@ -388,8 +388,11 @@ router.get('/redirecionadas/enviadas', async (req, res) => {
     const { rows } = await readSheet(REDIRECT_SHEET);
     const registros = rows
       .filter((row) => equalsIgnoreCase(row[REDIRECT_COL.DE_COLABORADOR], req.user.nome))
-      .filter((row) => equalsIgnoreCase(row[REDIRECT_COL.STATUS], 'Devolvido'))
       .filter((row) => equalsIgnoreCase(row[REDIRECT_COL.ATIVO], 'Sim'))
+      .filter((row) => {
+        const status = normalizeText(row[REDIRECT_COL.STATUS]).toLowerCase();
+        return status === 'pendente' || status === 'devolvido';
+      })
       .map(mapRedirectRow);
     return res.json({ registros });
   } catch (error) {

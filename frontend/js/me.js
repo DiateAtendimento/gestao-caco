@@ -44,8 +44,7 @@ const modalRedir = document.getElementById('modal-redir');
 const modalRedirCriar = document.getElementById('modal-redir-criar');
 const demandaDetalheContent = document.getElementById('demanda-detalhe-content');
 const redirBadgeEl = document.getElementById('redir-badge');
-const redirRecebidasBodyEl = document.getElementById('redir-recebidas-body');
-const redirEnviadasBodyEl = document.getElementById('redir-enviadas-body');
+const redirUnificadoBodyEl = document.getElementById('redir-unificado-body');
 const redirObservacoesEl = document.getElementById('redir-observacoes');
 const redirFromAvatarEl = document.getElementById('redir-from-avatar');
 const redirFromNameEl = document.getElementById('redir-from-name');
@@ -53,10 +52,6 @@ const redirToAvatarEl = document.getElementById('redir-to-avatar');
 const redirToNameEl = document.getElementById('redir-to-name');
 const redirToPickerEl = document.getElementById('redir-to-picker');
 const redirToListEl = document.getElementById('redir-to-list');
-const redirTabRecebidasEl = document.getElementById('redir-tab-recebidas');
-const redirTabEnviadasEl = document.getElementById('redir-tab-enviadas');
-const redirPaneRecebidasEl = document.getElementById('redir-pane-recebidas');
-const redirPaneEnviadasEl = document.getElementById('redir-pane-enviadas');
 const webconfRegistrosCountEl = document.getElementById('webconf-registros-count');
 const slotWebconfDataSearch = document.getElementById('slot-webconf-data-search');
 const slotWebconfTextSearch = document.getElementById('slot-webconf-text-search');
@@ -502,82 +497,82 @@ function renderRedirectBadge() {
   redirBadgeEl.classList.toggle('hidden', total <= 0);
 }
 
-function renderRedirectReceived() {
-  if (!redirRecebidasBodyEl) return;
-  redirRecebidasBodyEl.innerHTML = '';
-  if (!state.redirectReceived.length) {
-    redirRecebidasBodyEl.innerHTML = '<tr><td colspan="5">Nenhuma demanda redirecionada pendente.</td></tr>';
+function renderRedirectUnified() {
+  if (!redirUnificadoBodyEl) return;
+  redirUnificadoBodyEl.innerHTML = '';
+
+  const receivedRows = (state.redirectReceived || []).map((item) => ({
+    tipo: 'Recebida',
+    colaboradorNome: item.deColaborador || '-',
+    status: item.status || 'Pendente',
+    descricao: item.descricaoSnapshot || '-',
+    motivoDevolucao: item.motivoDevolucao || '-',
+    idDemanda: item.idDemanda || '-',
+    idRedirecionamento: item.idRedirecionamento || '',
+    actionType: 'recebida'
+  }));
+  const sentRows = (state.redirectSent || []).map((item) => ({
+    tipo: 'Enviada',
+    colaboradorNome: item.paraColaborador || '-',
+    status: item.status || '-',
+    descricao: item.descricaoSnapshot || '-',
+    motivoDevolucao: item.motivoDevolucao || '-',
+    idDemanda: item.idDemanda || '-',
+    idRedirecionamento: item.idRedirecionamento || '',
+    actionType: normalizeTextValue(item.status) === 'devolvido' ? 'enviada-devolvida' : 'enviada'
+  }));
+
+  const rows = [...receivedRows, ...sentRows];
+  if (!rows.length) {
+    redirUnificadoBodyEl.innerHTML = '<tr><td colspan="6">Nenhuma demanda redirecionada no momento.</td></tr>';
     return;
   }
-  state.redirectReceived.forEach((item) => {
+
+  rows.forEach((item) => {
     const tr = document.createElement('tr');
+    let actionHtml = '<span>-</span>';
+    if (item.actionType === 'recebida') {
+      actionHtml = `
+        <button class="btn-status concluido" data-redir-accept="${item.idRedirecionamento}" type="button">Aceitar</button>
+        <button class="btn-status andamento" data-redir-return="${item.idRedirecionamento}" type="button">Devolver</button>
+      `;
+    } else if (item.actionType === 'enviada-devolvida') {
+      actionHtml = `
+        <button class="btn-status concluido" data-redir-accept-return="${item.idRedirecionamento}" type="button">Aceitar</button>
+        <button class="btn-status andamento" data-redir-refuse-return="${item.idRedirecionamento}" type="button">Recusar</button>
+      `;
+    }
+
     tr.innerHTML = `
-      <td>${item.idDemanda || '-'}</td>
-      <td>${item.area || '-'}</td>
+      <td>${item.tipo}</td>
+      <td>${item.idDemanda}</td>
       <td>
         <div class="redir-mini-person">
-          <img data-redir-avatar="${item.deColaborador || ''}" alt="${item.deColaborador || 'Colaborador'}" />
-          <span>${item.deColaborador || '-'}</span>
+          <img data-redir-avatar="${item.colaboradorNome}" alt="${item.colaboradorNome}" />
+          <span>${item.colaboradorNome}</span>
         </div>
       </td>
-      <td>${truncateText(item.descricaoSnapshot || '-', 120)}</td>
-      <td>
-        <div class="status-actions">
-          <button class="btn-status concluido" data-redir-accept="${item.idRedirecionamento}" type="button">Aceitar</button>
-          <button class="btn-status andamento" data-redir-return="${item.idRedirecionamento}" type="button">Devolver</button>
-        </div>
-      </td>
+      <td><span class="cat-badge urgente">${item.status}</span></td>
+      <td>${truncateText(item.descricao, 95)}</td>
+      <td>${item.motivoDevolucao}</td>
+      <td><div class="status-actions">${actionHtml}</div></td>
     `;
-    redirRecebidasBodyEl.appendChild(tr);
+    redirUnificadoBodyEl.appendChild(tr);
   });
 
-  redirRecebidasBodyEl.querySelectorAll('[data-redir-avatar]').forEach((img) => {
+  redirUnificadoBodyEl.querySelectorAll('[data-redir-avatar]').forEach((img) => {
     attachAvatar(img, img.dataset.redirAvatar || '');
   });
-  redirRecebidasBodyEl.querySelectorAll('[data-redir-accept]').forEach((btn) => {
+  redirUnificadoBodyEl.querySelectorAll('[data-redir-accept]').forEach((btn) => {
     btn.addEventListener('click', () => void acceptRedirect(btn.dataset.redirAccept));
   });
-  redirRecebidasBodyEl.querySelectorAll('[data-redir-return]').forEach((btn) => {
+  redirUnificadoBodyEl.querySelectorAll('[data-redir-return]').forEach((btn) => {
     btn.addEventListener('click', () => void returnRedirect(btn.dataset.redirReturn));
   });
-}
-
-function renderRedirectSent() {
-  if (!redirEnviadasBodyEl) return;
-  redirEnviadasBodyEl.innerHTML = '';
-  if (!state.redirectSent.length) {
-    redirEnviadasBodyEl.innerHTML = '<tr><td colspan="5">Nenhuma demanda devolvida no momento.</td></tr>';
-    return;
-  }
-  state.redirectSent.forEach((item) => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${item.idDemanda || '-'}</td>
-      <td>
-        <div class="redir-mini-person">
-          <img data-redir-avatar="${item.paraColaborador || ''}" alt="${item.paraColaborador || 'Colaborador'}" />
-          <span>${item.paraColaborador || '-'}</span>
-        </div>
-      </td>
-      <td><span class="cat-badge urgente">${item.status || '-'}</span></td>
-      <td>${item.motivoDevolucao || '-'}</td>
-      <td>
-        <div class="status-actions">
-          <button class="btn-status concluido" data-redir-accept-return="${item.idRedirecionamento}" type="button">Aceitar</button>
-          <button class="btn-status andamento" data-redir-refuse-return="${item.idRedirecionamento}" type="button">Recusar</button>
-        </div>
-      </td>
-    `;
-    redirEnviadasBodyEl.appendChild(tr);
-  });
-
-  redirEnviadasBodyEl.querySelectorAll('[data-redir-avatar]').forEach((img) => {
-    attachAvatar(img, img.dataset.redirAvatar || '');
-  });
-  redirEnviadasBodyEl.querySelectorAll('[data-redir-accept-return]').forEach((btn) => {
+  redirUnificadoBodyEl.querySelectorAll('[data-redir-accept-return]').forEach((btn) => {
     btn.addEventListener('click', () => void acceptReturnedRedirect(btn.dataset.redirAcceptReturn));
   });
-  redirEnviadasBodyEl.querySelectorAll('[data-redir-refuse-return]').forEach((btn) => {
+  redirUnificadoBodyEl.querySelectorAll('[data-redir-refuse-return]').forEach((btn) => {
     btn.addEventListener('click', () => void refuseReturnedRedirect(btn.dataset.redirRefuseReturn));
   });
 }
@@ -662,8 +657,7 @@ async function sendRedirect() {
       await loadData();
       renderDemandas();
       renderRedirectBadge();
-      renderRedirectReceived();
-      renderRedirectSent();
+      renderRedirectUnified();
     });
   } catch (_e) {}
 }
@@ -675,8 +669,7 @@ async function acceptRedirect(redirectId) {
       await loadData();
       renderDemandas();
       renderRedirectBadge();
-      renderRedirectReceived();
-      renderRedirectSent();
+      renderRedirectUnified();
     });
   } catch (_e) {}
 }
@@ -698,8 +691,7 @@ async function returnRedirect(redirectId) {
       });
       await loadData();
       renderRedirectBadge();
-      renderRedirectReceived();
-      renderRedirectSent();
+      renderRedirectUnified();
     });
   } catch (_e) {}
 }
@@ -710,8 +702,7 @@ async function acceptReturnedRedirect(redirectId) {
       await api(`/api/demandas/redirecionadas/${encodeURIComponent(redirectId)}/aceitar-devolucao`, { method: 'POST' });
       await loadData();
       renderRedirectBadge();
-      renderRedirectReceived();
-      renderRedirectSent();
+      renderRedirectUnified();
     });
   } catch (_e) {}
 }
@@ -722,8 +713,7 @@ async function refuseReturnedRedirect(redirectId) {
       await api(`/api/demandas/redirecionadas/${encodeURIComponent(redirectId)}/recusar-devolucao`, { method: 'POST' });
       await loadData();
       renderRedirectBadge();
-      renderRedirectReceived();
-      renderRedirectSent();
+      renderRedirectUnified();
     });
   } catch (_e) {}
 }
@@ -1313,25 +1303,13 @@ function setupRedirectModules() {
   const btnConfirm = document.getElementById('btn-confirm-redir');
   if (!btnOpenRedir || !btnCloseRedir || !btnCloseCriar || !btnConfirm) return;
 
-  const openPane = (pane) => {
-    const recebidas = pane !== 'enviadas';
-    redirTabRecebidasEl?.classList.toggle('active', recebidas);
-    redirTabEnviadasEl?.classList.toggle('active', !recebidas);
-    redirPaneRecebidasEl?.classList.toggle('active', recebidas);
-    redirPaneEnviadasEl?.classList.toggle('active', !recebidas);
-  };
-
   btnOpenRedir.addEventListener('click', () => {
-    renderRedirectReceived();
-    renderRedirectSent();
-    openPane('recebidas');
+    renderRedirectUnified();
     openModal(modalRedir);
   });
   btnCloseRedir.addEventListener('click', () => closeModal(modalRedir));
   btnCloseCriar.addEventListener('click', () => closeModal(modalRedirCriar));
   btnConfirm.addEventListener('click', () => void sendRedirect());
-  redirTabRecebidasEl?.addEventListener('click', () => openPane('recebidas'));
-  redirTabEnviadasEl?.addEventListener('click', () => openPane('enviadas'));
   redirToPickerEl?.addEventListener('click', () => {
     redirToListEl?.classList.toggle('open');
   });
@@ -1355,8 +1333,7 @@ async function refreshSilently() {
     renderRegistrosSiga();
     renderWebconfRegistros();
     renderRedirectBadge();
-    renderRedirectReceived();
-    renderRedirectSent();
+    renderRedirectUnified();
   } catch (error) {
     console.error('[Colaborador] polling erro:', error.message);
   } finally {
@@ -1373,8 +1350,7 @@ async function refreshSilently() {
       renderRegistrosSiga();
       renderWebconfRegistros();
       renderRedirectBadge();
-      renderRedirectReceived();
-      renderRedirectSent();
+      renderRedirectUnified();
       setupWhatsapp();
       setupWebconfSearch();
       setupWebconfWizard();
