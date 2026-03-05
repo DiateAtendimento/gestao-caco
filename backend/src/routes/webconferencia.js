@@ -154,6 +154,20 @@ function setByHeaderAliases(targetRow, existingHeaders, aliases, value) {
   }
 }
 
+function setByHeaderTokenIncludes(targetRow, existingHeaders, requiredTokens, value) {
+  const tokens = requiredTokens.map((t) => normalizeHeaderLabel(t));
+  let matched = false;
+  (existingHeaders || []).forEach((header) => {
+    const normalized = normalizeHeaderLabel(header);
+    const hasAll = tokens.every((token) => normalized.includes(token));
+    if (hasAll) {
+      targetRow[header] = value;
+      matched = true;
+    }
+  });
+  return matched;
+}
+
 function normalizeComparableText(value) {
   return String(value || '')
     .normalize('NFD')
@@ -376,6 +390,7 @@ router.post('/registros', async (req, res) => {
       ['Qual a Webconferencia', 'Qual a Webconferência', 'Qual Webconferencia', 'Qual Webconferência'],
       qualWebconferencia
     );
+    setByHeaderTokenIncludes(webconfRow, webconfHeaders, ['qual', 'webconfer'], qualWebconferencia);
     setByHeaderAliases(webconfRow, webconfHeaders, ['Horário', 'Horario'], horario);
     setByHeaderAliases(webconfRow, webconfHeaders, ['Ente compareceu ao agendamento', 'Ente compareceu'], enteCompareceu);
     setByHeaderAliases(
