@@ -130,6 +130,30 @@ function legacyWebconfId(row) {
   return `LG${hash}${rowPart}`;
 }
 
+function normalizeHeaderLabel(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, ' ')
+    .replace(/[^a-zA-Z0-9 ]+/g, '')
+    .trim()
+    .toLowerCase();
+}
+
+function setByHeaderAliases(targetRow, existingHeaders, aliases, value) {
+  const aliasSet = new Set(aliases.map((alias) => normalizeHeaderLabel(alias)));
+  let matched = false;
+  (existingHeaders || []).forEach((header) => {
+    if (aliasSet.has(normalizeHeaderLabel(header))) {
+      targetRow[header] = value;
+      matched = true;
+    }
+  });
+  if (!matched && aliases[0]) {
+    targetRow[aliases[0]] = value;
+  }
+}
+
 function normalizeComparableText(value) {
   return String(value || '')
     .normalize('NFD')
@@ -321,6 +345,7 @@ router.post('/registros', async (req, res) => {
     }
 
     await writeHeadersIfEmpty(WEBCONF_SHEET, WEBCONF_HEADERS);
+    const { headers: webconfHeaders } = await readSheet(WEBCONF_SHEET);
     await writeHeadersIfEmpty(DEMANDS_SHEET, DEMANDS_HEADERS);
     await ensureDemandsMetaColumn();
 
@@ -344,22 +369,24 @@ router.post('/registros', async (req, res) => {
       ? participants.map((p, index) => participantBlock(p, index)).join('\n\n--------------------\n\n')
       : '';
 
-    await appendMappedRow(WEBCONF_SHEET, {
-      ID: webId,
-      'Qual a Webconferencia': qualWebconferencia,
-      'Qual a Webconferência': qualWebconferencia,
-      'Qual Webconferencia': qualWebconferencia,
-      'Qual Webconferência': qualWebconferencia,
-      Data: data,
-      'Horário': horario,
-      Horario: horario,
-      Atendente: req.user.nome,
-      'Ente compareceu ao agendamento': enteCompareceu,
-      'Ente não compareceu ao agendamento': enteNaoCompareceu,
-      'Ente nao compareceu ao agendamento': enteNaoCompareceu,
-      'Quantidade atendida': String(quantidadeAtendida),
-      Participantes: participantesTexto
-    }, WEBCONF_HEADERS);
+    const webconfRow = { ID: webId, Data: data, Atendente: req.user.nome, Participantes: participantesTexto };
+    setByHeaderAliases(
+      webconfRow,
+      webconfHeaders,
+      ['Qual a Webconferencia', 'Qual a Webconferência', 'Qual Webconferencia', 'Qual Webconferência'],
+      qualWebconferencia
+    );
+    setByHeaderAliases(webconfRow, webconfHeaders, ['Horário', 'Horario'], horario);
+    setByHeaderAliases(webconfRow, webconfHeaders, ['Ente compareceu ao agendamento', 'Ente compareceu'], enteCompareceu);
+    setByHeaderAliases(
+      webconfRow,
+      webconfHeaders,
+      ['Ente não compareceu ao agendamento', 'Ente nao compareceu ao agendamento'],
+      enteNaoCompareceu
+    );
+    setByHeaderAliases(webconfRow, webconfHeaders, ['Quantidade atendida'], String(quantidadeAtendida));
+
+    await appendMappedRow(WEBCONF_SHEET, webconfRow, WEBCONF_HEADERS);
 
     let demandSeq = nextSequenceByPrefix(demandsRowsFresh.rows, 'WBC');
     const createdDemandIds = [];

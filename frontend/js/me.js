@@ -1145,6 +1145,10 @@ function setupWebconfWizard() {
 
   document.getElementById('webconf-next-1').addEventListener('click', async () => {
     state.webconfDraft.qualWebconferencia = document.getElementById('webconf-qual').value.trim();
+    if (!state.webconfDraft.qualWebconferencia) {
+      await showStatus('erro', 'Selecione qual é a webconferência');
+      return;
+    }
     await fillWebconfAgendaDefaults(state.webconfDraft.qualWebconferencia);
     setWebconfStep(2);
   });
@@ -1201,6 +1205,11 @@ function setupWebconfWizard() {
 
   document.getElementById('webconf-save').addEventListener('click', async () => {
     state.webconfDraft.qualWebconferencia = document.getElementById('webconf-qual').value.trim();
+    if (!state.webconfDraft.qualWebconferencia) {
+      await showStatus('erro', 'Selecione qual é a webconferência');
+      setWebconfStep(1);
+      return;
+    }
     state.webconfDraft.data = document.getElementById('webconf-data').value.trim();
     state.webconfDraft.horario = document.getElementById('webconf-horario').value.trim();
     state.webconfDraft.enteCompareceu = selectedEnteCompareceuValue();
