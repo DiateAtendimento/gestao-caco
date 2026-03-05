@@ -21,6 +21,8 @@ const { toBrDate, currentYear } = require('../utils/datetime');
 
 const router = express.Router();
 router.use(authMiddleware);
+const permissionCache = new Map();
+const PERMISSION_TTL_MS = 60 * 1000;
 
 function onlyDigits(value) {
   return String(value || '').replace(/\D/g, '');
@@ -28,13 +30,23 @@ function onlyDigits(value) {
 
 function parseParticipants(input) {
   if (!Array.isArray(input)) return [];
-  return input.map((item) => ({
-    nome: normalizeText(item?.nome),
-    cpf: onlyDigits(item?.cpf),
-    municipio: normalizeText(item?.municipio),
-    uf: normalizeText(item?.uf).toUpperCase(),
-    descricao: normalizeText(item?.descricao)
-  }));
+  return input
+    .map((item) => ({
+      nome: normalizeText(item?.nome),
+      cpf: onlyDigits(item?.cpf),
+      municipio: normalizeText(item?.municipio),
+      uf: normalizeText(item?.uf).toUpperCase(),
+      descricao: normalizeText(item?.descricao)
+    }))
+    .filter((p) => (p.nome || p.cpf || p.municipio || p.uf || p.descricao))
+    .filter((p) => !p.cpf || p.cpf.length === 11);
+}
+
+function countParticipantsFromText(participantesTexto) {
+  const text = String(participantesTexto || '');
+  if (!text.trim()) return 0;
+  const matches = text.match(/Participante\s+\d+/gi);
+  return matches ? matches.length : 0;
 }
 
 function participantBlock(p, index) {
@@ -157,9 +169,17 @@ function weekdayLabelByJsDay(jsDay) {
 }
 
 async function hasWebconferencePermission(nome) {
+  const key = normalizeText(nome).toLowerCase();
+  const cached = permissionCache.get(`webconf:${key}`);
+  const now = Date.now();
+  if (cached && cached.expiresAt > now) {
+    return cached.value;
+  }
   const { rows } = await readSheet(PROFILE_SHEET);
   const user = rows.find((row) => equalsIgnoreCase(row.Atendente, nome));
-  return !!(user && equalsIgnoreCase(user.Webconferencia, 'Sim'));
+  const value = !!(user && equalsIgnoreCase(user.Webconferencia, 'Sim'));
+  permissionCache.set(`webconf:${key}`, { value, expiresAt: now + PERMISSION_TTL_MS });
+  return value;
 }
 
 router.get('/registros', async (req, res) => {
@@ -200,7 +220,7 @@ router.get('/registros', async (req, res) => {
         horario: row['Horário'] || row.Horario || '',
         atendente: row.Atendente || '',
         enteNaoCompareceu: row['Ente não compareceu ao agendamento'] || row['Ente nao compareceu ao agendamento'] || '',
-        quantidadeAtendida: Number(row['Quantidade atendida'] || 0),
+        quantidadeAtendida: Number(row['Quantidade atendida'] || 0) || countParticipantsFromText(row.Participantes),
         participantes: row.Participantes || '',
         rowIndex: Number(row._rowIndex || 0) || 0
       }))
@@ -297,6 +317,7 @@ router.post('/registros', async (req, res) => {
     const horario = normalizeText(req.body?.horario);
     const enteNaoCompareceu = normalizeText(req.body?.enteNaoCompareceu);
     const participants = parseParticipants(req.body?.participants);
+    const quantidadeAtendida = participants.length;
 
     const webRowsFresh = await readSheet(WEBCONF_SHEET, { forceRefresh: true });
     const demandsRowsFresh = await readSheet(DEMANDS_SHEET, { forceRefresh: true });
@@ -304,7 +325,7 @@ router.post('/registros', async (req, res) => {
     const nextWebSeq = nextSequenceByPrefix(webRowsFresh.rows, 'RWC') + 1;
     const webId = `RWC${String(nextWebSeq).padStart(6, '0')}/${currentYear()}`;
 
-    const participantesTexto = participants.length
+    const participantesTexto = quantidadeAtendida
       ? participants.map((p, index) => participantBlock(p, index)).join('\n\n--------------------\n\n')
       : '';
 
@@ -320,7 +341,7 @@ router.post('/registros', async (req, res) => {
       Atendente: req.user.nome,
       'Ente não compareceu ao agendamento': enteNaoCompareceu,
       'Ente nao compareceu ao agendamento': enteNaoCompareceu,
-      'Quantidade atendida': String(participants.length),
+      'Quantidade atendida': String(quantidadeAtendida),
       Participantes: participantesTexto
     }, WEBCONF_HEADERS);
 

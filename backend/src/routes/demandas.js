@@ -1,6 +1,6 @@
 ﻿const express = require('express');
 const { authMiddleware } = require('../middleware/auth');
-const { DEMANDS_SHEET, PROFILE_SHEET, REDIRECT_SHEET, REDIRECT_HEADERS, STATUS } = require('../config/constants');
+const { DEMANDS_SHEET, PROFILE_SHEET, REDIRECT_SHEET, REDIRECT_HEADERS, ACTIVITY_COLUMNS, STATUS } = require('../config/constants');
 const { readSheet, updateMappedRow, appendMappedRow, writeHeadersIfEmpty } = require('../services/sheetsService');
 const { parseMeta, demandsRowTemplate, generateNextSolicitacaoId, ensureDemandsMetaColumn } = require('../services/demandService');
 const { normalizeText, equalsIgnoreCase } = require('../utils/text');
@@ -8,6 +8,8 @@ const { toBrDate, toBrDateTime, currentYear } = require('../utils/datetime');
 
 const router = express.Router();
 router.use(authMiddleware);
+const permissionCache = new Map();
+const PERMISSION_TTL_MS = 60 * 1000;
 
 function getRegisteredBy(row) {
   return row['Registrado por'] || row['Registrador por'] || '';
@@ -56,9 +58,17 @@ function resolveDemandRow(rows, id, rowIndexInput) {
 }
 
 async function hasSigaPermission(nome) {
+  const key = normalizeText(nome).toLowerCase();
+  const cached = permissionCache.get(`siga:${key}`);
+  const now = Date.now();
+  if (cached && cached.expiresAt > now) {
+    return cached.value;
+  }
   const { rows } = await readSheet(PROFILE_SHEET);
   const user = rows.find((row) => equalsIgnoreCase(row.Atendente, nome));
-  return !!(user && equalsIgnoreCase(user.Registrosiga, 'Sim'));
+  const value = !!(user && equalsIgnoreCase(user.Registrosiga, 'Sim'));
+  permissionCache.set(`siga:${key}`, { value, expiresAt: now + PERMISSION_TTL_MS });
+  return value;
 }
 
 function isSigaQueueItem(row) {
@@ -242,18 +252,26 @@ router.get('/redirecionaveis/:id', async (req, res) => {
       return res.status(403).json({ error: 'Apenas responsável atual pode redirecionar' });
     }
 
-    const activityColumn = mapAreaToActivityColumn(item.Assunto);
-    if (!activityColumn) return res.json({ colaboradores: [] });
-
     const { rows: profileRows } = await readSheet(PROFILE_SHEET);
+    const activityColumn = mapAreaToActivityColumn(item.Assunto);
+    const requester = profileRows.find((row) => equalsIgnoreCase(row.Atendente, req.user.nome));
+    const requesterActivities = ACTIVITY_COLUMNS.filter((col) => equalsIgnoreCase(requester?.[col], 'Sim'));
+
+    if (!activityColumn && !requesterActivities.length) {
+      return res.json({ colaboradores: [] });
+    }
+
     const colaboradores = profileRows
       .filter((row) => equalsIgnoreCase(row.Ativo, 'Sim'))
       .filter((row) => !equalsIgnoreCase(row.Atendente, req.user.nome))
-      .filter((row) => equalsIgnoreCase(row[activityColumn], 'Sim'))
+      .filter((row) => {
+        if (activityColumn) return equalsIgnoreCase(row[activityColumn], 'Sim');
+        return requesterActivities.some((col) => equalsIgnoreCase(row[col], 'Sim'));
+      })
       .map((row) => ({
         nome: row.Atendente,
         ramal: row.Ramal || '',
-        atividade: activityColumn
+        atividade: activityColumn || requesterActivities.join(', ')
       }));
 
     return res.json({ colaboradores });
@@ -292,9 +310,13 @@ router.post('/:id/redirecionar', async (req, res) => {
 
     const activityColumn = mapAreaToActivityColumn(item.Assunto);
     const { rows: profileRows } = await readSheet(PROFILE_SHEET);
+    const requester = profileRows.find((row) => equalsIgnoreCase(row.Atendente, req.user.nome));
+    const requesterActivities = ACTIVITY_COLUMNS.filter((col) => equalsIgnoreCase(requester?.[col], 'Sim'));
     const target = profileRows.find((row) => equalsIgnoreCase(row.Atendente, paraColaborador) && equalsIgnoreCase(row.Ativo, 'Sim'));
     if (!target) return res.status(404).json({ error: 'Colaborador de destino não encontrado/ativo' });
-    if (!activityColumn || !equalsIgnoreCase(target[activityColumn], 'Sim')) {
+    const compatibleByArea = activityColumn ? equalsIgnoreCase(target[activityColumn], 'Sim') : false;
+    const compatibleByUserActivities = requesterActivities.some((col) => equalsIgnoreCase(target[col], 'Sim'));
+    if (!compatibleByArea && !compatibleByUserActivities) {
       return res.status(400).json({ error: 'Destino sem atividade compatível com a demanda' });
     }
 

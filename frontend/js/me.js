@@ -26,7 +26,8 @@ const state = {
   },
   redirectReceived: [],
   redirectSent: [],
-  redirectContext: null
+  redirectContext: null,
+  selectedRedirectTarget: ''
 };
 
 const atividadesEl = document.getElementById('atividades');
@@ -39,19 +40,23 @@ const modalWebconfWizard = document.getElementById('modal-webconf-wizard');
 const modalWebconfParticipantes = document.getElementById('modal-webconf-participantes');
 const modalWebconfEditParticipante = document.getElementById('modal-webconf-edit-participante');
 const modalDemandaDetalhe = document.getElementById('modal-demanda-detalhe');
-const modalRedirRecebidas = document.getElementById('modal-redir-recebidas');
-const modalRedirEnviadas = document.getElementById('modal-redir-enviadas');
+const modalRedir = document.getElementById('modal-redir');
 const modalRedirCriar = document.getElementById('modal-redir-criar');
 const demandaDetalheContent = document.getElementById('demanda-detalhe-content');
 const redirBadgeEl = document.getElementById('redir-badge');
 const redirRecebidasBodyEl = document.getElementById('redir-recebidas-body');
 const redirEnviadasBodyEl = document.getElementById('redir-enviadas-body');
-const redirTargetEl = document.getElementById('redir-target');
 const redirObservacoesEl = document.getElementById('redir-observacoes');
 const redirFromAvatarEl = document.getElementById('redir-from-avatar');
 const redirFromNameEl = document.getElementById('redir-from-name');
 const redirToAvatarEl = document.getElementById('redir-to-avatar');
 const redirToNameEl = document.getElementById('redir-to-name');
+const redirToPickerEl = document.getElementById('redir-to-picker');
+const redirToListEl = document.getElementById('redir-to-list');
+const redirTabRecebidasEl = document.getElementById('redir-tab-recebidas');
+const redirTabEnviadasEl = document.getElementById('redir-tab-enviadas');
+const redirPaneRecebidasEl = document.getElementById('redir-pane-recebidas');
+const redirPaneEnviadasEl = document.getElementById('redir-pane-enviadas');
 const webconfRegistrosCountEl = document.getElementById('webconf-registros-count');
 const slotWebconfDataSearch = document.getElementById('slot-webconf-data-search');
 const slotWebconfTextSearch = document.getElementById('slot-webconf-text-search');
@@ -206,7 +211,13 @@ function getFilteredWebconfRegistros() {
 
 async function runAction(actionName, loadingText, successType, successText, fn) {
   const started = performance.now();
-  const loading = await showLoading(loadingText);
+  let loading = null;
+  let loadingShown = false;
+  const loadingDelayMs = 450;
+  const loadingTimer = window.setTimeout(async () => {
+    loadingShown = true;
+    loading = await showLoading(loadingText);
+  }, loadingDelayMs);
   console.log(`[Colaborador] ${actionName} iniciado`);
 
   try {
@@ -222,7 +233,10 @@ async function runAction(actionName, loadingText, successType, successText, fn) 
     await showStatus('erro', `Erro: ${error.message}`);
     throw error;
   } finally {
-    loading.close();
+    window.clearTimeout(loadingTimer);
+    if (loadingShown && loading?.close) {
+      loading.close();
+    }
   }
 }
 
@@ -567,14 +581,35 @@ function renderRedirectSent() {
   });
 }
 
-function fillRedirectTargetOptions(candidates) {
-  if (!redirTargetEl) return;
-  redirTargetEl.innerHTML = '<option value="">Selecione</option>';
+function renderRedirectCandidateList(candidates) {
+  if (!redirToListEl) return;
+  redirToListEl.innerHTML = '';
+  if (!candidates.length) {
+    redirToListEl.innerHTML = '<div class="empty-state-box"><p>Nenhum colaborador compatível encontrado.</p></div>';
+    return;
+  }
   candidates.forEach((colab) => {
-    const option = document.createElement('option');
-    option.value = colab.nome;
-    option.textContent = `${colab.nome}${colab.ramal ? ` - Ramal ${colab.ramal}` : ''}`;
-    redirTargetEl.appendChild(option);
+    const btn = document.createElement('button');
+    btn.className = 'redir-candidate-item';
+    btn.type = 'button';
+    btn.dataset.redirCandidate = colab.nome;
+    btn.innerHTML = `
+      <img data-redir-candidate-avatar="${colab.nome}" alt="${colab.nome}" />
+      <span>${colab.nome}${colab.ramal ? ` - Ramal ${colab.ramal}` : ''}</span>
+    `;
+    redirToListEl.appendChild(btn);
+  });
+  redirToListEl.querySelectorAll('[data-redir-candidate-avatar]').forEach((img) => {
+    attachAvatar(img, img.dataset.redirCandidateAvatar || '');
+  });
+  redirToListEl.querySelectorAll('[data-redir-candidate]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const nome = String(btn.dataset.redirCandidate || '').trim();
+      state.selectedRedirectTarget = nome;
+      if (redirToNameEl) redirToNameEl.textContent = nome || 'Selecione';
+      attachAvatar(redirToAvatarEl, nome);
+      redirToListEl.classList.add('hidden');
+    });
   });
 }
 
@@ -588,11 +623,12 @@ async function openRedirectCreateModal(demanda) {
       rowIndex: demanda.rowIndex || null,
       candidates
     };
-    fillRedirectTargetOptions(candidates);
+    state.selectedRedirectTarget = '';
+    renderRedirectCandidateList(candidates);
     if (redirObservacoesEl) redirObservacoesEl.value = '';
     if (redirFromNameEl) redirFromNameEl.textContent = user.nome;
     if (redirToNameEl) redirToNameEl.textContent = 'Selecione';
-    if (redirTargetEl) redirTargetEl.value = '';
+    if (redirToListEl) redirToListEl.classList.add('hidden');
     attachAvatar(redirFromAvatarEl, user.nome);
     attachAvatar(redirToAvatarEl, '');
     openModal(modalRedirCriar);
@@ -606,7 +642,7 @@ async function openRedirectCreateModal(demanda) {
 
 async function sendRedirect() {
   if (!state.redirectContext) return;
-  const paraColaborador = String(redirTargetEl?.value || '').trim();
+  const paraColaborador = String(state.selectedRedirectTarget || '').trim();
   if (!paraColaborador) {
     await showStatus('erro', 'Selecione o colaborador de destino');
     return;
@@ -793,23 +829,20 @@ async function fillWebconfAgendaDefaults(assunto) {
     }
     const query = params.toString() ? `?${params.toString()}` : '';
     const data = await api(`/api/webconferencia/agenda${query}`);
-    if (data?.data) {
-      document.getElementById('webconf-data').value = data.data;
-      state.webconfDraft.data = data.data;
-    }
     if (data?.horarioInicio) {
       document.getElementById('webconf-horario').value = data.horarioInicio;
       state.webconfDraft.horario = data.horarioInicio;
     }
   } catch (_error) {
-    const today = new Date();
-    const day = String(today.getDate()).padStart(2, '0');
-    const month = String(today.getMonth() + 1).padStart(2, '0');
-    const year = today.getFullYear();
-    const fallback = `${day}/${month}/${year}`;
-    document.getElementById('webconf-data').value = fallback;
-    state.webconfDraft.data = fallback;
+    // Mantém o campo de data em branco por definição de UX.
   }
+}
+
+function maskDateInput(value) {
+  const digits = String(value || '').replace(/\D/g, '').slice(0, 8);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
 }
 
 function openWebconfWizard() {
@@ -1049,6 +1082,7 @@ function setupWebconfWizard() {
   const closeEditBtn = document.getElementById('btn-close-webconf-edit');
   const saveEditBtn = document.getElementById('btn-save-webconf-edit');
   const pNome = document.getElementById('webconf-p-nome');
+  const webconfDataInput = document.getElementById('webconf-data');
   const pCpf = document.getElementById('webconf-p-cpf');
   const pMunicipio = document.getElementById('webconf-p-municipio');
   const pUf = document.getElementById('webconf-p-uf');
@@ -1074,6 +1108,11 @@ function setupWebconfWizard() {
 
   if (pNome) {
     pNome.addEventListener('input', () => { pNome.value = toLetters(pNome.value); });
+  }
+  if (webconfDataInput) {
+    webconfDataInput.addEventListener('input', () => {
+      webconfDataInput.value = maskDateInput(webconfDataInput.value);
+    });
   }
   if (pMunicipio) {
     pMunicipio.addEventListener('input', () => { pMunicipio.value = toLetters(pMunicipio.value); });
@@ -1258,34 +1297,41 @@ if (btnCloseDemandaDetalhe) {
 }
 
 function setupRedirectModules() {
-  const btnOpenRecebidas = document.getElementById('btn-open-redir-recebidas');
-  const btnOpenEnviadas = document.getElementById('btn-open-redir-enviadas');
-  const btnCloseRecebidas = document.getElementById('btn-close-redir-recebidas');
-  const btnCloseEnviadas = document.getElementById('btn-close-redir-enviadas');
+  const btnOpenRedir = document.getElementById('btn-open-redir');
+  const btnCloseRedir = document.getElementById('btn-close-redir');
   const btnCloseCriar = document.getElementById('btn-close-redir-criar');
   const btnConfirm = document.getElementById('btn-confirm-redir');
-  if (!btnOpenRecebidas || !btnOpenEnviadas || !btnCloseRecebidas || !btnCloseEnviadas || !btnCloseCriar || !btnConfirm) return;
+  if (!btnOpenRedir || !btnCloseRedir || !btnCloseCriar || !btnConfirm) return;
 
-  btnOpenRecebidas.addEventListener('click', () => {
+  const openPane = (pane) => {
+    const recebidas = pane !== 'enviadas';
+    redirTabRecebidasEl?.classList.toggle('active', recebidas);
+    redirTabEnviadasEl?.classList.toggle('active', !recebidas);
+    redirPaneRecebidasEl?.classList.toggle('active', recebidas);
+    redirPaneEnviadasEl?.classList.toggle('active', !recebidas);
+  };
+
+  btnOpenRedir.addEventListener('click', () => {
     renderRedirectReceived();
-    openModal(modalRedirRecebidas);
-  });
-  btnOpenEnviadas.addEventListener('click', () => {
     renderRedirectSent();
-    openModal(modalRedirEnviadas);
+    openPane('recebidas');
+    openModal(modalRedir);
   });
-  btnCloseRecebidas.addEventListener('click', () => closeModal(modalRedirRecebidas));
-  btnCloseEnviadas.addEventListener('click', () => closeModal(modalRedirEnviadas));
+  btnCloseRedir.addEventListener('click', () => closeModal(modalRedir));
   btnCloseCriar.addEventListener('click', () => closeModal(modalRedirCriar));
   btnConfirm.addEventListener('click', () => void sendRedirect());
-
-  if (redirTargetEl) {
-    redirTargetEl.addEventListener('change', () => {
-      const nome = String(redirTargetEl.value || '').trim();
-      if (redirToNameEl) redirToNameEl.textContent = nome || 'Selecione';
-      attachAvatar(redirToAvatarEl, nome);
-    });
-  }
+  redirTabRecebidasEl?.addEventListener('click', () => openPane('recebidas'));
+  redirTabEnviadasEl?.addEventListener('click', () => openPane('enviadas'));
+  redirToPickerEl?.addEventListener('click', () => {
+    redirToListEl?.classList.toggle('hidden');
+  });
+  document.addEventListener('click', (event) => {
+    if (!modalRedirCriar?.classList.contains('open')) return;
+    const target = event.target;
+    if (!(target instanceof Node)) return;
+    if (redirToPickerEl?.contains(target) || redirToListEl?.contains(target)) return;
+    redirToListEl?.classList.add('hidden');
+  });
 }
 
 

@@ -27,14 +27,10 @@
         <div id="atividades" class="sidebar-activity-grid"></div>
       </section>
       <section class="sidebar-modules">
-        <button id="btn-open-redir-recebidas" class="sidebar-module-btn" type="button">
-          <i class="bi bi-arrow-left-right"></i>
+        <button id="btn-open-redir" class="sidebar-module-btn" type="button">
+          <img src="./assets/icons/demandas redirecionadas.svg" alt="Demandas redirecionadas" />
           <span>Demandas Redirecionadas</span>
           <b id="redir-badge" class="redir-badge hidden">0</b>
-        </button>
-        <button id="btn-open-redir-enviadas" class="sidebar-module-btn" type="button">
-          <i class="bi bi-send-check"></i>
-          <span>Demandas Repassadas</span>
         </button>
       </section>
       <p id="msg" class="msg-area"></p>
@@ -302,36 +298,33 @@
     </div>
   </div>
 
-  <div id="modal-redir-recebidas" class="modal-overlay">
+  <div id="modal-redir" class="modal-overlay">
     <div class="modal">
       <header class="modal-header">Demandas Redirecionadas
-        <button id="btn-close-redir-recebidas" class="modal-close-x" type="button">×</button>
+        <button id="btn-close-redir" class="modal-close-x" type="button">×</button>
       </header>
       <div class="modal-content">
-        <div class="table-shell demand-table">
-          <table class="table">
-            <thead>
-              <tr>
-                <th>ID Demanda</th>
-                <th>Área</th>
-                <th>De colaborador</th>
-                <th>Descrição</th>
-                <th>Ação</th>
-              </tr>
-            </thead>
-            <tbody id="redir-recebidas-body"></tbody>
-          </table>
+        <div class="tab-row">
+          <button id="redir-tab-recebidas" class="active" type="button">Demandas Redirecionadas</button>
+          <button id="redir-tab-enviadas" type="button">Demandas Repassadas</button>
         </div>
-      </div>
-    </div>
-  </div>
-
-  <div id="modal-redir-enviadas" class="modal-overlay">
-    <div class="modal">
-      <header class="modal-header">Demandas Repassadas
-        <button id="btn-close-redir-enviadas" class="modal-close-x" type="button">×</button>
-      </header>
-      <div class="modal-content">
+        <section id="redir-pane-recebidas" class="tab-content active">
+          <div class="table-shell demand-table">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>ID Demanda</th>
+                  <th>Área</th>
+                  <th>De colaborador</th>
+                  <th>Descrição</th>
+                  <th>Ação</th>
+                </tr>
+              </thead>
+              <tbody id="redir-recebidas-body"></tbody>
+            </table>
+          </div>
+        </section>
+        <section id="redir-pane-enviadas" class="tab-content">
         <div class="table-shell demand-table">
           <table class="table">
             <thead>
@@ -346,6 +339,7 @@
             <tbody id="redir-enviadas-body"></tbody>
           </table>
         </div>
+        </section>
       </div>
     </div>
   </div>
@@ -366,17 +360,12 @@
           </div>
           <div class="redir-person-card">
             <h4>Para colaborador</h4>
-            <div class="redir-person">
+            <button id="redir-to-picker" class="redir-person redir-picker-btn" type="button">
               <img id="redir-to-avatar" alt="Para colaborador" />
               <span id="redir-to-name">Selecione</span>
-            </div>
+            </button>
+            <div id="redir-to-list" class="redir-candidate-list hidden"></div>
           </div>
-        </div>
-        <div class="form-row">
-          <label class="field-label" for="redir-target">Selecionar colaborador compatível</label>
-          <select id="redir-target">
-            <option value="">Selecione</option>
-          </select>
         </div>
         <div class="form-row">
           <label class="field-label" for="redir-observacoes">Observações (opcional)</label>

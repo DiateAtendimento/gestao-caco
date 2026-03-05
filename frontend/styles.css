@@ -708,6 +708,12 @@ img {
   font-size: 15px;
 }
 
+.sidebar-module-btn img {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+}
+
 .sidebar-module-btn span {
   min-width: 0;
 }
@@ -1764,6 +1770,61 @@ img {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.redir-picker-btn {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #f2f8ff;
+  padding: 8px;
+  text-align: left;
+}
+
+.redir-candidate-list {
+  margin-top: 8px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  max-height: 220px;
+  overflow-y: auto;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.redir-candidate-item {
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid rgba(149, 177, 212, 0.35);
+  background: transparent;
+  color: #f2f8ff;
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+}
+
+.redir-candidate-item:last-child {
+  border-bottom: 0;
+}
+
+.redir-candidate-item img {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.redir-candidate-item:hover,
+.redir-candidate-item:focus-visible {
+  background: rgba(124, 167, 221, 0.3);
+  outline: none;
+}
+
+.tab-row button.active {
+  background: #123f72;
+  color: #ffffff;
+  border-color: #2a5688;
 }
 
 .redir-person img {
