@@ -16,7 +16,7 @@ const state = {
     qualWebconferencia: '',
     data: '',
     horario: '',
-    enteNaoCompareceu: '',
+    enteCompareceu: '',
     participants: []
   },
   webconfFilters: {
@@ -199,6 +199,7 @@ function getFilteredWebconfRegistros() {
       row.data,
       row.horario,
       row.atendente,
+      row.enteCompareceu,
       row.enteNaoCompareceu,
       row.quantidadeAtendida,
       row.participantes
@@ -467,7 +468,7 @@ function renderWebconfRegistros() {
           <span>${row.atendente || '-'}</span>
         </div>
       </td>
-      <td>${row.enteNaoCompareceu || '-'}</td>
+      <td>${row.enteCompareceu || row.enteNaoCompareceu || '-'}</td>
       <td>${Number(row.quantidadeAtendida || 0)}</td>
       <td>
         <button class=\"detail-inline-btn table-eye-btn\" data-webconf-participantes=\"${webconfKey}\" type=\"button\" title=\"Ver participantes\">
@@ -608,7 +609,7 @@ function renderRedirectCandidateList(candidates) {
       state.selectedRedirectTarget = nome;
       if (redirToNameEl) redirToNameEl.textContent = nome || 'Selecione';
       attachAvatar(redirToAvatarEl, nome);
-      redirToListEl.classList.add('hidden');
+      redirToListEl.classList.remove('open');
     });
   });
 }
@@ -628,7 +629,7 @@ async function openRedirectCreateModal(demanda) {
     if (redirObservacoesEl) redirObservacoesEl.value = '';
     if (redirFromNameEl) redirFromNameEl.textContent = user.nome;
     if (redirToNameEl) redirToNameEl.textContent = 'Selecione';
-    if (redirToListEl) redirToListEl.classList.add('hidden');
+    if (redirToListEl) redirToListEl.classList.remove('open');
     attachAvatar(redirFromAvatarEl, user.nome);
     attachAvatar(redirToAvatarEl, '');
     openModal(modalRedirCriar);
@@ -732,7 +733,7 @@ function resetWebconfDraft() {
     qualWebconferencia: '',
     data: '',
     horario: '',
-    enteNaoCompareceu: 'Não',
+    enteCompareceu: 'Não',
     participants: []
   };
 }
@@ -816,7 +817,7 @@ function paintCpfHint(hintEl, isValid) {
   hintEl.classList.toggle('error', !isValid);
 }
 
-function selectedEnteNaoCompareceuValue() {
+function selectedEnteCompareceuValue() {
   const checked = document.querySelector('input[name="webconf-ente-nao"]:checked');
   return checked?.value || 'Não';
 }
@@ -1151,7 +1152,7 @@ function setupWebconfWizard() {
   document.getElementById('webconf-next-2').addEventListener('click', () => {
     state.webconfDraft.data = document.getElementById('webconf-data').value.trim();
     state.webconfDraft.horario = document.getElementById('webconf-horario').value.trim();
-    state.webconfDraft.enteNaoCompareceu = selectedEnteNaoCompareceuValue();
+    state.webconfDraft.enteCompareceu = selectedEnteCompareceuValue();
     setWebconfStep(3);
   });
   document.getElementById('webconf-back-3').addEventListener('click', () => setWebconfStep(2));
@@ -1202,7 +1203,7 @@ function setupWebconfWizard() {
     state.webconfDraft.qualWebconferencia = document.getElementById('webconf-qual').value.trim();
     state.webconfDraft.data = document.getElementById('webconf-data').value.trim();
     state.webconfDraft.horario = document.getElementById('webconf-horario').value.trim();
-    state.webconfDraft.enteNaoCompareceu = selectedEnteNaoCompareceuValue();
+    state.webconfDraft.enteCompareceu = selectedEnteCompareceuValue();
 
     try {
       await runAction('registrar webconferência', 'Salvando registro...', 'salvo', 'Registro de webconferência salvo', async () => {
@@ -1212,7 +1213,7 @@ function setupWebconfWizard() {
             qualWebconferencia: state.webconfDraft.qualWebconferencia,
             data: state.webconfDraft.data,
             horario: state.webconfDraft.horario,
-            enteNaoCompareceu: state.webconfDraft.enteNaoCompareceu,
+            enteCompareceu: state.webconfDraft.enteCompareceu,
             participants: state.webconfDraft.participants
           })
         });
@@ -1323,14 +1324,14 @@ function setupRedirectModules() {
   redirTabRecebidasEl?.addEventListener('click', () => openPane('recebidas'));
   redirTabEnviadasEl?.addEventListener('click', () => openPane('enviadas'));
   redirToPickerEl?.addEventListener('click', () => {
-    redirToListEl?.classList.toggle('hidden');
+    redirToListEl?.classList.toggle('open');
   });
   document.addEventListener('click', (event) => {
     if (!modalRedirCriar?.classList.contains('open')) return;
     const target = event.target;
     if (!(target instanceof Node)) return;
     if (redirToPickerEl?.contains(target) || redirToListEl?.contains(target)) return;
-    redirToListEl?.classList.add('hidden');
+    redirToListEl?.classList.remove('open');
   });
 }
 

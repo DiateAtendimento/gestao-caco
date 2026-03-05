@@ -127,7 +127,7 @@
                   <th>Data</th>
                   <th>Horário</th>
                   <th>Atendente</th>
-                  <th>Ente não compareceu ao agendamento</th>
+                  <th>Ente compareceu ao agendamento</th>
                   <th>Quantidade atendida</th>
                   <th>Participantes</th>
                 </tr>
@@ -226,7 +226,7 @@
           <div class="form-row"><input id="webconf-p-uf" placeholder="UF" maxlength="2" autocomplete="off" /></div>
           <div class="form-row"><textarea id="webconf-p-descricao" placeholder="Descrição (opcional)" autocomplete="off"></textarea></div>
           <div class="webconf-radio-row">
-            <span>Ente não compareceu ao agendamento:</span>
+            <span>Ente compareceu ao agendamento:</span>
             <label><input type="radio" name="webconf-ente-nao" value="Sim" /> Sim</label>
             <label><input type="radio" name="webconf-ente-nao" value="Não" checked /> Não</label>
           </div>
@@ -351,20 +351,20 @@
       </header>
       <div class="modal-content">
         <div class="redir-people-row">
-          <div class="redir-person-card">
+          <div class="redir-person-card from-card">
             <h4>De colaborador</h4>
             <div class="redir-person">
               <img id="redir-from-avatar" alt="De colaborador" />
               <span id="redir-from-name">-</span>
             </div>
           </div>
-          <div class="redir-person-card">
+          <div class="redir-person-card to-card">
             <h4>Para colaborador</h4>
             <button id="redir-to-picker" class="redir-person redir-picker-btn" type="button">
               <img id="redir-to-avatar" alt="Para colaborador" />
               <span id="redir-to-name">Selecione</span>
             </button>
-            <div id="redir-to-list" class="redir-candidate-list hidden"></div>
+            <div id="redir-to-list" class="redir-candidate-list"></div>
           </div>
         </div>
         <div class="form-row">

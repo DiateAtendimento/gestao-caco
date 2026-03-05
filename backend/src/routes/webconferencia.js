@@ -42,6 +42,12 @@ function parseParticipants(input) {
     .filter((p) => !p.cpf || p.cpf.length === 11);
 }
 
+function invertYesNo(value) {
+  if (equalsIgnoreCase(value, 'Sim')) return 'Não';
+  if (equalsIgnoreCase(value, 'Não')) return 'Sim';
+  return '';
+}
+
 function countParticipantsFromText(participantesTexto) {
   const text = String(participantesTexto || '');
   if (!text.trim()) return 0;
@@ -207,6 +213,12 @@ router.get('/registros', async (req, res) => {
 
     const registros = rows
       .map((row) => ({
+        enteCompareceu: (
+          row['Ente compareceu ao agendamento']
+          || row['Ente compareceu']
+          || invertYesNo(row['Ente não compareceu ao agendamento'] || row['Ente nao compareceu ao agendamento'])
+          || ''
+        ),
         id: String(row.ID || '').trim() || legacyWebconfId(row),
         qualWebconferencia: getFirstFilled(row, [
           'Qual a Webconferencia',
@@ -315,7 +327,10 @@ router.post('/registros', async (req, res) => {
     const qualWebconferencia = normalizeText(req.body?.qualWebconferencia);
     const data = normalizeText(req.body?.data) || toBrDate();
     const horario = normalizeText(req.body?.horario);
-    const enteNaoCompareceu = normalizeText(req.body?.enteNaoCompareceu);
+    const enteCompareceu = normalizeText(req.body?.enteCompareceu)
+      || invertYesNo(normalizeText(req.body?.enteNaoCompareceu))
+      || '';
+    const enteNaoCompareceu = invertYesNo(enteCompareceu);
     const participants = parseParticipants(req.body?.participants);
     const quantidadeAtendida = participants.length;
 
@@ -339,6 +354,7 @@ router.post('/registros', async (req, res) => {
       'Horário': horario,
       Horario: horario,
       Atendente: req.user.nome,
+      'Ente compareceu ao agendamento': enteCompareceu,
       'Ente não compareceu ao agendamento': enteNaoCompareceu,
       'Ente nao compareceu ao agendamento': enteNaoCompareceu,
       'Quantidade atendida': String(quantidadeAtendida),

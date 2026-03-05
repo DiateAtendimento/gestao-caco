@@ -1766,6 +1766,14 @@ img {
   font-size: 13px;
 }
 
+.redir-person-card.from-card .redir-person {
+  justify-content: center;
+  flex-direction: column;
+  text-align: center;
+  gap: 8px;
+  min-height: 86px;
+}
+
 .redir-person {
   display: flex;
   align-items: center;
@@ -1786,9 +1794,19 @@ img {
   margin-top: 8px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  max-height: 220px;
-  overflow-y: auto;
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  transition: max-height 220ms ease, opacity 220ms ease;
   background: rgba(255, 255, 255, 0.08);
+}
+
+.redir-candidate-list.open {
+  max-height: 220px;
+  opacity: 1;
+  pointer-events: auto;
+  overflow-y: auto;
 }
 
 .redir-candidate-item {

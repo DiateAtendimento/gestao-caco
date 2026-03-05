@@ -253,25 +253,28 @@ router.get('/redirecionaveis/:id', async (req, res) => {
     }
 
     const { rows: profileRows } = await readSheet(PROFILE_SHEET);
-    const activityColumn = mapAreaToActivityColumn(item.Assunto);
     const requester = profileRows.find((row) => equalsIgnoreCase(row.Atendente, req.user.nome));
     const requesterActivities = ACTIVITY_COLUMNS.filter((col) => equalsIgnoreCase(requester?.[col], 'Sim'));
 
-    if (!activityColumn && !requesterActivities.length) {
+    if (!requesterActivities.length) {
       return res.json({ colaboradores: [] });
     }
 
     const colaboradores = profileRows
       .filter((row) => equalsIgnoreCase(row.Ativo, 'Sim'))
       .filter((row) => !equalsIgnoreCase(row.Atendente, req.user.nome))
-      .filter((row) => {
-        if (activityColumn) return equalsIgnoreCase(row[activityColumn], 'Sim');
-        return requesterActivities.some((col) => equalsIgnoreCase(row[col], 'Sim'));
+      .map((row) => {
+        const sharedActivities = requesterActivities.filter((col) => equalsIgnoreCase(row[col], 'Sim'));
+        return {
+          row,
+          sharedActivities
+        };
       })
-      .map((row) => ({
+      .filter(({ sharedActivities }) => sharedActivities.length > 0)
+      .map(({ row, sharedActivities }) => ({
         nome: row.Atendente,
         ramal: row.Ramal || '',
-        atividade: activityColumn || requesterActivities.join(', ')
+        atividade: sharedActivities.join(', ')
       }));
 
     return res.json({ colaboradores });
@@ -308,15 +311,16 @@ router.post('/:id/redirecionar', async (req, res) => {
       return res.status(400).json({ error: 'Não é possível redirecionar para si mesmo' });
     }
 
-    const activityColumn = mapAreaToActivityColumn(item.Assunto);
     const { rows: profileRows } = await readSheet(PROFILE_SHEET);
     const requester = profileRows.find((row) => equalsIgnoreCase(row.Atendente, req.user.nome));
     const requesterActivities = ACTIVITY_COLUMNS.filter((col) => equalsIgnoreCase(requester?.[col], 'Sim'));
+    if (!requesterActivities.length) {
+      return res.status(400).json({ error: 'Seu perfil não possui atividades habilitadas para redirecionamento' });
+    }
     const target = profileRows.find((row) => equalsIgnoreCase(row.Atendente, paraColaborador) && equalsIgnoreCase(row.Ativo, 'Sim'));
     if (!target) return res.status(404).json({ error: 'Colaborador de destino não encontrado/ativo' });
-    const compatibleByArea = activityColumn ? equalsIgnoreCase(target[activityColumn], 'Sim') : false;
     const compatibleByUserActivities = requesterActivities.some((col) => equalsIgnoreCase(target[col], 'Sim'));
-    if (!compatibleByArea && !compatibleByUserActivities) {
+    if (!compatibleByUserActivities) {
       return res.status(400).json({ error: 'Destino sem atividade compatível com a demanda' });
     }
 
