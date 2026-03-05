@@ -1,10 +1,10 @@
 ﻿const express = require('express');
 const { authMiddleware } = require('../middleware/auth');
-const { DEMANDS_SHEET, PROFILE_SHEET, STATUS } = require('../config/constants');
-const { readSheet, updateMappedRow, appendMappedRow } = require('../services/sheetsService');
+const { DEMANDS_SHEET, PROFILE_SHEET, REDIRECT_SHEET, REDIRECT_HEADERS, STATUS } = require('../config/constants');
+const { readSheet, updateMappedRow, appendMappedRow, writeHeadersIfEmpty } = require('../services/sheetsService');
 const { parseMeta, demandsRowTemplate, generateNextSolicitacaoId, ensureDemandsMetaColumn } = require('../services/demandService');
 const { normalizeText, equalsIgnoreCase } = require('../utils/text');
-const { toBrDate } = require('../utils/datetime');
+const { toBrDate, toBrDateTime, currentYear } = require('../utils/datetime');
 
 const router = express.Router();
 router.use(authMiddleware);
@@ -93,6 +93,118 @@ function sortByMostRecent(rows) {
   });
 }
 
+function normalizeComparableText(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9]+/g, '')
+    .toLowerCase();
+}
+
+function mapAreaToActivityColumn(area) {
+  const key = normalizeComparableText(area);
+  if (!key) return '';
+  const map = {
+    ti: 'Ti',
+    whatsapp: 'Whatsapp',
+    email: 'Email',
+    webconferencia: 'Webconferencia',
+    progregularidade: 'Programaregularidade',
+    programaregularidade: 'Programaregularidade',
+    programaderegularidade: 'Programaregularidade',
+    sei: 'Sei',
+    falabr: 'Falabr',
+    registrosiga: 'Registrosiga',
+    registrossiga: 'Registrosiga',
+    siga: 'Registrosiga',
+    servprotocolo: 'Servicoprotocolo',
+    servicodeprotocolo: 'Servicoprotocolo',
+    gescon: 'Gescon',
+    taxigov: 'Taxigov',
+    salareuniao400: 'Salareuniao400',
+    sala400: 'Salareuniao400',
+    benspatrimonio: 'Benspatrimonio',
+    bensepatrimonio: 'Benspatrimonio',
+    materialescritorio: 'Materialescritorio',
+    materialdeescritorio: 'Materialescritorio',
+    phplist: 'Phplist',
+    registroviagem: 'Registroviagem'
+  };
+  if (map[key]) return map[key];
+  const partialMatches = [
+    ['webconferencia', 'Webconferencia'],
+    ['whatsapp', 'Whatsapp'],
+    ['programaderegularidade', 'Programaregularidade'],
+    ['registrosiga', 'Registrosiga'],
+    ['registrossiga', 'Registrosiga'],
+    ['gescon', 'Gescon'],
+    ['taxigov', 'Taxigov'],
+    ['phplist', 'Phplist'],
+    ['sei', 'Sei'],
+    ['email', 'Email']
+  ];
+  const matched = partialMatches.find(([token]) => key.includes(token));
+  return matched ? matched[1] : '';
+}
+
+function nextRedirectId(rows) {
+  const year = currentYear();
+  const regex = new RegExp(`^DRD(\\d{6})/${year}$`, 'i');
+  const seq = rows.reduce((acc, row) => {
+    const id = String(row[REDIRECT_COL.ID_REDIRECT] || '').trim();
+    const match = id.match(regex);
+    if (!match) return acc;
+    return Math.max(acc, Number(match[1]));
+  }, 0) + 1;
+  return `DRD${String(seq).padStart(6, '0')}/${year}`;
+}
+
+function mapRedirectRow(row) {
+  return {
+    idRedirecionamento: row[REDIRECT_COL.ID_REDIRECT] || '',
+    idDemanda: row[REDIRECT_COL.ID_DEMANDA] || '',
+    deColaborador: row[REDIRECT_COL.DE_COLABORADOR] || '',
+    paraColaborador: row[REDIRECT_COL.PARA_COLABORADOR] || '',
+    area: row[REDIRECT_COL.AREA] || '',
+    categoria: row[REDIRECT_COL.CATEGORIA] || '',
+    descricaoSnapshot: row[REDIRECT_COL.DESCRICAO_SNAPSHOT] || '',
+    status: row[REDIRECT_COL.STATUS] || '',
+    dataHoraEnvio: row[REDIRECT_COL.DATA_ENVIO] || '',
+    dataHoraResposta: row[REDIRECT_COL.DATA_RESPOSTA] || '',
+    respondidoPor: row[REDIRECT_COL.RESPONDIDO_POR] || '',
+    motivoDevolucao: row[REDIRECT_COL.MOTIVO_DEVOLUCAO] || '',
+    tentativa: Number(row[REDIRECT_COL.TENTATIVA] || 1) || 1,
+    ativo: equalsIgnoreCase(row[REDIRECT_COL.ATIVO], 'Sim'),
+    observacoes: row[REDIRECT_COL.OBSERVACOES] || '',
+    rowIndex: Number(row._rowIndex || 0) || null
+  };
+}
+
+function applyRedirectRowTemplate(overrides = {}) {
+  const base = {};
+  REDIRECT_HEADERS.forEach((h) => { base[h] = ''; });
+  return { ...base, ...overrides };
+}
+
+const REDIRECT_COL = {
+  ID_REDIRECT: REDIRECT_HEADERS[0],
+  ID_DEMANDA: REDIRECT_HEADERS[1],
+  DE_COLABORADOR: REDIRECT_HEADERS[2],
+  PARA_COLABORADOR: REDIRECT_HEADERS[3],
+  AREA: REDIRECT_HEADERS[4],
+  CATEGORIA: REDIRECT_HEADERS[5],
+  DESCRICAO_SNAPSHOT: REDIRECT_HEADERS[6],
+  STATUS: REDIRECT_HEADERS[7],
+  DATA_ENVIO: REDIRECT_HEADERS[8],
+  DATA_RESPOSTA: REDIRECT_HEADERS[9],
+  RESPONDIDO_POR: REDIRECT_HEADERS[10],
+  MOTIVO_DEVOLUCAO: REDIRECT_HEADERS[11],
+  TENTATIVA: REDIRECT_HEADERS[12],
+  ATIVO: REDIRECT_HEADERS[13],
+  DATA_CONCLUSAO_FLUXO: REDIRECT_HEADERS[14],
+  OBSERVACOES: REDIRECT_HEADERS[15]
+};
+
 router.get('/', async (req, res) => {
   try {
     const atendente = normalizeText(req.query.atendente);
@@ -110,6 +222,270 @@ router.get('/', async (req, res) => {
       .map(mapDemanda);
 
     return res.json({ demandas });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/redirecionaveis/:id', async (req, res) => {
+  try {
+    if (req.user.role !== 'colaborador') {
+      return res.status(403).json({ error: 'Somente colaborador' });
+    }
+
+    const id = normalizeText(req.params.id);
+    const rowIndex = Number(req.query?.rowIndex || 0) || null;
+    const { rows: demandRows } = await readSheet(DEMANDS_SHEET);
+    const item = resolveDemandRow(demandRows, id, rowIndex);
+    if (!item) return res.status(404).json({ error: 'Demanda não encontrada' });
+    if (!equalsIgnoreCase(item['Atribuida para'], req.user.nome)) {
+      return res.status(403).json({ error: 'Apenas responsável atual pode redirecionar' });
+    }
+
+    const activityColumn = mapAreaToActivityColumn(item.Assunto);
+    if (!activityColumn) return res.json({ colaboradores: [] });
+
+    const { rows: profileRows } = await readSheet(PROFILE_SHEET);
+    const colaboradores = profileRows
+      .filter((row) => equalsIgnoreCase(row.Ativo, 'Sim'))
+      .filter((row) => !equalsIgnoreCase(row.Atendente, req.user.nome))
+      .filter((row) => equalsIgnoreCase(row[activityColumn], 'Sim'))
+      .map((row) => ({
+        nome: row.Atendente,
+        ramal: row.Ramal || '',
+        atividade: activityColumn
+      }));
+
+    return res.json({ colaboradores });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/:id/redirecionar', async (req, res) => {
+  try {
+    if (req.user.role !== 'colaborador') {
+      return res.status(403).json({ error: 'Somente colaborador' });
+    }
+
+    const id = normalizeText(req.params.id);
+    const rowIndex = req.body?.rowIndex;
+    const paraColaborador = normalizeText(req.body?.paraColaborador);
+    const observacoes = normalizeText(req.body?.observacoes);
+    if (!paraColaborador) {
+      return res.status(400).json({ error: 'paraColaborador é obrigatório' });
+    }
+
+    await writeHeadersIfEmpty(REDIRECT_SHEET, REDIRECT_HEADERS);
+    const { rows: demandRows } = await readSheet(DEMANDS_SHEET);
+    const item = resolveDemandRow(demandRows, id, rowIndex);
+    if (!item) return res.status(404).json({ error: 'Demanda não encontrada' });
+    if (isConcluidoValue(item.Finalizado)) {
+      return res.status(400).json({ error: 'Demanda concluída não pode ser redirecionada' });
+    }
+    if (!equalsIgnoreCase(item['Atribuida para'], req.user.nome)) {
+      return res.status(403).json({ error: 'Apenas responsável atual pode redirecionar' });
+    }
+    if (equalsIgnoreCase(paraColaborador, req.user.nome)) {
+      return res.status(400).json({ error: 'Não é possível redirecionar para si mesmo' });
+    }
+
+    const activityColumn = mapAreaToActivityColumn(item.Assunto);
+    const { rows: profileRows } = await readSheet(PROFILE_SHEET);
+    const target = profileRows.find((row) => equalsIgnoreCase(row.Atendente, paraColaborador) && equalsIgnoreCase(row.Ativo, 'Sim'));
+    if (!target) return res.status(404).json({ error: 'Colaborador de destino não encontrado/ativo' });
+    if (!activityColumn || !equalsIgnoreCase(target[activityColumn], 'Sim')) {
+      return res.status(400).json({ error: 'Destino sem atividade compatível com a demanda' });
+    }
+
+    const { rows: redirectRows } = await readSheet(REDIRECT_SHEET, { forceRefresh: true });
+    const alreadyPending = redirectRows.some((row) =>
+      equalsIgnoreCase(row[REDIRECT_COL.ID_DEMANDA], item.ID) &&
+      equalsIgnoreCase(row[REDIRECT_COL.ATIVO], 'Sim') &&
+      equalsIgnoreCase(row[REDIRECT_COL.STATUS], 'Pendente')
+    );
+    if (alreadyPending) {
+      return res.status(400).json({ error: 'Já existe redirecionamento pendente para essa demanda' });
+    }
+
+    const idRedirecionamento = nextRedirectId(redirectRows);
+    const row = applyRedirectRowTemplate({
+      [REDIRECT_COL.ID_REDIRECT]: idRedirecionamento,
+      [REDIRECT_COL.ID_DEMANDA]: item.ID,
+      [REDIRECT_COL.DE_COLABORADOR]: req.user.nome,
+      [REDIRECT_COL.PARA_COLABORADOR]: paraColaborador,
+      [REDIRECT_COL.AREA]: item.Assunto || '',
+      [REDIRECT_COL.CATEGORIA]: item.Categoria || '',
+      [REDIRECT_COL.DESCRICAO_SNAPSHOT]: item['Descrição'] || '',
+      [REDIRECT_COL.STATUS]: 'Pendente',
+      [REDIRECT_COL.DATA_ENVIO]: toBrDateTime(),
+      [REDIRECT_COL.DATA_RESPOSTA]: '',
+      [REDIRECT_COL.RESPONDIDO_POR]: '',
+      [REDIRECT_COL.MOTIVO_DEVOLUCAO]: '',
+      [REDIRECT_COL.TENTATIVA]: '1',
+      [REDIRECT_COL.ATIVO]: 'Sim',
+      [REDIRECT_COL.DATA_CONCLUSAO_FLUXO]: '',
+      [REDIRECT_COL.OBSERVACOES]: observacoes
+    });
+
+    await appendMappedRow(REDIRECT_SHEET, row, REDIRECT_HEADERS);
+    return res.status(201).json({ message: 'Demanda redirecionada', idRedirecionamento });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/redirecionadas/recebidas', async (req, res) => {
+  try {
+    if (req.user.role !== 'colaborador') {
+      return res.status(403).json({ error: 'Somente colaborador' });
+    }
+    await writeHeadersIfEmpty(REDIRECT_SHEET, REDIRECT_HEADERS);
+    const { rows } = await readSheet(REDIRECT_SHEET);
+    const registros = rows
+      .filter((row) => equalsIgnoreCase(row[REDIRECT_COL.PARA_COLABORADOR], req.user.nome))
+      .filter((row) => equalsIgnoreCase(row[REDIRECT_COL.STATUS], 'Pendente'))
+      .filter((row) => equalsIgnoreCase(row[REDIRECT_COL.ATIVO], 'Sim'))
+      .map(mapRedirectRow);
+    return res.json({ registros });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/redirecionadas/enviadas', async (req, res) => {
+  try {
+    if (req.user.role !== 'colaborador') {
+      return res.status(403).json({ error: 'Somente colaborador' });
+    }
+    await writeHeadersIfEmpty(REDIRECT_SHEET, REDIRECT_HEADERS);
+    const { rows } = await readSheet(REDIRECT_SHEET);
+    const registros = rows
+      .filter((row) => equalsIgnoreCase(row[REDIRECT_COL.DE_COLABORADOR], req.user.nome))
+      .filter((row) => equalsIgnoreCase(row[REDIRECT_COL.STATUS], 'Devolvido'))
+      .filter((row) => equalsIgnoreCase(row[REDIRECT_COL.ATIVO], 'Sim'))
+      .map(mapRedirectRow);
+    return res.json({ registros });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/redirecionadas/:id/aceitar', async (req, res) => {
+  try {
+    if (req.user.role !== 'colaborador') {
+      return res.status(403).json({ error: 'Somente colaborador' });
+    }
+    const redirectId = normalizeText(req.params.id);
+    const { rows: redirectRows } = await readSheet(REDIRECT_SHEET);
+    const redir = redirectRows.find((row) => equalsIgnoreCase(row[REDIRECT_COL.ID_REDIRECT], redirectId));
+    if (!redir) return res.status(404).json({ error: 'Redirecionamento não encontrado' });
+    if (!equalsIgnoreCase(redir[REDIRECT_COL.PARA_COLABORADOR], req.user.nome)) {
+      return res.status(403).json({ error: 'Apenas destinatário pode aceitar' });
+    }
+    if (!equalsIgnoreCase(redir[REDIRECT_COL.STATUS], 'Pendente')) {
+      return res.status(400).json({ error: 'Redirecionamento não está pendente' });
+    }
+
+    const { rows: demandRows } = await readSheet(DEMANDS_SHEET);
+    const demand = demandRows.find((row) => equalsIgnoreCase(row.ID, redir[REDIRECT_COL.ID_DEMANDA]));
+    if (!demand) return res.status(404).json({ error: 'Demanda original não encontrada' });
+    demand['Atribuida para'] = req.user.nome;
+    await updateMappedRow(DEMANDS_SHEET, demand._rowIndex, demand);
+
+    redir[REDIRECT_COL.STATUS] = 'Aceito';
+    redir[REDIRECT_COL.ATIVO] = 'Não';
+    redir[REDIRECT_COL.DATA_RESPOSTA] = toBrDateTime();
+    redir[REDIRECT_COL.RESPONDIDO_POR] = req.user.nome;
+    redir[REDIRECT_COL.DATA_CONCLUSAO_FLUXO] = toBrDateTime();
+    await updateMappedRow(REDIRECT_SHEET, redir._rowIndex, redir);
+    return res.json({ message: 'Demanda aceita e atribuída' });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/redirecionadas/:id/devolver', async (req, res) => {
+  try {
+    if (req.user.role !== 'colaborador') {
+      return res.status(403).json({ error: 'Somente colaborador' });
+    }
+    const redirectId = normalizeText(req.params.id);
+    const motivo = normalizeText(req.body?.motivoDevolucao);
+    const { rows } = await readSheet(REDIRECT_SHEET);
+    const redir = rows.find((row) => equalsIgnoreCase(row[REDIRECT_COL.ID_REDIRECT], redirectId));
+    if (!redir) return res.status(404).json({ error: 'Redirecionamento não encontrado' });
+    if (!equalsIgnoreCase(redir[REDIRECT_COL.PARA_COLABORADOR], req.user.nome)) {
+      return res.status(403).json({ error: 'Apenas destinatário pode devolver' });
+    }
+    if (!equalsIgnoreCase(redir[REDIRECT_COL.STATUS], 'Pendente')) {
+      return res.status(400).json({ error: 'Redirecionamento não está pendente' });
+    }
+
+    redir[REDIRECT_COL.STATUS] = 'Devolvido';
+    redir[REDIRECT_COL.DATA_RESPOSTA] = toBrDateTime();
+    redir[REDIRECT_COL.RESPONDIDO_POR] = req.user.nome;
+    redir[REDIRECT_COL.MOTIVO_DEVOLUCAO] = motivo;
+    redir[REDIRECT_COL.ATIVO] = 'Sim';
+    await updateMappedRow(REDIRECT_SHEET, redir._rowIndex, redir);
+    return res.json({ message: 'Demanda devolvida ao remetente' });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/redirecionadas/:id/aceitar-devolucao', async (req, res) => {
+  try {
+    if (req.user.role !== 'colaborador') {
+      return res.status(403).json({ error: 'Somente colaborador' });
+    }
+    const redirectId = normalizeText(req.params.id);
+    const { rows } = await readSheet(REDIRECT_SHEET);
+    const redir = rows.find((row) => equalsIgnoreCase(row[REDIRECT_COL.ID_REDIRECT], redirectId));
+    if (!redir) return res.status(404).json({ error: 'Redirecionamento não encontrado' });
+    if (!equalsIgnoreCase(redir[REDIRECT_COL.DE_COLABORADOR], req.user.nome)) {
+      return res.status(403).json({ error: 'Apenas remetente pode aceitar devolução' });
+    }
+    if (!equalsIgnoreCase(redir[REDIRECT_COL.STATUS], 'Devolvido')) {
+      return res.status(400).json({ error: 'Redirecionamento não está devolvido' });
+    }
+
+    redir[REDIRECT_COL.STATUS] = 'Devolução aceita';
+    redir[REDIRECT_COL.ATIVO] = 'Não';
+    redir[REDIRECT_COL.DATA_CONCLUSAO_FLUXO] = toBrDateTime();
+    await updateMappedRow(REDIRECT_SHEET, redir._rowIndex, redir);
+    return res.json({ message: 'Devolução aceita' });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/redirecionadas/:id/recusar-devolucao', async (req, res) => {
+  try {
+    if (req.user.role !== 'colaborador') {
+      return res.status(403).json({ error: 'Somente colaborador' });
+    }
+    const redirectId = normalizeText(req.params.id);
+    const { rows } = await readSheet(REDIRECT_SHEET);
+    const redir = rows.find((row) => equalsIgnoreCase(row[REDIRECT_COL.ID_REDIRECT], redirectId));
+    if (!redir) return res.status(404).json({ error: 'Redirecionamento não encontrado' });
+    if (!equalsIgnoreCase(redir[REDIRECT_COL.DE_COLABORADOR], req.user.nome)) {
+      return res.status(403).json({ error: 'Apenas remetente pode recusar devolução' });
+    }
+    if (!equalsIgnoreCase(redir[REDIRECT_COL.STATUS], 'Devolvido')) {
+      return res.status(400).json({ error: 'Redirecionamento não está devolvido' });
+    }
+
+    redir[REDIRECT_COL.STATUS] = 'Pendente';
+    redir[REDIRECT_COL.DATA_ENVIO] = toBrDateTime();
+    redir[REDIRECT_COL.DATA_RESPOSTA] = '';
+    redir[REDIRECT_COL.RESPONDIDO_POR] = '';
+    redir[REDIRECT_COL.MOTIVO_DEVOLUCAO] = '';
+    redir[REDIRECT_COL.TENTATIVA] = String((Number(redir[REDIRECT_COL.TENTATIVA] || 1) || 1) + 1);
+    redir[REDIRECT_COL.ATIVO] = 'Sim';
+    redir[REDIRECT_COL.OBSERVACOES] = normalizeText(redir[REDIRECT_COL.OBSERVACOES]) || 'Reenviado após recusa de devolução';
+    await updateMappedRow(REDIRECT_SHEET, redir._rowIndex, redir);
+    return res.json({ message: 'Devolução recusada e demanda reenviada' });
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }

@@ -26,6 +26,17 @@
         <h4>Atividades</h4>
         <div id="atividades" class="sidebar-activity-grid"></div>
       </section>
+      <section class="sidebar-modules">
+        <button id="btn-open-redir-recebidas" class="sidebar-module-btn" type="button">
+          <i class="bi bi-arrow-left-right"></i>
+          <span>Demandas Redirecionadas</span>
+          <b id="redir-badge" class="redir-badge hidden">0</b>
+        </button>
+        <button id="btn-open-redir-enviadas" class="sidebar-module-btn" type="button">
+          <i class="bi bi-send-check"></i>
+          <span>Demandas Repassadas</span>
+        </button>
+      </section>
       <p id="msg" class="msg-area"></p>
 
       <div class="sidebar-footer">
@@ -287,6 +298,93 @@
       </header>
       <div class="modal-content">
         <pre id="demanda-detalhe-content" class="webconf-preview"></pre>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-redir-recebidas" class="modal-overlay">
+    <div class="modal">
+      <header class="modal-header">Demandas Redirecionadas
+        <button id="btn-close-redir-recebidas" class="modal-close-x" type="button">×</button>
+      </header>
+      <div class="modal-content">
+        <div class="table-shell demand-table">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>ID Demanda</th>
+                <th>Área</th>
+                <th>De colaborador</th>
+                <th>Descrição</th>
+                <th>Ação</th>
+              </tr>
+            </thead>
+            <tbody id="redir-recebidas-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-redir-enviadas" class="modal-overlay">
+    <div class="modal">
+      <header class="modal-header">Demandas Repassadas
+        <button id="btn-close-redir-enviadas" class="modal-close-x" type="button">×</button>
+      </header>
+      <div class="modal-content">
+        <div class="table-shell demand-table">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>ID Demanda</th>
+                <th>Para colaborador</th>
+                <th>Status</th>
+                <th>Motivo devolução</th>
+                <th>Ação</th>
+              </tr>
+            </thead>
+            <tbody id="redir-enviadas-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-redir-criar" class="modal-overlay">
+    <div class="modal small">
+      <header class="modal-header">Redirecionar Demanda
+        <button id="btn-close-redir-criar" class="modal-close-x" type="button">×</button>
+      </header>
+      <div class="modal-content">
+        <div class="redir-people-row">
+          <div class="redir-person-card">
+            <h4>De colaborador</h4>
+            <div class="redir-person">
+              <img id="redir-from-avatar" alt="De colaborador" />
+              <span id="redir-from-name">-</span>
+            </div>
+          </div>
+          <div class="redir-person-card">
+            <h4>Para colaborador</h4>
+            <div class="redir-person">
+              <img id="redir-to-avatar" alt="Para colaborador" />
+              <span id="redir-to-name">Selecione</span>
+            </div>
+          </div>
+        </div>
+        <div class="form-row">
+          <label class="field-label" for="redir-target">Selecionar colaborador compatível</label>
+          <select id="redir-target">
+            <option value="">Selecione</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label class="field-label" for="redir-observacoes">Observações (opcional)</label>
+          <textarea id="redir-observacoes" placeholder="Escreva uma observação para o colaborador"></textarea>
+        </div>
+        <div class="form-actions">
+          <button id="btn-confirm-redir" class="btn-main" type="button">Enviar redirecionamento</button>
+        </div>
       </div>
     </div>
   </div>

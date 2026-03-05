@@ -1,6 +1,6 @@
 ﻿import { api, requireAuth, clearSession, initThemeIcon } from './auth.js';
 import { ACTIVITIES, AREA_OPTIONS, META_OPTIONS, CATEGORY_OPTIONS } from './data.js';
-import { showLoading, showStatus, promptText } from './feedback.js';
+import { showLoading, showStatus, promptText, mountInlineLottie } from './feedback.js';
 import { attachAvatar } from './avatar.js';
 
 const user = requireAuth('admin');
@@ -41,9 +41,14 @@ const slotTextSearch = document.getElementById('slot-text-search');
 const dataSearchStart = document.getElementById('data-search-start');
 const dataSearchEnd = document.getElementById('data-search-end');
 const textSearchInput = document.getElementById('text-search-input');
+const drSearchFeedback = document.getElementById('dr-search-feedback');
+const drSearchFeedbackText = document.getElementById('dr-search-feedback-text');
+const drSearchFeedbackLottie = document.getElementById('dr-search-feedback-lottie');
+const btnCloseDrSearchFeedback = document.getElementById('btn-close-dr-search-feedback');
 const ADMIN_AVATAR_SRC = './img/admin.png?v=20260226';
 const SILENT_REFRESH_MS = 3000;
 let refreshInFlight = false;
+let demandasRegistrosFilteredCount = 0;
 const adminAvatar = document.getElementById('admin-avatar');
 if (adminAvatar) {
   adminAvatar.src = ADMIN_AVATAR_SRC;
@@ -73,7 +78,33 @@ function clearDemandasRegistrosInputs() {
     demandasRegistrosCount.textContent = '';
     demandasRegistrosCount.classList.add('hidden');
   }
+  hideDemandasRegistrosFeedback();
   collapseDemandasRegistrosSearch();
+}
+
+function hideDemandasRegistrosFeedback() {
+  if (!drSearchFeedback) return;
+  drSearchFeedback.classList.add('hidden');
+  if (drSearchFeedbackText) drSearchFeedbackText.textContent = '';
+  if (drSearchFeedbackLottie) drSearchFeedbackLottie.innerHTML = '';
+  if (btnCloseDrSearchFeedback) btnCloseDrSearchFeedback.classList.add('hidden');
+}
+
+async function showDemandasRegistrosFeedback(type) {
+  if (!drSearchFeedback || !drSearchFeedbackText || !drSearchFeedbackLottie) return;
+  drSearchFeedback.classList.remove('hidden');
+  drSearchFeedbackLottie.innerHTML = '';
+
+  if (type === 'searching') {
+    drSearchFeedbackText.textContent = 'Buscando...';
+    if (btnCloseDrSearchFeedback) btnCloseDrSearchFeedback.classList.add('hidden');
+    await mountInlineLottie(drSearchFeedbackLottie, 'searching', true);
+    return;
+  }
+
+  drSearchFeedbackText.textContent = 'A pesquisa não retornou resultado';
+  if (btnCloseDrSearchFeedback) btnCloseDrSearchFeedback.classList.remove('hidden');
+  await mountInlineLottie(drSearchFeedbackLottie, 'sem_atividade', true);
 }
 
 function applyNoHistoryToDemandasRegistrosInputs() {
@@ -611,6 +642,7 @@ function renderDemandasRegistros() {
   const hasCriteria = !!(String(dataInicio || '').trim() || String(dataFim || '').trim() || String(texto || '').trim());
   if (!hasCriteria) {
     demandasRegistrosBody.innerHTML = '<tr><td colspan="9">Use a busca por data/período ou texto para listar resultados.</td></tr>';
+    demandasRegistrosFilteredCount = 0;
     if (demandasRegistrosCount) {
       demandasRegistrosCount.textContent = '';
       demandasRegistrosCount.classList.add('hidden');
@@ -654,9 +686,11 @@ function renderDemandasRegistros() {
     }
   }
   if (!filtered.length) {
-    demandasRegistrosBody.innerHTML = '<tr><td colspan="9">Nenhum registro encontrado.</td></tr>';
+    demandasRegistrosBody.innerHTML = '';
+    demandasRegistrosFilteredCount = 0;
     return;
   }
+  demandasRegistrosFilteredCount = filtered.length;
 
   filtered.forEach((row) => {
     const dataRegistro = formatDateBr(row.dataRegistro);
@@ -708,6 +742,7 @@ async function applyDemandasRegistrosSearch() {
   const { dataInicio, dataFim, texto } = state.demandasRegistrosFilters;
   const hasCriteria = !!(String(dataInicio || '').trim() || String(dataFim || '').trim() || String(texto || '').trim());
   if (!hasCriteria) {
+    hideDemandasRegistrosFeedback();
     renderDemandasRegistros();
     return;
   }
@@ -716,21 +751,40 @@ async function applyDemandasRegistrosSearch() {
   const fimInvalido = String(dataFim || '').trim() && !parseInputDate(dataFim);
   if (inicioInvalido || fimInvalido) {
     demandasRegistrosBody.innerHTML = '<tr><td colspan="9">Data inválida. Use o formato dd/mm/aaaa.</td></tr>';
+    hideDemandasRegistrosFeedback();
     return;
   }
+  hideDemandasRegistrosFeedback();
+
+  let shownSearching = false;
+  const searchingTimer = window.setTimeout(() => {
+    shownSearching = true;
+    void showDemandasRegistrosFeedback('searching');
+  }, 1000);
 
   if (!state.demandasRegistrosLoaded) {
     state.demandasRegistrosLoaded = true;
     try {
       await loadDemandasRegistros();
     } catch (error) {
+      window.clearTimeout(searchingTimer);
       state.demandasRegistrosLoaded = false;
       showMsg(error.message || 'Falha ao carregar demandas e registros.');
       demandasRegistrosBody.innerHTML = '<tr><td colspan="9">Falha ao carregar dados.</td></tr>';
+      hideDemandasRegistrosFeedback();
       return;
     }
   }
+  window.clearTimeout(searchingTimer);
   renderDemandasRegistros();
+  if (shownSearching) {
+    hideDemandasRegistrosFeedback();
+  }
+  if (demandasRegistrosFilteredCount === 0) {
+    await showDemandasRegistrosFeedback('no_result');
+  } else {
+    hideDemandasRegistrosFeedback();
+  }
 }
 
 async function openConfig(nome) {
@@ -802,6 +856,9 @@ document.getElementById('btn-close-demandas-registros').addEventListener('click'
   clearDemandasRegistrosInputs();
   closeModal(modalDemandasRegistros);
 });
+if (btnCloseDrSearchFeedback) {
+  btnCloseDrSearchFeedback.addEventListener('click', () => hideDemandasRegistrosFeedback());
+}
 modalDemandasRegistros.addEventListener('click', (event) => {
   if (event.target === modalDemandasRegistros) {
     clearDemandasRegistrosInputs();

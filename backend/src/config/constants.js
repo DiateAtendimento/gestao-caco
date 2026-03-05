@@ -2,6 +2,7 @@ const PROFILE_SHEET = 'Perfil';
 const DEMANDS_SHEET = 'Registro de Demandas';
 const WEBCONF_SHEET = 'Reg webconferencia';
 const DAYS_WEBCONF_SHEET = 'Dias webconferencia';
+const REDIRECT_SHEET = 'Demandas redirecionadas';
 
 const PROFILE_HEADERS = [
   'Atendente',
@@ -61,6 +62,25 @@ const WEBCONF_HEADERS = [
   'Participantes'
 ];
 
+const REDIRECT_HEADERS = [
+  'ID Redirecionamento',
+  'ID Demanda',
+  'De Colaborador',
+  'Para Colaborador',
+  'Área',
+  'Categoria',
+  'Descrição Snapshot',
+  'Status Redirecionamento',
+  'Data/Hora Envio',
+  'Data/Hora Resposta',
+  'Respondido por',
+  'Motivo Devolução',
+  'Tentativa',
+  'Ativo',
+  'Data/Hora Conclusão Fluxo',
+  'Observações'
+];
+
 const STATUS = {
   NAO_INICIADA: 'Não iniciada',
   EM_ANDAMENTO: 'Em andamento',
@@ -74,11 +94,13 @@ module.exports = {
   DEMANDS_SHEET,
   WEBCONF_SHEET,
   DAYS_WEBCONF_SHEET,
+  REDIRECT_SHEET,
   PROFILE_HEADERS,
   PROFILE_NON_ACTIVITY_HEADERS,
   ACTIVITY_COLUMNS,
   DEMANDS_HEADERS,
   WEBCONF_HEADERS,
+  REDIRECT_HEADERS,
   STATUS,
   DASHBOARD_URL
 };
