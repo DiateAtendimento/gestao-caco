@@ -107,6 +107,20 @@ function getFirstFilled(row, keys) {
   return '';
 }
 
+function getByHeaderTokens(row, requiredTokens) {
+  const tokens = requiredTokens.map((t) => normalizeHeaderLabel(t));
+  const entries = Object.entries(row || {});
+  for (const [header, rawValue] of entries) {
+    if (header === '_rowIndex') continue;
+    const normalized = normalizeHeaderLabel(header);
+    const hasAll = tokens.every((token) => normalized.includes(token));
+    if (!hasAll) continue;
+    const value = String(rawValue || '').trim();
+    if (value) return value;
+  }
+  return '';
+}
+
 function simpleHashBase36(input) {
   let hash = 0;
   for (let i = 0; i < input.length; i += 1) {
@@ -265,7 +279,7 @@ router.get('/registros', async (req, res) => {
           'Qual Webconferencia',
           'Webconferência',
           'Webconferencia'
-        ]),
+        ]) || getByHeaderTokens(row, ['qual', 'webconfer']),
         data: row.Data || '',
         horario: row['Horário'] || row.Horario || '',
         atendente: row.Atendente || '',
