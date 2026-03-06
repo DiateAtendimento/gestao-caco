@@ -22,6 +22,11 @@ function detectGender(name) {
   return 'masculino';
 }
 
+function activityValue(row, key) {
+  if (key !== 'Telefone') return row?.[key];
+  return row?.Telefone || row?.['Registro Telefone'] || row?.['Registro de Telefone'] || '';
+}
+
 router.get('/', async (_req, res) => {
   try {
     await ensureProfileStructure();
@@ -36,7 +41,7 @@ router.get('/', async (_req, res) => {
         role: row.Role,
         genero: row.Genero || detectGender(row.Atendente),
         atividades: ACTIVITY_COLUMNS.reduce((acc, key) => {
-          acc[key] = row[key] || 'Não';
+          acc[key] = activityValue(row, key) || 'Não';
           return acc;
         }, {})
       }));
@@ -110,6 +115,14 @@ router.put('/:nome/atividades', async (req, res) => {
 
     const next = user[atividade] === 'Sim' ? 'Não' : 'Sim';
     user[atividade] = next;
+    if (atividade === 'Telefone') {
+      if (Object.prototype.hasOwnProperty.call(user, 'Registro Telefone')) {
+        user['Registro Telefone'] = next;
+      }
+      if (Object.prototype.hasOwnProperty.call(user, 'Registro de Telefone')) {
+        user['Registro de Telefone'] = next;
+      }
+    }
     await updateMappedRow(PROFILE_SHEET, user._rowIndex, user);
 
     return res.json({ atividade, valor: next });

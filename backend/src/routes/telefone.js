@@ -16,8 +16,6 @@ const { toBrDate, currentYear } = require('../utils/datetime');
 const router = express.Router();
 router.use(authMiddleware);
 
-const permissionCache = new Map();
-const PERMISSION_TTL_MS = 60 * 1000;
 
 function normalizeComparableText(value) {
   return String(value || '')
@@ -96,16 +94,16 @@ function buildDetalhamento({
 }
 
 async function hasTelefonePermission(nome) {
-  const key = normalizeText(nome).toLowerCase();
-  const cached = permissionCache.get(`telefone:${key}`);
-  const now = Date.now();
-  if (cached && cached.expiresAt > now) return cached.value;
-
   const { rows } = await readSheet(PROFILE_SHEET);
   const user = rows.find((row) => equalsIgnoreCase(row.Atendente, nome));
-  const value = !!(user && equalsIgnoreCase(user.Telefone, 'Sim'));
-  permissionCache.set(`telefone:${key}`, { value, expiresAt: now + PERMISSION_TTL_MS });
-  return value;
+  return !!(
+    user
+    && (
+      equalsIgnoreCase(user.Telefone, 'Sim')
+      || equalsIgnoreCase(user['Registro Telefone'], 'Sim')
+      || equalsIgnoreCase(user['Registro de Telefone'], 'Sim')
+    )
+  );
 }
 
 router.get('/transferencias', async (req, res) => {

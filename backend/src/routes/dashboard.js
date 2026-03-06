@@ -49,6 +49,11 @@ function isSim(value) {
   return normalizeText(value).toLowerCase() === 'sim';
 }
 
+function activityValue(row, key) {
+  if (key !== 'Telefone') return row?.[key];
+  return row?.Telefone || row?.['Registro Telefone'] || row?.['Registro de Telefone'] || '';
+}
+
 function parseSigaMeta(value) {
   const normalized = normalizeText(value).replace('%', '').replace(',', '.');
   const number = Number(normalized);
@@ -107,7 +112,7 @@ router.get('/admin', async (_req, res) => {
         naoIniciadas,
         staleOver48h: staleCount > 0,
         atividades: ACTIVITY_COLUMNS.reduce((acc, key) => {
-          acc[key] = col[key] || 'Não';
+          acc[key] = isSim(activityValue(col, key)) ? 'Sim' : 'Não';
           return acc;
         }, {})
       };

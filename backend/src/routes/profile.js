@@ -11,6 +11,11 @@ function isSim(value) {
   return normalizeText(value).toLowerCase() === 'sim';
 }
 
+function activityValue(row, key) {
+  if (key !== 'Telefone') return row?.[key];
+  return row?.Telefone || row?.['Registro Telefone'] || row?.['Registro de Telefone'] || '';
+}
+
 router.get('/me', async (req, res) => {
   try {
     await ensureColumn(PROFILE_SHEET, 'Senha');
@@ -24,7 +29,7 @@ router.get('/me', async (req, res) => {
       return res.status(404).json({ error: 'Perfil não encontrado ou inativo' });
     }
 
-    const atividades = ACTIVITY_COLUMNS.filter((key) => isSim(profile[key]));
+    const atividades = ACTIVITY_COLUMNS.filter((key) => isSim(activityValue(profile, key)));
 
     return res.json({
       nome: profile.Atendente,
@@ -32,7 +37,7 @@ router.get('/me', async (req, res) => {
       role: normalizeText(profile.Role).toLowerCase(),
       atividades,
       flags: ACTIVITY_COLUMNS.reduce((acc, key) => {
-        acc[key] = isSim(profile[key]) ? 'Sim' : 'Não';
+        acc[key] = isSim(activityValue(profile, key)) ? 'Sim' : 'Não';
         return acc;
       }, {})
     });
