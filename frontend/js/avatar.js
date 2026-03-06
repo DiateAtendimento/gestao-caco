@@ -8,6 +8,9 @@ function sanitizeName(name) {
     .trim();
 }
 
+const AVATAR_BASE_URL = new URL('../img/', import.meta.url);
+const ICONS_BASE_URL = new URL('../assets/icons/', import.meta.url);
+
 function candidates(name) {
   const raw = String(name || '').trim();
   const clean = sanitizeName(raw);
@@ -17,7 +20,7 @@ function candidates(name) {
   const compactFirst = firstClean.replace(/\s+/g, '');
   const title = compact ? `${compact.charAt(0).toUpperCase()}${compact.slice(1).toLowerCase()}` : '';
   const titleFirst = compactFirst ? `${compactFirst.charAt(0).toUpperCase()}${compactFirst.slice(1).toLowerCase()}` : '';
-  const base = ['img'];
+  const base = [AVATAR_BASE_URL];
   const exts = ['png', 'jpg', 'jpeg', 'webp', 'svg'];
   const vars = [...new Set([
     raw,
@@ -46,7 +49,7 @@ function candidates(name) {
   [...vars, ...manualAliases].forEach((v) => {
     if (!v) return;
     exts.forEach((ext) => {
-      list.push(`${base[0]}/${v}.${ext}`);
+      list.push(new URL(`${v}.${ext}`, base[0]).href);
     });
   });
   return list;
@@ -60,8 +63,8 @@ export function attachAvatar(imgElement, name) {
   if (!imgElement) return;
 
   const fallback = isLikelyFemale(name)
-    ? 'assets/icons/perfil-feminino.svg'
-    : 'assets/icons/perfil-masculino.svg';
+    ? new URL('perfil-feminino.svg', ICONS_BASE_URL).href
+    : new URL('perfil-masculino.svg', ICONS_BASE_URL).href;
 
   const tries = candidates(name);
   let index = 0;
