@@ -12,6 +12,9 @@ const state = {
   demandas: [],
   sigaRegistros: [],
   webconfRegistros: [],
+  telefoneRegistros: [],
+  telefoneTransferGroups: [],
+  selectedTelefoneTransfer: null,
   webconfDraft: {
     qualWebconferencia: '',
     data: '',
@@ -36,9 +39,13 @@ const sigaBodyEl = document.getElementById('registros-siga-body');
 const sigaBlockEl = document.getElementById('siga-block');
 const webconfBlockEl = document.getElementById('webconf-block');
 const webconfBodyEl = document.getElementById('webconf-body');
+const telefoneBlockEl = document.getElementById('telefone-block');
+const telefoneBodyEl = document.getElementById('telefone-body');
 const modalWebconfWizard = document.getElementById('modal-webconf-wizard');
 const modalWebconfParticipantes = document.getElementById('modal-webconf-participantes');
 const modalWebconfEditParticipante = document.getElementById('modal-webconf-edit-participante');
+const modalTelefoneForm = document.getElementById('modal-telefone-form');
+const modalTelefoneDetalhe = document.getElementById('modal-telefone-detalhe');
 const modalDemandaDetalhe = document.getElementById('modal-demanda-detalhe');
 const modalRedir = document.getElementById('modal-redir');
 const modalRedirCriar = document.getElementById('modal-redir-criar');
@@ -52,6 +59,8 @@ const redirToAvatarEl = document.getElementById('redir-to-avatar');
 const redirToNameEl = document.getElementById('redir-to-name');
 const redirToPickerEl = document.getElementById('redir-to-picker');
 const redirToListEl = document.getElementById('redir-to-list');
+const telefoneTransferInputEl = document.getElementById('telefone-transferido-input');
+const telefoneTransferListEl = document.getElementById('telefone-transferido-list');
 const webconfRegistrosCountEl = document.getElementById('webconf-registros-count');
 const slotWebconfDataSearch = document.getElementById('slot-webconf-data-search');
 const slotWebconfTextSearch = document.getElementById('slot-webconf-text-search');
@@ -488,6 +497,143 @@ function renderWebconfRegistros() {
       openModal(modalWebconfParticipantes);
     });
   });
+}
+
+function getTodayBrDate() {
+  const today = new Date();
+  const day = String(today.getDate()).padStart(2, '0');
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const year = today.getFullYear();
+  return `${day}/${month}/${year}`;
+}
+
+function renderTelefoneRegistros() {
+  if (!telefoneBlockEl || !telefoneBodyEl) return;
+  if (!isEnabled(state.profile?.flags?.Ti) && !isEnabled(state.profile?.flags?.Telefone)) {
+    telefoneBlockEl.classList.add('hidden');
+    return;
+  }
+
+  telefoneBlockEl.classList.remove('hidden');
+  telefoneBodyEl.innerHTML = '';
+  if (!state.telefoneRegistros.length) {
+    telefoneBodyEl.innerHTML = '<tr><td colspan="8">Nenhum registro de telefone encontrado.</td></tr>';
+    return;
+  }
+
+  state.telefoneRegistros.forEach((row, index) => {
+    const key = row.id || `tel-${index}`;
+    const tr = document.createElement('tr');
+    tr.dataset.telefoneKey = key;
+    tr.innerHTML = `
+      <td>${row.id || '-'}</td>
+      <td>${row.assunto || '-'}</td>
+      <td>${truncateText(row.descricao || '-', 85)}</td>
+      <td>${row.dataRegistro || '-'}</td>
+      <td>
+        <div class="webconf-attendente">
+          <img data-telefone-avatar="${row.atendente || ''}" alt="${row.atendente || 'Atendente'}" />
+          <span>${row.atendente || '-'}</span>
+        </div>
+      </td>
+      <td>
+        <div class="webconf-attendente">
+          <img data-telefone-avatar="${row.transferidoPara || ''}" alt="${row.transferidoPara || 'Transferido'}" />
+          <span>${row.transferidoPara || '-'}</span>
+        </div>
+      </td>
+      <td>${row.coordenacao || '-'}</td>
+      <td>
+        <button class="detail-inline-btn table-eye-btn" data-telefone-detail="${key}" type="button" title="Ver detalhamento">
+          <i class="bi bi-eye-fill" aria-hidden="true"></i>
+        </button>
+      </td>
+    `;
+    telefoneBodyEl.appendChild(tr);
+  });
+
+  telefoneBodyEl.querySelectorAll('[data-telefone-avatar]').forEach((img) => {
+    attachAvatar(img, img.dataset.telefoneAvatar || '');
+  });
+
+  telefoneBodyEl.querySelectorAll('[data-telefone-detail]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const key = btn.dataset.telefoneDetail;
+      const row = state.telefoneRegistros.find((item, idx) => (item.id || `tel-${idx}`) === key);
+      if (!row) return;
+
+      document.getElementById('telefone-detalhe-assunto').value = row.assunto || '-';
+      document.getElementById('telefone-detalhe-descricao').value = row.descricao || '-';
+      document.getElementById('telefone-detalhe-data').value = row.dataRegistro || '-';
+      document.getElementById('telefone-detalhe-atendente').textContent = row.atendente || '-';
+      document.getElementById('telefone-detalhe-transferido').textContent = row.transferidoPara || '-';
+      document.getElementById('telefone-detalhe-coordenacao').textContent = row.coordenacao || '-';
+      attachAvatar(document.getElementById('telefone-detalhe-atendente-avatar'), row.atendente || '');
+      attachAvatar(document.getElementById('telefone-detalhe-transferido-avatar'), row.transferidoPara || '');
+      openModal(modalTelefoneDetalhe);
+    });
+  });
+}
+
+function flattenTransferGroups(groups) {
+  return (groups || []).flatMap((group) =>
+    (group.nomes || []).map((nome) => ({
+      sigla: group.sigla,
+      nome
+    }))
+  );
+}
+
+function renderTelefoneTransferList(filterText = '') {
+  if (!telefoneTransferListEl) return;
+  const term = normalizeTextValue(filterText);
+  const groups = (state.telefoneTransferGroups || []).map((group) => ({
+    sigla: group.sigla,
+    nomes: (group.nomes || []).filter((nome) => !term || normalizeTextValue(nome).includes(term))
+  })).filter((group) => group.nomes.length > 0);
+
+  telefoneTransferListEl.innerHTML = '';
+  if (!groups.length) {
+    telefoneTransferListEl.classList.remove('open');
+    return;
+  }
+
+  groups.forEach((group) => {
+    const title = document.createElement('div');
+    title.className = 'telefone-transfer-group';
+    title.textContent = group.sigla || '-';
+    telefoneTransferListEl.appendChild(title);
+
+    group.nomes.forEach((nome) => {
+      const btn = document.createElement('button');
+      btn.className = 'telefone-transfer-item';
+      btn.type = 'button';
+      btn.dataset.telefoneNome = nome;
+      btn.dataset.telefoneSigla = group.sigla || '';
+      btn.innerHTML = `
+        <img data-telefone-candidate-avatar="${nome}" alt="${nome}" />
+        <span>${nome}</span>
+      `;
+      telefoneTransferListEl.appendChild(btn);
+    });
+  });
+
+  telefoneTransferListEl.querySelectorAll('[data-telefone-candidate-avatar]').forEach((img) => {
+    attachAvatar(img, img.dataset.telefoneCandidateAvatar || '');
+  });
+  telefoneTransferListEl.querySelectorAll('[data-telefone-nome]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const nome = btn.dataset.telefoneNome || '';
+      const sigla = btn.dataset.telefoneSigla || '';
+      state.selectedTelefoneTransfer = { nome, sigla };
+      if (telefoneTransferInputEl) telefoneTransferInputEl.value = nome;
+      const coordenacaoEl = document.getElementById('telefone-coordenacao');
+      if (coordenacaoEl) coordenacaoEl.value = sigla;
+      telefoneTransferListEl.classList.remove('open');
+    });
+  });
+
+  telefoneTransferListEl.classList.add('open');
 }
 
 function renderRedirectBadge() {
@@ -1235,12 +1381,20 @@ async function loadData() {
   const webconfPromise = isEnabled(profile?.flags?.Webconferencia)
     ? api('/api/webconferencia/registros')
     : Promise.resolve({ registros: [] });
+  const telefoneRegistrosPromise = (isEnabled(profile?.flags?.Ti) || isEnabled(profile?.flags?.Telefone))
+    ? api('/api/telefone/registros').catch(() => ({ registros: [] }))
+    : Promise.resolve({ registros: [] });
+  const telefoneTransferPromise = (isEnabled(profile?.flags?.Ti) || isEnabled(profile?.flags?.Telefone))
+    ? api('/api/telefone/transferencias').catch(() => ({ grupos: [] }))
+    : Promise.resolve({ grupos: [] });
   const redirectReceivedPromise = api('/api/demandas/redirecionadas/recebidas').catch(() => ({ registros: [] }));
   const redirectSentPromise = api('/api/demandas/redirecionadas/enviadas').catch(() => ({ registros: [] }));
-  const [demandas, siga, webconf, redirectsReceived, redirectsSent] = await Promise.all([
+  const [demandas, siga, webconf, telefoneRegistros, telefoneTransfer, redirectsReceived, redirectsSent] = await Promise.all([
     demandasPromise,
     sigaPromise,
     webconfPromise,
+    telefoneRegistrosPromise,
+    telefoneTransferPromise,
     redirectReceivedPromise,
     redirectSentPromise
   ]);
@@ -1264,6 +1418,8 @@ async function loadData() {
   state.demandas = sortByRecent(demandas.demandas || [], 'dataRegistro');
   state.sigaRegistros = sortByRecent(siga?.registros || [], 'dataRegistro');
   state.webconfRegistros = sortByRecent(webconf?.registros || [], 'data');
+  state.telefoneRegistros = sortByRecent(telefoneRegistros?.registros || [], 'dataRegistro');
+  state.telefoneTransferGroups = telefoneTransfer?.grupos || [];
   state.redirectReceived = redirectsReceived?.registros || [];
   state.redirectSent = redirectsSent?.registros || [];
 
@@ -1294,6 +1450,117 @@ document.getElementById('btn-logout').addEventListener('click', async () => {
 const btnCloseDemandaDetalhe = document.getElementById('btn-close-demanda-detalhe');
 if (btnCloseDemandaDetalhe) {
   btnCloseDemandaDetalhe.addEventListener('click', () => closeModal(modalDemandaDetalhe));
+}
+
+function resetTelefoneForm() {
+  state.selectedTelefoneTransfer = null;
+  const assuntoEl = document.getElementById('telefone-assunto');
+  const descricaoEl = document.getElementById('telefone-descricao');
+  const dataEl = document.getElementById('telefone-data');
+  const transferidoEl = document.getElementById('telefone-transferido-input');
+  const coordenacaoEl = document.getElementById('telefone-coordenacao');
+  const suffix = String(Date.now());
+  [
+    { el: assuntoEl, name: `telefone_assunto_${suffix}` },
+    { el: descricaoEl, name: `telefone_descricao_${suffix}` },
+    { el: dataEl, name: `telefone_data_${suffix}` },
+    { el: transferidoEl, name: `telefone_transferido_${suffix}` }
+  ].forEach(({ el, name }) => {
+    if (!el) return;
+    el.setAttribute('name', name);
+    el.setAttribute('autocomplete', 'off');
+    el.setAttribute('autocorrect', 'off');
+    el.setAttribute('autocapitalize', 'off');
+    el.setAttribute('spellcheck', 'false');
+  });
+  if (assuntoEl) assuntoEl.value = '';
+  if (descricaoEl) descricaoEl.value = '';
+  if (dataEl) dataEl.value = getTodayBrDate();
+  if (transferidoEl) transferidoEl.value = '';
+  if (coordenacaoEl) coordenacaoEl.value = '';
+  if (telefoneTransferListEl) {
+    telefoneTransferListEl.innerHTML = '';
+    telefoneTransferListEl.classList.remove('open');
+  }
+}
+
+function setupTelefoneModule() {
+  const openBtn = document.getElementById('btn-open-telefone-modal');
+  const closeBtn = document.getElementById('btn-close-telefone-modal');
+  const closeDetailBtn = document.getElementById('btn-close-telefone-detalhe');
+  const saveBtn = document.getElementById('btn-save-telefone');
+  if (!openBtn || !closeBtn || !saveBtn || !closeDetailBtn) return;
+
+  openBtn.addEventListener('click', () => {
+    resetTelefoneForm();
+    const atendenteEl = document.getElementById('telefone-atendente');
+    if (atendenteEl) atendenteEl.textContent = user.nome;
+    attachAvatar(document.getElementById('telefone-atendente-avatar'), user.nome);
+    openModal(modalTelefoneForm);
+  });
+
+  closeBtn.addEventListener('click', () => closeModal(modalTelefoneForm));
+  closeDetailBtn.addEventListener('click', () => closeModal(modalTelefoneDetalhe));
+
+  if (telefoneTransferInputEl && !telefoneTransferInputEl.dataset.bound) {
+    telefoneTransferInputEl.dataset.bound = 'true';
+    telefoneTransferInputEl.addEventListener('input', () => {
+      const typed = telefoneTransferInputEl.value || '';
+      const coordenacaoEl = document.getElementById('telefone-coordenacao');
+      const flat = flattenTransferGroups(state.telefoneTransferGroups);
+      const exact = flat.find((item) => normalizeTextValue(item.nome) === normalizeTextValue(typed));
+      state.selectedTelefoneTransfer = exact || null;
+      if (coordenacaoEl) coordenacaoEl.value = exact?.sigla || '';
+      renderTelefoneTransferList(typed);
+    });
+    telefoneTransferInputEl.addEventListener('focus', () => {
+      renderTelefoneTransferList(telefoneTransferInputEl.value || '');
+    });
+  }
+
+  const telefoneDataEl = document.getElementById('telefone-data');
+  if (telefoneDataEl && !telefoneDataEl.dataset.bound) {
+    telefoneDataEl.dataset.bound = 'true';
+    telefoneDataEl.addEventListener('input', () => {
+      telefoneDataEl.value = maskDateInput(telefoneDataEl.value);
+    });
+  }
+
+  document.addEventListener('click', (event) => {
+    if (!modalTelefoneForm?.classList.contains('open')) return;
+    const target = event.target;
+    if (!(target instanceof Node)) return;
+    if (telefoneTransferInputEl?.contains(target) || telefoneTransferListEl?.contains(target)) return;
+    telefoneTransferListEl?.classList.remove('open');
+  });
+
+  saveBtn.addEventListener('click', async () => {
+    const assunto = String(document.getElementById('telefone-assunto')?.value || '').trim();
+    const descricao = String(document.getElementById('telefone-descricao')?.value || '').trim();
+    const dataRegistro = String(document.getElementById('telefone-data')?.value || '').trim();
+    const transferidoPara = String(document.getElementById('telefone-transferido-input')?.value || '').trim();
+    if (!assunto) {
+      await showStatus('erro', 'Assunto é obrigatório');
+      return;
+    }
+
+    try {
+      await runAction('registrar telefone', 'Salvando registro...', 'salvo', 'Registro de telefone salvo', async () => {
+        await api('/api/telefone/registros', {
+          method: 'POST',
+          body: JSON.stringify({
+            assunto,
+            descricao,
+            dataRegistro,
+            transferidoPara
+          })
+        });
+        closeModal(modalTelefoneForm);
+        await loadData();
+        renderTelefoneRegistros();
+      });
+    } catch (_e) {}
+  });
 }
 
 function setupRedirectModules() {
@@ -1332,6 +1599,7 @@ async function refreshSilently() {
     renderDemandas();
     renderRegistrosSiga();
     renderWebconfRegistros();
+    renderTelefoneRegistros();
     renderRedirectBadge();
     renderRedirectUnified();
   } catch (error) {
@@ -1349,11 +1617,13 @@ async function refreshSilently() {
       renderDemandas();
       renderRegistrosSiga();
       renderWebconfRegistros();
+      renderTelefoneRegistros();
       renderRedirectBadge();
       renderRedirectUnified();
       setupWhatsapp();
       setupWebconfSearch();
       setupWebconfWizard();
+      setupTelefoneModule();
       setupRedirectModules();
     });
 

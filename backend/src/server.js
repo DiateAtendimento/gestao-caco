@@ -8,6 +8,7 @@ const demandasRoutes = require('./routes/demandas');
 const dashboardRoutes = require('./routes/dashboard');
 const profileRoutes = require('./routes/profile');
 const webconferenciaRoutes = require('./routes/webconferencia');
+const telefoneRoutes = require('./routes/telefone');
 
 const app = express();
 
@@ -25,6 +26,7 @@ app.use('/api/demandas', demandasRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/webconferencia', webconferenciaRoutes);
+app.use('/api/telefone', telefoneRoutes);
 
 app.use((err, _req, res, _next) => {
   res.status(500).json({ error: err.message });

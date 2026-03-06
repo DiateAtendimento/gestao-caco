@@ -118,6 +118,7 @@ function mapAreaToActivityColumn(area) {
     ti: 'Ti',
     whatsapp: 'Whatsapp',
     email: 'Email',
+    telefone: 'Telefone',
     webconferencia: 'Webconferencia',
     progregularidade: 'Programaregularidade',
     programaregularidade: 'Programaregularidade',
@@ -144,6 +145,7 @@ function mapAreaToActivityColumn(area) {
   const partialMatches = [
     ['webconferencia', 'Webconferencia'],
     ['whatsapp', 'Whatsapp'],
+    ['telefone', 'Telefone'],
     ['programaderegularidade', 'Programaregularidade'],
     ['registrosiga', 'Registrosiga'],
     ['registrossiga', 'Registrosiga'],

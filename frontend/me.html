@@ -141,6 +141,32 @@
         </div>
       </article>
 
+      <article id="telefone-block" class="section-shell hidden">
+        <div class="section-title">Registro de Telefone</div>
+        <div class="section-content webconf-panel">
+          <div class="table-shell demand-table">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Assunto</th>
+                  <th>Descrição</th>
+                  <th>Data do Registro</th>
+                  <th>Atendente</th>
+                  <th>Transferido para</th>
+                  <th>Coordenação</th>
+                  <th>Detalhamento</th>
+                </tr>
+              </thead>
+              <tbody id="telefone-body"></tbody>
+            </table>
+          </div>
+          <div class="form-actions webconf-create-actions">
+            <button id="btn-open-telefone-modal" class="btn-main" type="button">Criar novo registro</button>
+          </div>
+        </div>
+      </article>
+
       <article class="section-shell">
         <div class="section-title">Demandas Atribuídas</div>
         <div class="section-content">
@@ -353,6 +379,86 @@
         </div>
         <div class="form-actions">
           <button id="btn-confirm-redir" class="btn-main" type="button">Enviar redirecionamento</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-telefone-form" class="modal-overlay">
+    <div class="modal">
+      <header class="modal-header">Registro de Telefone
+        <button id="btn-close-telefone-modal" class="modal-close-x" type="button">×</button>
+      </header>
+      <div class="modal-content">
+        <div class="form-row">
+          <label class="field-label" for="telefone-assunto">Assunto</label>
+          <input id="telefone-assunto" type="text" placeholder="Digite o assunto" />
+        </div>
+        <div class="form-row">
+          <label class="field-label" for="telefone-descricao">Descrição</label>
+          <textarea id="telefone-descricao" placeholder="Digite a descrição"></textarea>
+        </div>
+        <div class="form-row">
+          <label class="field-label" for="telefone-data">Data do Registro</label>
+          <input id="telefone-data" type="text" placeholder="dd/mm/aaaa" />
+        </div>
+        <label class="field-label">Atendente</label>
+        <div class="webconf-attendente webconf-attendente-card telefone-attendente">
+          <img id="telefone-atendente-avatar" alt="Atendente" />
+          <span id="telefone-atendente" class="webconf-attendente-name"></span>
+        </div>
+        <div class="form-row">
+          <label class="field-label" for="telefone-transferido-input">Transferido para</label>
+          <input id="telefone-transferido-input" type="text" placeholder="Digite o nome para buscar" />
+          <div id="telefone-transferido-list" class="telefone-transfer-list"></div>
+        </div>
+        <div class="form-row">
+          <label class="field-label" for="telefone-coordenacao">Coordenação</label>
+          <input id="telefone-coordenacao" type="text" readonly />
+        </div>
+        <div class="form-actions">
+          <button id="btn-save-telefone" class="btn-main" type="button">Registrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-telefone-detalhe" class="modal-overlay">
+    <div class="modal">
+      <header class="modal-header">Detalhamento do Registro
+        <button id="btn-close-telefone-detalhe" class="modal-close-x" type="button">×</button>
+      </header>
+      <div class="modal-content">
+        <div class="form-row">
+          <label class="field-label">Assunto</label>
+          <input id="telefone-detalhe-assunto" type="text" readonly />
+        </div>
+        <div class="form-row">
+          <label class="field-label">Descrição</label>
+          <textarea id="telefone-detalhe-descricao" readonly></textarea>
+        </div>
+        <div class="form-row">
+          <label class="field-label">Data do Registro</label>
+          <input id="telefone-detalhe-data" type="text" readonly />
+        </div>
+        <div class="telefone-transfer-detail">
+          <div class="telefone-detail-person">
+            <h4>Atendente</h4>
+            <img id="telefone-detalhe-atendente-avatar" alt="Atendente" />
+            <span id="telefone-detalhe-atendente"></span>
+          </div>
+          <div class="telefone-transfer-icon-wrap">
+            <img src="./assets/icons/icon ligacao trasferida.svg" alt="Transferência" />
+          </div>
+          <div class="telefone-detail-person">
+            <h4>Transferido para</h4>
+            <img id="telefone-detalhe-transferido-avatar" alt="Transferido para" />
+            <span id="telefone-detalhe-transferido"></span>
+          </div>
+          <div class="telefone-detail-person sigla">
+            <h4>Coordenação</h4>
+            <span id="telefone-detalhe-coordenacao" class="telefone-sigla"></span>
+          </div>
         </div>
       </div>
     </div>
