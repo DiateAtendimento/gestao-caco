@@ -1,4 +1,4 @@
-function sanitizeName(name) {
+﻿function sanitizeName(name) {
   return String(name || '')
     .trim()
     .normalize('NFD')
@@ -11,48 +11,76 @@ function sanitizeName(name) {
 const AVATAR_BASE_URL = new URL('../img/', import.meta.url);
 const ICONS_BASE_URL = new URL('../assets/icons/', import.meta.url);
 
-function candidates(name) {
-  const raw = String(name || '').trim();
-  const clean = sanitizeName(raw);
-  const firstRaw = raw.split(/\s+/)[0] || '';
-  const firstClean = clean.split(/\s+/)[0] || '';
-  const compact = clean.replace(/\s+/g, '');
-  const compactFirst = firstClean.replace(/\s+/g, '');
-  const title = compact ? `${compact.charAt(0).toUpperCase()}${compact.slice(1).toLowerCase()}` : '';
-  const titleFirst = compactFirst ? `${compactFirst.charAt(0).toUpperCase()}${compactFirst.slice(1).toLowerCase()}` : '';
-  const base = [AVATAR_BASE_URL];
-  const exts = ['png', 'jpg', 'jpeg', 'webp', 'svg'];
-  const vars = [...new Set([
-    raw,
-    clean,
-    firstRaw,
-    firstClean,
-    compact,
-    compactFirst,
-    raw.toLowerCase(),
-    clean.toLowerCase(),
-    firstRaw.toLowerCase(),
-    firstClean.toLowerCase(),
-    compact.toLowerCase(),
-    compactFirst.toLowerCase(),
-    title,
-    titleFirst
-  ])];
+const AVATAR_FILES = [
+  'admin.png',
+  'Alexandre.png',
+  'Aline.svg',
+  'Allex Rodrigues.svg',
+  'Andre.png',
+  'Carina.png',
+  'Carlos.png',
+  'Charles.svg',
+  'Claudia Iten.svg',
+  'cobertura.png',
+  'Elceane.svg',
+  'Fabricia Padilha.svg',
+  'Francisca.png',
+  'Hildiene.svg',
+  'Hugo.svg',
+  'Ilusca.svg',
+  'Jessiane.svg',
+  'Joelma.png',
+  'Leonardo Coimbra.svg',
+  'Lourdes.png',
+  'Luciana.svg',
+  'Luiz Alves.svg',
+  'Mateus.png',
+  'Samara.png',
+  'Thayna.png',
+  'Vanderleia.png',
+  'Wagner.png'
+];
 
-  const manualAliases = [];
-  const norm = clean.toLowerCase();
-  if (norm.includes('wagner')) manualAliases.push('Wagner', 'wagner');
-  if (norm.includes('cobertura')) manualAliases.push('cobertura', 'Cobertura');
-  if (norm.includes('thayna')) manualAliases.push('Thayna', 'thayna', 'Thayná', 'thayná');
+function toKey(value) {
+  return sanitizeName(value).toLowerCase();
+}
 
-  const list = [];
-  [...vars, ...manualAliases].forEach((v) => {
-    if (!v) return;
-    exts.forEach((ext) => {
-      list.push(new URL(`${v}.${ext}`, base[0]).href);
+function keyVariants(name) {
+  const key = toKey(name);
+  const compact = key.replace(/\s+/g, '');
+  const first = key.split(/\s+/)[0] || '';
+  return [...new Set([key, compact, first])].filter(Boolean);
+}
+
+function buildAvatarNameMap() {
+  const map = new Map();
+
+  AVATAR_FILES.forEach((file) => {
+    const baseName = file.replace(/\.[^.]+$/, '');
+    const full = toKey(baseName);
+    const compact = full.replace(/\s+/g, '');
+    const first = full.split(/\s+/)[0] || '';
+
+    [full, compact, first].forEach((key) => {
+      if (!key || map.has(key)) return;
+      map.set(key, file);
     });
   });
-  return list;
+
+  return map;
+}
+
+const AVATAR_NAME_MAP = buildAvatarNameMap();
+
+function resolveAvatarUrl(name) {
+  const keys = keyVariants(name);
+
+  for (const key of keys) {
+    const file = AVATAR_NAME_MAP.get(key);
+    if (file) return new URL(file, AVATAR_BASE_URL).href;
+  }
+
+  return '';
 }
 
 export function isLikelyFemale(name) {
@@ -66,19 +94,12 @@ export function attachAvatar(imgElement, name) {
     ? new URL('perfil-feminino.svg', ICONS_BASE_URL).href
     : new URL('perfil-masculino.svg', ICONS_BASE_URL).href;
 
-  const tries = candidates(name);
-  let index = 0;
+  const resolved = resolveAvatarUrl(name);
 
-  function next() {
-    if (index >= tries.length) {
-      imgElement.onerror = null;
-      imgElement.src = fallback;
-      return;
-    }
-    imgElement.src = tries[index];
-    index += 1;
-  }
+  imgElement.onerror = () => {
+    imgElement.onerror = null;
+    imgElement.src = fallback;
+  };
 
-  imgElement.onerror = next;
-  next();
+  imgElement.src = resolved || fallback;
 }
