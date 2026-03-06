@@ -14,6 +14,9 @@ function isSim(value) {
 router.get('/me', async (req, res) => {
   try {
     await ensureColumn(PROFILE_SHEET, 'Senha');
+    for (const activity of ACTIVITY_COLUMNS) {
+      await ensureColumn(PROFILE_SHEET, activity);
+    }
     const { rows } = await readSheet(PROFILE_SHEET);
     const profile = rows.find((row) => equalsIgnoreCase(row.Atendente, req.user.nome));
 

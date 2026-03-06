@@ -509,7 +509,7 @@ function getTodayBrDate() {
 
 function renderTelefoneRegistros() {
   if (!telefoneBlockEl || !telefoneBodyEl) return;
-  if (!isEnabled(state.profile?.flags?.Ti) && !isEnabled(state.profile?.flags?.Telefone)) {
+  if (!isEnabled(state.profile?.flags?.Telefone)) {
     telefoneBlockEl.classList.add('hidden');
     return;
   }
@@ -1381,10 +1381,10 @@ async function loadData() {
   const webconfPromise = isEnabled(profile?.flags?.Webconferencia)
     ? api('/api/webconferencia/registros')
     : Promise.resolve({ registros: [] });
-  const telefoneRegistrosPromise = (isEnabled(profile?.flags?.Ti) || isEnabled(profile?.flags?.Telefone))
+  const telefoneRegistrosPromise = isEnabled(profile?.flags?.Telefone)
     ? api('/api/telefone/registros').catch(() => ({ registros: [] }))
     : Promise.resolve({ registros: [] });
-  const telefoneTransferPromise = (isEnabled(profile?.flags?.Ti) || isEnabled(profile?.flags?.Telefone))
+  const telefoneTransferPromise = isEnabled(profile?.flags?.Telefone)
     ? api('/api/telefone/transferencias').catch(() => ({ grupos: [] }))
     : Promise.resolve({ grupos: [] });
   const redirectReceivedPromise = api('/api/demandas/redirecionadas/recebidas').catch(() => ({ registros: [] }));

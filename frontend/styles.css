@@ -1679,6 +1679,11 @@ img {
   padding: 10px 18px;
 }
 
+#telefone-block .webconf-create-actions {
+  margin-top: 18px;
+  padding-top: 8px;
+}
+
 .telefone-attendente {
   margin-bottom: 10px;
 }

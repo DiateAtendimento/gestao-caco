@@ -2,7 +2,7 @@
   { key: 'Ti', label: 'TI', icon: 'assets/icons/ti.svg' },
   { key: 'Whatsapp', label: 'WhatsApp', icon: 'assets/icons/whatsapp.svg' },
   { key: 'Email', label: 'Email', icon: 'assets/icons/email.svg' },
-  { key: 'Telefone', label: 'Telefone', icon: 'assets/icons/telefone.svg' },
+  { key: 'Telefone', label: 'Registro Telefone', icon: 'assets/icons/icon registro telefone.svg' },
   { key: 'Webconferencia', label: 'Webconferência', icon: 'assets/icons/webconferencia.svg' },
   { key: 'Programaregularidade', label: 'Prog. Regularidade', icon: 'assets/icons/prog-regularidade.svg' },
   { key: 'Sei', label: 'SEI', icon: 'assets/icons/sei.svg' },

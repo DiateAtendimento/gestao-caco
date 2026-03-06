@@ -103,13 +103,7 @@ async function hasTelefonePermission(nome) {
 
   const { rows } = await readSheet(PROFILE_SHEET);
   const user = rows.find((row) => equalsIgnoreCase(row.Atendente, nome));
-  const value = !!(
-    user
-    && (
-      equalsIgnoreCase(user.Telefone, 'Sim')
-      || equalsIgnoreCase(user.Ti, 'Sim')
-    )
-  );
+  const value = !!(user && equalsIgnoreCase(user.Telefone, 'Sim'));
   permissionCache.set(`telefone:${key}`, { value, expiresAt: now + PERMISSION_TTL_MS });
   return value;
 }

@@ -7,6 +7,14 @@ const { equalsIgnoreCase, normalizeText } = require('../utils/text');
 const router = express.Router();
 router.use(authMiddleware, requireRole('admin'));
 
+async function ensureProfileStructure() {
+  await writeHeadersIfEmpty(PROFILE_SHEET, PROFILE_HEADERS);
+  await ensureColumn(PROFILE_SHEET, 'Senha');
+  for (const activity of ACTIVITY_COLUMNS) {
+    await ensureColumn(PROFILE_SHEET, activity);
+  }
+}
+
 function detectGender(name) {
   const lower = normalizeText(name).toLowerCase();
   if (!lower) return 'masculino';
@@ -16,8 +24,7 @@ function detectGender(name) {
 
 router.get('/', async (_req, res) => {
   try {
-    await writeHeadersIfEmpty(PROFILE_SHEET, PROFILE_HEADERS);
-    await ensureColumn(PROFILE_SHEET, 'Senha');
+    await ensureProfileStructure();
 
     const { rows } = await readSheet(PROFILE_SHEET);
     const users = rows
@@ -55,8 +62,7 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Genero inválido' });
     }
 
-    await writeHeadersIfEmpty(PROFILE_SHEET, PROFILE_HEADERS);
-    await ensureColumn(PROFILE_SHEET, 'Senha');
+    await ensureProfileStructure();
 
     const { rows } = await readSheet(PROFILE_SHEET);
     const exists = rows.find((row) => equalsIgnoreCase(row.Atendente, nome));
@@ -95,6 +101,7 @@ router.put('/:nome/atividades', async (req, res) => {
       return res.status(400).json({ error: 'Atividade inválida' });
     }
 
+    await ensureProfileStructure();
     const { rows } = await readSheet(PROFILE_SHEET);
     const user = rows.find((row) => equalsIgnoreCase(row.Atendente, nome) && row.Ativo === 'Sim');
     if (!user) {
