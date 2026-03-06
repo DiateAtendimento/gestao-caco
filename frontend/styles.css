@@ -633,20 +633,20 @@ img {
 
 /* Colaborador */
 .me-side {
-  gap: 14px;
+  gap: 12px;
 }
 
 .sidebar-activities h4 {
-  margin: 0 0 10px;
+  margin: 0 0 8px;
   color: var(--ink);
-  font-size: 22px;
+  font-size: 30px;
   font-weight: 700;
 }
 
 .sidebar-activity-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px 8px;
+  gap: 8px 6px;
   align-items: start;
 }
 
@@ -668,14 +668,14 @@ img {
 }
 
 .sidebar-activity-grid .activity-chip img {
-  width: 52px;
-  height: 52px;
+  width: 40px;
+  height: 40px;
 }
 
 .sidebar-activity-grid .activity-chip div {
-  margin-top: 4px;
-  font-size: 14px;
-  font-weight: 700;
+  margin-top: 2px;
+  font-size: 11px;
+  font-weight: 600;
   line-height: 1.2;
   overflow-wrap: anywhere;
   word-break: break-word;
@@ -686,19 +686,20 @@ img {
 .sidebar-modules {
   display: grid;
   gap: 8px;
+  justify-items: center;
 }
 
 .sidebar-module-btn {
-  width: 100%;
+  width: min(100%, 166px);
   border: 0;
   border-radius: 999px;
   background: #123f72;
   color: #ffffff;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  font-size: 13px;
+  gap: 6px;
+  padding: 7px 10px;
+  font-size: 11px;
   font-weight: 700;
   position: relative;
   text-align: left;
@@ -709,13 +710,14 @@ img {
 }
 
 .sidebar-module-btn img {
-  width: 18px;
-  height: 18px;
+  width: 17px;
+  height: 17px;
   object-fit: contain;
 }
 
 .sidebar-module-btn span {
   min-width: 0;
+  line-height: 1.1;
 }
 
 .redir-badge {
