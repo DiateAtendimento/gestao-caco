@@ -639,8 +639,13 @@ img {
 .sidebar-activities h4 {
   margin: 0 0 8px;
   color: var(--ink);
-  font-size: 30px;
+  font-size: 20px;
   font-weight: 700;
+}
+
+.sidebar-activities {
+  width: min(100%, 166px);
+  margin: 0 auto;
 }
 
 .sidebar-activity-grid {
