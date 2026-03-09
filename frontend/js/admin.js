@@ -1,7 +1,8 @@
-﻿import { api, requireAuth, clearSession, initThemeIcon } from './auth.js';
+﻿import { api, requireAuth, clearSession, initThemeIcon, getToken } from './auth.js';
 import { ACTIVITIES, AREA_OPTIONS, META_OPTIONS, CATEGORY_OPTIONS } from './data.js';
 import { showLoading, showStatus, promptText, mountInlineLottie } from './feedback.js';
 import { attachAvatar } from './avatar.js';
+import { API_BASE_URL } from './config.js';
 
 const user = requireAuth('admin');
 if (!user) throw new Error('Sessão inválida');
@@ -46,8 +47,10 @@ const drSearchFeedbackText = document.getElementById('dr-search-feedback-text');
 const drSearchFeedbackLottie = document.getElementById('dr-search-feedback-lottie');
 const btnCloseDrSearchFeedback = document.getElementById('btn-close-dr-search-feedback');
 const ADMIN_AVATAR_SRC = './img/admin.png?v=20260226';
-const SILENT_REFRESH_MS = 3000;
+const SILENT_REFRESH_MS = 15000;
 let refreshInFlight = false;
+let realtimeStream = null;
+let realtimeRefreshTimer = null;
 let demandasRegistrosFilteredCount = 0;
 const adminAvatar = document.getElementById('admin-avatar');
 if (adminAvatar) {
@@ -57,6 +60,13 @@ if (adminAvatar) {
 
 function showMsg(text) {
   msgEl.textContent = text || '';
+}
+
+function getApiBaseUrl() {
+  return window.GESTAO_API_URL
+    || localStorage.getItem('apiBaseUrl')
+    || API_BASE_URL
+    || 'https://gestao-caco-backend.onrender.com';
 }
 
 function openModal(el) { el.classList.add('open'); }
@@ -319,8 +329,8 @@ function renderCards() {
     box.innerHTML = `
       <div class="colab-head">
         <div class="colab-icon-actions">
-          <button class="icon-btn" data-del="${card.nome}" title="Excluir">🗑</button>
-          <button class="icon-btn" data-edit="${card.nome}" title="Editar">✎</button>
+          <button class="icon-btn" data-del="${card.nome}" title="Excluir">??</button>
+          <button class="icon-btn" data-edit="${card.nome}" title="Editar">?</button>
         </div>
         <img class="colab-avatar" data-avatar-name="${card.nome}" alt="${card.nome}" />
         <div class="colab-name">${card.nome}</div>
@@ -432,8 +442,8 @@ function renderSolicitacoesSelecionado() {
       <td>${Number(row.meta).toFixed(2)}%</td>
       <td>${row.descricao}</td>
       <td class="actions-cell">
-        <button data-edit-sol="${row.id}" title="Editar">✏</button>
-        <button data-del-sol="${row.id}" title="Excluir">❌</button>
+        <button data-edit-sol="${row.id}" title="Editar">?</button>
+        <button data-del-sol="${row.id}" title="Excluir">?</button>
         <button data-assign-sol="${row.id}" class="btn-assign-sol" title="Atribuir"><i class="bi bi-send-fill"></i></button>
       </td>
     `;
@@ -576,7 +586,7 @@ function renderHistoricoSelecionado() {
       <td>${row.id}</td>
       <td>${row.area}</td>
       <td>${row.descricao}</td>
-      <td><button data-reopen="${row.id}" title="Reabrir" ${canReopen ? '' : 'disabled'}>↺</button></td>
+      <td><button data-reopen="${row.id}" title="Reabrir" ${canReopen ? '' : 'disabled'}>?</button></td>
       <td>${row.medidasAdotadas || '-'}</td>
       <td>${row.motivoReabertura || '-'}</td>
       <td>${row.respostaFinal || '-'}</td>
@@ -813,6 +823,46 @@ async function loadAdminData() {
   console.log(`[Admin] cards carregados: ${state.cards.length}, tempo: ${Math.round(performance.now() - started)}ms`);
 }
 
+function scheduleRealtimeRefresh() {
+  if (realtimeRefreshTimer) clearTimeout(realtimeRefreshTimer);
+  realtimeRefreshTimer = setTimeout(() => {
+    realtimeRefreshTimer = null;
+    void refreshSilently();
+  }, 300);
+}
+
+function connectRealtimeStream() {
+  if (typeof window.EventSource === 'undefined') return;
+  const token = String(getToken() || '').trim();
+  if (!token) return;
+
+  if (realtimeStream) {
+    realtimeStream.close();
+    realtimeStream = null;
+  }
+
+  const streamUrl = `${getApiBaseUrl()}/api/events?token=${encodeURIComponent(token)}`;
+  realtimeStream = new EventSource(streamUrl);
+  realtimeStream.addEventListener('connected', () => {
+    console.log('[Admin] stream conectado');
+  });
+  realtimeStream.addEventListener('demandas:update', () => {
+    scheduleRealtimeRefresh();
+  });
+  realtimeStream.addEventListener('error', () => {});
+}
+
+function disconnectRealtimeStream() {
+  if (realtimeRefreshTimer) {
+    clearTimeout(realtimeRefreshTimer);
+    realtimeRefreshTimer = null;
+  }
+  if (realtimeStream) {
+    realtimeStream.close();
+    realtimeStream = null;
+  }
+}
+
 async function refreshSilently() {
   if (document.hidden || refreshInFlight) return;
   refreshInFlight = true;
@@ -825,7 +875,7 @@ async function refreshSilently() {
       renderHistoricoSelecionado();
     }
   } catch (error) {
-    console.error('[Admin] polling erro:', error.message);
+    console.error('[Admin] atualização silenciosa com erro:', error.message);
   } finally {
     refreshInFlight = false;
   }
@@ -1031,6 +1081,7 @@ setupSolicitacaoForm();
     await runAction('carregar dashboard admin', 'Carregando painel admin...', null, null, async () => {
       await loadAdminData();
       renderCards();
+      connectRealtimeStream();
     });
     setInterval(() => {
       void refreshSilently();
@@ -1043,6 +1094,11 @@ setupSolicitacaoForm();
     window.addEventListener('focus', () => {
       void refreshSilently();
     });
+    window.addEventListener('beforeunload', () => {
+      disconnectRealtimeStream();
+    });
   } catch (_e) {}
 })();
+
+
 
