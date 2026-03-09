@@ -35,7 +35,7 @@ function isOlderThan48h(value) {
 
 function isSigaQueueItem(row) {
   const origem = normalizeText(row.Origem).toLowerCase();
-  const isSigaOrigin = origem === 'whatsapp' || origem === 'webconferencia';
+  const isSigaOrigin = origem === 'whatsapp' || origem === 'webconferencia' || origem === 'telefone';
   if (isConcluido(row.Finalizado)) return false;
   if (!isSigaOrigin) return false;
   return true;

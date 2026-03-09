@@ -144,6 +144,32 @@
       <article id="telefone-block" class="section-shell hidden">
         <div class="section-title">Registro de Telefone</div>
         <div class="section-content webconf-panel">
+          <div class="search-toolbar">
+            <div id="slot-telefone-data-search" class="search-slot">
+              <div class="search-slot-bar">
+                <span>Pesquisa por data ou período</span>
+                <button id="btn-toggle-telefone-data-search" class="icon-search-toggle" type="button" title="Pesquisar por data ou período">
+                  <img src="./assets/icons/pesquisar-data.svg" alt="Pesquisar por data" />
+                </button>
+              </div>
+              <div id="telefone-data-search-wrap" class="search-inline-wrap search-expand">
+                <input id="telefone-data-search-start" type="text" placeholder="Início" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+                <input id="telefone-data-search-end" type="text" placeholder="Fim" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+              </div>
+            </div>
+            <div id="slot-telefone-text-search" class="search-slot">
+              <div class="search-slot-bar">
+                <span>Palavra chave, ID, atendente, etc...</span>
+                <button id="btn-toggle-telefone-text-search" class="icon-search-toggle" type="button" title="Pesquisar por texto">
+                  <img src="./assets/icons/lupa-pesquisa.svg" alt="Pesquisar por texto" />
+                </button>
+              </div>
+              <div id="telefone-text-search-wrap" class="search-inline-wrap search-expand">
+                <input id="telefone-text-search-input" type="text" placeholder="Palavra chave, ID, atendente, etc..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+              </div>
+            </div>
+          </div>
+          <div id="telefone-registros-count" class="results-count hidden"></div>
           <div class="table-shell demand-table">
             <table class="table">
               <thead>

@@ -159,8 +159,8 @@ router.post('/registros', async (req, res) => {
     const dataRegistro = normalizeText(req.body?.dataRegistro) || toBrDate();
     const transferidoPara = normalizeText(req.body?.transferidoPara);
 
-    if (!assunto) {
-      return res.status(400).json({ error: 'Assunto é obrigatório' });
+    if (!assunto || !descricao) {
+      return res.status(400).json({ error: 'Assunto e descrição são obrigatórios' });
     }
 
     const { rows: coordRows } = await readSheet(COORDENACOES_SHEET);
@@ -211,7 +211,7 @@ router.post('/registros', async (req, res) => {
       'Demanda reaberta qtd': '0',
       'Motivo reabertura': '',
       'Resposta final': '',
-      Origem: 'TELEFONE'
+      Origem: 'Telefone'
     });
 
     await appendMappedRow(DEMANDS_SHEET, demandRow, DEMANDS_HEADERS);

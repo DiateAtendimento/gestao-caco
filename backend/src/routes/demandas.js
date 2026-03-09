@@ -74,7 +74,7 @@ async function hasSigaPermission(nome) {
 function isSigaQueueItem(row) {
   const finalizado = normalizeText(row.Finalizado);
   const origem = normalizeText(row.Origem).toLowerCase();
-  const isSigaOrigin = origem === 'whatsapp' || origem === 'webconferencia';
+  const isSigaOrigin = origem === 'whatsapp' || origem === 'webconferencia' || origem === 'telefone';
   if (isConcluidoValue(finalizado)) return false;
   if (!isSigaOrigin) return false;
   return true;

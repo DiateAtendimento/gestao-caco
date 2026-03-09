@@ -1473,6 +1473,19 @@ img {
   padding: 0 10px;
 }
 
+#telefone-data-search-wrap {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 0 8px;
+}
+
+#telefone-text-search-wrap {
+  display: grid;
+  grid-template-columns: 1fr;
+  padding: 0 10px;
+}
+
 [data-theme='dark'] .search-slot-bar {
   background: #0f335d;
   color: #9fb8d8;

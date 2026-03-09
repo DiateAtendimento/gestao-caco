@@ -27,6 +27,11 @@ const state = {
     dataFim: '',
     texto: ''
   },
+  telefoneFilters: {
+    dataInicio: '',
+    dataFim: '',
+    texto: ''
+  },
   redirectReceived: [],
   redirectSent: [],
   redirectContext: null,
@@ -69,6 +74,14 @@ const webconfTextSearchWrap = document.getElementById('webconf-text-search-wrap'
 const webconfDataSearchStart = document.getElementById('webconf-data-search-start');
 const webconfDataSearchEnd = document.getElementById('webconf-data-search-end');
 const webconfTextSearchInput = document.getElementById('webconf-text-search-input');
+const telefoneRegistrosCountEl = document.getElementById('telefone-registros-count');
+const slotTelefoneDataSearch = document.getElementById('slot-telefone-data-search');
+const slotTelefoneTextSearch = document.getElementById('slot-telefone-text-search');
+const telefoneDataSearchWrap = document.getElementById('telefone-data-search-wrap');
+const telefoneTextSearchWrap = document.getElementById('telefone-text-search-wrap');
+const telefoneDataSearchStart = document.getElementById('telefone-data-search-start');
+const telefoneDataSearchEnd = document.getElementById('telefone-data-search-end');
+const telefoneTextSearchInput = document.getElementById('telefone-text-search-input');
 const msgEl = document.getElementById('msg');
 const seenDemandasKey = `seenDemandas:${user.nome}`;
 const SILENT_REFRESH_MS = 3000;
@@ -207,6 +220,35 @@ function getFilteredWebconfRegistros() {
       row.enteNaoCompareceu,
       row.quantidadeAtendida,
       row.participantes
+    ].map(normalizeTextValue).join(' ');
+    const matchesText = !hasTextFilter || bag.includes(term);
+    return matchesDate && matchesText;
+  });
+  return { hasCriteria, filtered };
+}
+
+function getFilteredTelefoneRegistros() {
+  const { dataInicio, dataFim, texto } = state.telefoneFilters;
+  const term = normalizeTextValue(texto);
+  const hasDateFilter = !!(String(dataInicio || '').trim() || String(dataFim || '').trim());
+  const hasTextFilter = !!term;
+  const hasCriteria = hasDateFilter || hasTextFilter;
+
+  if (!hasCriteria) {
+    return { hasCriteria, filtered: state.telefoneRegistros };
+  }
+
+  const filtered = state.telefoneRegistros.filter((row) => {
+    const matchesDate = !hasDateFilter || webconfMatchesDateRange(row.dataRegistro, dataInicio, dataFim);
+    const bag = [
+      row.id,
+      row.assunto,
+      row.descricao,
+      row.dataRegistro,
+      row.atendente,
+      row.transferidoPara,
+      row.coordenacao,
+      row.detalhamento
     ].map(normalizeTextValue).join(' ');
     const matchesText = !hasTextFilter || bag.includes(term);
     return matchesDate && matchesText;
@@ -413,7 +455,11 @@ function renderRegistrosSiga() {
 
   state.sigaRegistros.forEach((d, index) => {
     const origem = String(d.origem || '').toLowerCase();
-    const origemLabel = origem === 'webconferencia' ? 'Webconferência' : 'WhatsApp';
+    const origemLabel = origem === 'webconferencia'
+      ? 'Webconferência'
+      : origem === 'telefone'
+        ? 'Telefone'
+        : 'WhatsApp';
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${index + 1}</td>
@@ -516,12 +562,24 @@ function renderTelefoneRegistros() {
 
   telefoneBlockEl.classList.remove('hidden');
   telefoneBodyEl.innerHTML = '';
-  if (!state.telefoneRegistros.length) {
+  const { hasCriteria, filtered } = getFilteredTelefoneRegistros();
+  if (telefoneRegistrosCountEl) {
+    if (hasCriteria) {
+      const total = filtered.length;
+      telefoneRegistrosCountEl.textContent = `${total} resultado${total === 1 ? '' : 's'} encontrado${total === 1 ? '' : 's'}.`;
+      telefoneRegistrosCountEl.classList.remove('hidden');
+    } else {
+      telefoneRegistrosCountEl.textContent = '';
+      telefoneRegistrosCountEl.classList.add('hidden');
+    }
+  }
+
+  if (!filtered.length) {
     telefoneBodyEl.innerHTML = '<tr><td colspan="8">Nenhum registro de telefone encontrado.</td></tr>';
     return;
   }
 
-  state.telefoneRegistros.forEach((row, index) => {
+  filtered.forEach((row, index) => {
     const key = row.id || `tel-${index}`;
     const tr = document.createElement('tr');
     tr.dataset.telefoneKey = key;
@@ -559,7 +617,7 @@ function renderTelefoneRegistros() {
   telefoneBodyEl.querySelectorAll('[data-telefone-detail]').forEach((btn) => {
     btn.addEventListener('click', () => {
       const key = btn.dataset.telefoneDetail;
-      const row = state.telefoneRegistros.find((item, idx) => (item.id || `tel-${idx}`) === key);
+      const row = filtered.find((item, idx) => (item.id || `tel-${idx}`) === key);
       if (!row) return;
 
       document.getElementById('telefone-detalhe-assunto').value = row.assunto || '-';
@@ -1212,6 +1270,69 @@ function setupWebconfSearch() {
   }
 }
 
+function setupTelefoneSearch() {
+  if (!slotTelefoneDataSearch || !slotTelefoneTextSearch || !telefoneDataSearchWrap || !telefoneTextSearchWrap) return;
+
+  const noHistorySuffix = String(Date.now());
+  [
+    { el: telefoneDataSearchStart, name: `telefone_inicio_${noHistorySuffix}` },
+    { el: telefoneDataSearchEnd, name: `telefone_fim_${noHistorySuffix}` },
+    { el: telefoneTextSearchInput, name: `telefone_texto_${noHistorySuffix}` }
+  ].forEach(({ el, name }) => {
+    if (!el) return;
+    el.setAttribute('name', name);
+    el.setAttribute('autocomplete', 'off');
+    el.setAttribute('autocorrect', 'off');
+    el.setAttribute('autocapitalize', 'off');
+    el.setAttribute('spellcheck', 'false');
+  });
+
+  const btnToggleDate = document.getElementById('btn-toggle-telefone-data-search');
+  const btnToggleText = document.getElementById('btn-toggle-telefone-text-search');
+  if (btnToggleDate && !btnToggleDate.dataset.bound) {
+    btnToggleDate.dataset.bound = 'true';
+    btnToggleDate.addEventListener('click', () => {
+      telefoneDataSearchWrap.classList.toggle('open');
+      slotTelefoneDataSearch.classList.toggle('is-open');
+      if (telefoneDataSearchWrap.classList.contains('open')) {
+        telefoneDataSearchStart?.focus();
+      }
+    });
+  }
+  if (btnToggleText && !btnToggleText.dataset.bound) {
+    btnToggleText.dataset.bound = 'true';
+    btnToggleText.addEventListener('click', () => {
+      telefoneTextSearchWrap.classList.toggle('open');
+      slotTelefoneTextSearch.classList.toggle('is-open');
+      if (telefoneTextSearchWrap.classList.contains('open')) {
+        telefoneTextSearchInput?.focus();
+      }
+    });
+  }
+
+  if (telefoneDataSearchStart && !telefoneDataSearchStart.dataset.bound) {
+    telefoneDataSearchStart.dataset.bound = 'true';
+    telefoneDataSearchStart.addEventListener('input', () => {
+      state.telefoneFilters.dataInicio = telefoneDataSearchStart.value || '';
+      renderTelefoneRegistros();
+    });
+  }
+  if (telefoneDataSearchEnd && !telefoneDataSearchEnd.dataset.bound) {
+    telefoneDataSearchEnd.dataset.bound = 'true';
+    telefoneDataSearchEnd.addEventListener('input', () => {
+      state.telefoneFilters.dataFim = telefoneDataSearchEnd.value || '';
+      renderTelefoneRegistros();
+    });
+  }
+  if (telefoneTextSearchInput && !telefoneTextSearchInput.dataset.bound) {
+    telefoneTextSearchInput.dataset.bound = 'true';
+    telefoneTextSearchInput.addEventListener('input', () => {
+      state.telefoneFilters.texto = telefoneTextSearchInput.value || '';
+      renderTelefoneRegistros();
+    });
+  }
+}
+
 function setupWebconfWizard() {
   const openBtn = document.getElementById('btn-open-webconf-modal');
   const closeBtn = document.getElementById('btn-close-webconf-modal');
@@ -1622,6 +1743,7 @@ async function refreshSilently() {
       renderRedirectUnified();
       setupWhatsapp();
       setupWebconfSearch();
+      setupTelefoneSearch();
       setupWebconfWizard();
       setupTelefoneModule();
       setupRedirectModules();
