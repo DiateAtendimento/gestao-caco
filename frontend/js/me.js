@@ -1516,7 +1516,7 @@ async function loadData() {
     ? api('/api/webconferencia/registros')
     : Promise.resolve({ registros: [] });
   const telefoneRegistrosPromise = isEnabled(profile?.flags?.Telefone)
-    ? api('/api/telefone/registros').catch(() => ({ registros: [] }))
+    ? api('/api/telefone/registros').catch(() => ({ registros: null, __error: true }))
     : Promise.resolve({ registros: [] });
   const telefoneTransferPromise = isEnabled(profile?.flags?.Telefone)
     ? api('/api/telefone/transferencias').catch(() => ({ grupos: [] }))
@@ -1552,7 +1552,11 @@ async function loadData() {
   state.demandas = sortByRecent(demandas.demandas || [], 'dataRegistro');
   state.sigaRegistros = sortByRecent(siga?.registros || [], 'dataRegistro');
   state.webconfRegistros = sortByRecent(webconf?.registros || [], 'data');
-  state.telefoneRegistros = sortByRecent(telefoneRegistros?.registros || [], 'dataRegistro');
+  if (telefoneRegistros?.__error) {
+    console.warn('[Colaborador] falha temporária ao atualizar Registro de Telefone; mantendo últimos dados.');
+  } else {
+    state.telefoneRegistros = sortByRecent(telefoneRegistros?.registros || [], 'dataRegistro');
+  }
   state.telefoneTransferGroups = telefoneTransfer?.grupos || [];
   state.redirectReceived = redirectsReceived?.registros || [];
   state.redirectSent = redirectsSent?.registros || [];
