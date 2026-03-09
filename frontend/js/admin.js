@@ -329,8 +329,8 @@ function renderCards() {
     box.innerHTML = `
       <div class="colab-head">
         <div class="colab-icon-actions">
-          <button class="icon-btn" data-del="${card.nome}" title="Excluir">??</button>
-          <button class="icon-btn" data-edit="${card.nome}" title="Editar">?</button>
+          <button class="icon-btn" data-del="${card.nome}" title="Excluir"><i class="bi bi-trash-fill" aria-hidden="true"></i></button>
+          <button class="icon-btn" data-edit="${card.nome}" title="Editar"><i class="bi bi-pencil-fill" aria-hidden="true"></i></button>
         </div>
         <img class="colab-avatar" data-avatar-name="${card.nome}" alt="${card.nome}" />
         <div class="colab-name">${card.nome}</div>
@@ -442,8 +442,8 @@ function renderSolicitacoesSelecionado() {
       <td>${Number(row.meta).toFixed(2)}%</td>
       <td>${row.descricao}</td>
       <td class="actions-cell">
-        <button data-edit-sol="${row.id}" title="Editar">?</button>
-        <button data-del-sol="${row.id}" title="Excluir">?</button>
+        <button data-edit-sol="${row.id}" title="Editar"><i class="bi bi-pencil-fill" aria-hidden="true"></i></button>
+        <button data-del-sol="${row.id}" title="Excluir"><i class="bi bi-trash-fill" aria-hidden="true"></i></button>
         <button data-assign-sol="${row.id}" class="btn-assign-sol" title="Atribuir"><i class="bi bi-send-fill"></i></button>
       </td>
     `;
@@ -586,7 +586,7 @@ function renderHistoricoSelecionado() {
       <td>${row.id}</td>
       <td>${row.area}</td>
       <td>${row.descricao}</td>
-      <td><button data-reopen="${row.id}" title="Reabrir" ${canReopen ? '' : 'disabled'}>?</button></td>
+      <td><button data-reopen="${row.id}" title="Reabrir" ${canReopen ? '' : 'disabled'}><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i></button></td>
       <td>${row.medidasAdotadas || '-'}</td>
       <td>${row.motivoReabertura || '-'}</td>
       <td>${row.respostaFinal || '-'}</td>
