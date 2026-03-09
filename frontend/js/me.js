@@ -84,8 +84,11 @@ const telefoneDataSearchEnd = document.getElementById('telefone-data-search-end'
 const telefoneTextSearchInput = document.getElementById('telefone-text-search-input');
 const msgEl = document.getElementById('msg');
 const seenDemandasKey = `seenDemandas:${user.nome}`;
-const SILENT_REFRESH_MS = 3000;
+const SILENT_REFRESH_MS = 15000;
 let refreshInFlight = false;
+let realtimeStream = null;
+let realtimeConnected = false;
+let realtimeRefreshTimer = null;
 let webconfStep = 1;
 let webconfEditIndex = -1;
 const WHATSAPP_ASSUNTOS = [
@@ -139,6 +142,16 @@ const ACTIVITY_LINKS = {
 
 function showMsg(text) {
   msgEl.textContent = text || '';
+}
+
+function getApiBaseUrl() {
+  return window.GESTAO_API_URL
+    || localStorage.getItem('apiBaseUrl')
+    || 'https://gestao-caco-backend.onrender.com';
+}
+
+function getSessionToken() {
+  return String(sessionStorage.getItem('token') || '').trim();
 }
 
 function openModal(el) {
@@ -1710,6 +1723,84 @@ function setupRedirectModules() {
   });
 }
 
+function normalizeEventName(value) {
+  return normalizeTextValue(value);
+}
+
+function shouldRefreshByRealtimeEvent(payload) {
+  const myName = normalizeTextValue(user.nome);
+  const targetNames = [
+    payload?.atribuidaPara,
+    payload?.deColaborador,
+    payload?.paraColaborador,
+    payload?.registradoPor,
+    payload?.finalizadoPor,
+    payload?.respondidoPor
+  ].map(normalizeTextValue).filter(Boolean);
+
+  if (targetNames.includes(myName)) return true;
+
+  const type = normalizeEventName(payload?.type);
+  if (!type) return false;
+  if (type.includes('registro_') || type.includes('status_')) return true;
+  if (type.includes('redirecionamento') || type.includes('devolucao')) return true;
+  return false;
+}
+
+function scheduleRealtimeRefresh() {
+  if (realtimeRefreshTimer) clearTimeout(realtimeRefreshTimer);
+  realtimeRefreshTimer = setTimeout(() => {
+    realtimeRefreshTimer = null;
+    void refreshSilently();
+  }, 300);
+}
+
+function connectRealtimeStream() {
+  if (typeof window.EventSource === 'undefined') return;
+  const token = getSessionToken();
+  if (!token) return;
+
+  if (realtimeStream) {
+    realtimeStream.close();
+    realtimeStream = null;
+  }
+
+  const streamUrl = `${getApiBaseUrl()}/api/events?token=${encodeURIComponent(token)}`;
+  realtimeStream = new EventSource(streamUrl);
+
+  realtimeStream.addEventListener('connected', () => {
+    realtimeConnected = true;
+    console.log('[Colaborador] stream conectado');
+  });
+
+  realtimeStream.addEventListener('demandas:update', (event) => {
+    let payload = null;
+    try {
+      payload = JSON.parse(event.data || '{}');
+    } catch (_e) {
+      payload = null;
+    }
+    if (!shouldRefreshByRealtimeEvent(payload)) return;
+    scheduleRealtimeRefresh();
+  });
+
+  realtimeStream.addEventListener('error', () => {
+    realtimeConnected = false;
+  });
+}
+
+function disconnectRealtimeStream() {
+  if (realtimeRefreshTimer) {
+    clearTimeout(realtimeRefreshTimer);
+    realtimeRefreshTimer = null;
+  }
+  if (realtimeStream) {
+    realtimeStream.close();
+    realtimeStream = null;
+  }
+  realtimeConnected = false;
+}
+
 
 async function refreshSilently() {
   if (document.hidden || refreshInFlight) return;
@@ -1724,7 +1815,7 @@ async function refreshSilently() {
     renderRedirectBadge();
     renderRedirectUnified();
   } catch (error) {
-    console.error('[Colaborador] polling erro:', error.message);
+    console.error('[Colaborador] atualização silenciosa com erro:', error.message);
   } finally {
     refreshInFlight = false;
   }
@@ -1747,6 +1838,7 @@ async function refreshSilently() {
       setupWebconfWizard();
       setupTelefoneModule();
       setupRedirectModules();
+      connectRealtimeStream();
     });
 
     setInterval(() => {
@@ -1759,6 +1851,9 @@ async function refreshSilently() {
     });
     window.addEventListener('focus', () => {
       void refreshSilently();
+    });
+    window.addEventListener('beforeunload', () => {
+      disconnectRealtimeStream();
     });
   } catch (_e) {}
 })();

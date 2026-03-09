@@ -5,6 +5,7 @@ const { readSheet, updateMappedRow, appendMappedRow, writeHeadersIfEmpty } = req
 const { parseMeta, demandsRowTemplate, generateNextSolicitacaoId, ensureDemandsMetaColumn } = require('../services/demandService');
 const { normalizeText, equalsIgnoreCase } = require('../utils/text');
 const { toBrDate, toBrDateTime, currentYear } = require('../utils/datetime');
+const { publishDemandasUpdate } = require('../services/eventBus');
 
 const router = express.Router();
 router.use(authMiddleware);
@@ -357,6 +358,12 @@ router.post('/:id/redirecionar', async (req, res) => {
     });
 
     await appendMappedRow(REDIRECT_SHEET, row, REDIRECT_HEADERS);
+    publishDemandasUpdate({
+      type: 'redirecionamento_criado',
+      demandaId: item.ID,
+      deColaborador: req.user.nome,
+      paraColaborador
+    });
     return res.status(201).json({ message: 'Demanda redirecionada', idRedirecionamento });
   } catch (error) {
     return res.status(500).json({ error: error.message });
@@ -430,6 +437,12 @@ router.post('/redirecionadas/:id/aceitar', async (req, res) => {
     redir[REDIRECT_COL.RESPONDIDO_POR] = req.user.nome;
     redir[REDIRECT_COL.DATA_CONCLUSAO_FLUXO] = toBrDateTime();
     await updateMappedRow(REDIRECT_SHEET, redir._rowIndex, redir);
+    publishDemandasUpdate({
+      type: 'redirecionamento_aceito',
+      demandaId: redir[REDIRECT_COL.ID_DEMANDA],
+      deColaborador: redir[REDIRECT_COL.DE_COLABORADOR],
+      paraColaborador: req.user.nome
+    });
     return res.json({ message: 'Demanda aceita e atribuída' });
   } catch (error) {
     return res.status(500).json({ error: error.message });
@@ -459,6 +472,12 @@ router.post('/redirecionadas/:id/devolver', async (req, res) => {
     redir[REDIRECT_COL.MOTIVO_DEVOLUCAO] = motivo;
     redir[REDIRECT_COL.ATIVO] = 'Sim';
     await updateMappedRow(REDIRECT_SHEET, redir._rowIndex, redir);
+    publishDemandasUpdate({
+      type: 'redirecionamento_devolvido',
+      demandaId: redir[REDIRECT_COL.ID_DEMANDA],
+      deColaborador: redir[REDIRECT_COL.DE_COLABORADOR],
+      paraColaborador: req.user.nome
+    });
     return res.json({ message: 'Demanda devolvida ao remetente' });
   } catch (error) {
     return res.status(500).json({ error: error.message });
@@ -485,6 +504,12 @@ router.post('/redirecionadas/:id/aceitar-devolucao', async (req, res) => {
     redir[REDIRECT_COL.ATIVO] = 'Não';
     redir[REDIRECT_COL.DATA_CONCLUSAO_FLUXO] = toBrDateTime();
     await updateMappedRow(REDIRECT_SHEET, redir._rowIndex, redir);
+    publishDemandasUpdate({
+      type: 'devolucao_aceita',
+      demandaId: redir[REDIRECT_COL.ID_DEMANDA],
+      deColaborador: req.user.nome,
+      paraColaborador: redir[REDIRECT_COL.PARA_COLABORADOR]
+    });
     return res.json({ message: 'Devolução aceita' });
   } catch (error) {
     return res.status(500).json({ error: error.message });
@@ -516,6 +541,12 @@ router.post('/redirecionadas/:id/recusar-devolucao', async (req, res) => {
     redir[REDIRECT_COL.ATIVO] = 'Sim';
     redir[REDIRECT_COL.OBSERVACOES] = normalizeText(redir[REDIRECT_COL.OBSERVACOES]) || 'Reenviado após recusa de devolução';
     await updateMappedRow(REDIRECT_SHEET, redir._rowIndex, redir);
+    publishDemandasUpdate({
+      type: 'devolucao_recusada',
+      demandaId: redir[REDIRECT_COL.ID_DEMANDA],
+      deColaborador: req.user.nome,
+      paraColaborador: redir[REDIRECT_COL.PARA_COLABORADOR]
+    });
     return res.json({ message: 'Devolução recusada e demanda reenviada' });
   } catch (error) {
     return res.status(500).json({ error: error.message });
@@ -572,6 +603,13 @@ router.post('/:id/status', async (req, res) => {
     }
 
     await updateMappedRow(DEMANDS_SHEET, item._rowIndex, item);
+    publishDemandasUpdate({
+      type: 'status_alterado',
+      demandaId: item.ID,
+      atribuidaPara: item['Atribuida para'],
+      finalizado: item.Finalizado,
+      finalizadoPor: item['Finalizado por'] || ''
+    });
     return res.json({ message: 'Status atualizado', finalizado: item.Finalizado });
   } catch (error) {
     return res.status(500).json({ error: error.message });
@@ -614,6 +652,12 @@ router.post('/registro-whatsapp', async (req, res) => {
     });
 
     await appendMappedRow(DEMANDS_SHEET, row);
+    publishDemandasUpdate({
+      type: 'registro_whatsapp_criado',
+      demandaId: id,
+      origem: 'whatsapp',
+      registradoPor: req.user.nome
+    });
     return res.status(201).json({ message: 'Registro WhatsApp salvo' });
   } catch (error) {
     return res.status(500).json({ error: error.message });
@@ -657,6 +701,11 @@ router.post('/registros-siga/:id/registrado', async (req, res) => {
       item.Meta = '0.5';
     }
     await updateMappedRow(DEMANDS_SHEET, item._rowIndex, item);
+    publishDemandasUpdate({
+      type: 'registro_siga_concluido',
+      demandaId: item.ID,
+      finalizadoPor: req.user.nome
+    });
 
     return res.json({ message: 'Registro finalizado com sucesso' });
   } catch (error) {

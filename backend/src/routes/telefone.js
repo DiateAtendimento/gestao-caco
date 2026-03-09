@@ -12,6 +12,7 @@ const { readSheet, writeHeadersIfEmpty, appendMappedRow } = require('../services
 const { ensureDemandsMetaColumn, demandsRowTemplate } = require('../services/demandService');
 const { normalizeText, equalsIgnoreCase } = require('../utils/text');
 const { toBrDate, currentYear } = require('../utils/datetime');
+const { publishDemandasUpdate } = require('../services/eventBus');
 
 const router = express.Router();
 router.use(authMiddleware);
@@ -215,6 +216,12 @@ router.post('/registros', async (req, res) => {
     });
 
     await appendMappedRow(DEMANDS_SHEET, demandRow, DEMANDS_HEADERS);
+    publishDemandasUpdate({
+      type: 'registro_telefone_criado',
+      demandaId: telefoneId,
+      origem: 'telefone',
+      registradoPor: req.user.nome
+    });
     return res.status(201).json({ message: 'Registro de telefone salvo', id: telefoneId });
   } catch (error) {
     return res.status(500).json({ error: error.message });

@@ -18,6 +18,7 @@ const {
 const { ensureDemandsMetaColumn, demandsRowTemplate } = require('../services/demandService');
 const { normalizeText, equalsIgnoreCase } = require('../utils/text');
 const { toBrDate, currentYear } = require('../utils/datetime');
+const { publishDemandasUpdate } = require('../services/eventBus');
 
 const router = express.Router();
 router.use(authMiddleware);
@@ -446,6 +447,13 @@ router.post('/registros', async (req, res) => {
       await appendMappedRow(DEMANDS_SHEET, row, DEMANDS_HEADERS);
       createdDemandIds.push(demandId);
     }
+
+    publishDemandasUpdate({
+      type: 'registro_webconferencia_criado',
+      origem: 'webconferencia',
+      registradoPor: req.user.nome,
+      demandasGeradas: createdDemandIds
+    });
 
     return res.status(201).json({
       message: 'Registro de webconferência salvo',

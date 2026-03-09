@@ -3,7 +3,10 @@ const env = require('../config/env');
 
 function authMiddleware(req, res, next) {
   const auth = req.headers.authorization || '';
-  const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
+  let token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
+  if (!token && req.method === 'GET' && req.baseUrl === '/api/events') {
+    token = String(req.query?.token || '').trim() || null;
+  }
 
   if (!token) {
     return res.status(401).json({ error: 'Token ausente' });

@@ -5,6 +5,7 @@ const { readSheet, appendMappedRow, updateMappedRow, deleteRow, writeHeadersIfEm
 const { ensureDemandsMetaColumn, generateNextSolicitacaoId, demandsRowTemplate, parseMeta } = require('../services/demandService');
 const { normalizeText } = require('../utils/text');
 const { toBrDate } = require('../utils/datetime');
+const { publishDemandasUpdate } = require('../services/eventBus');
 
 const router = express.Router();
 router.use(authMiddleware);
@@ -152,6 +153,12 @@ router.post('/', async (req, res) => {
     });
 
     await appendMappedRow(DEMANDS_SHEET, row, DEMANDS_HEADERS);
+    publishDemandasUpdate({
+      type: 'solicitacao_criada',
+      demandaId: id,
+      atribuidaPara: atendenteNome || '',
+      registradoPor: req.user.nome
+    });
     return res.status(201).json({ message: 'Solicitação criada', id });
   } catch (error) {
     return res.status(500).json({ error: error.message });
@@ -187,6 +194,11 @@ router.put('/:id', async (req, res) => {
     }
 
     await updateMappedRow(DEMANDS_SHEET, item._rowIndex, item);
+    publishDemandasUpdate({
+      type: 'solicitacao_atualizada',
+      demandaId: item.ID,
+      atribuidaPara: item['Atribuida para'] || ''
+    });
     return res.json({ message: 'Solicitação atualizada' });
   } catch (error) {
     return res.status(500).json({ error: error.message });
@@ -207,6 +219,10 @@ router.delete('/:id', async (req, res) => {
     }
 
     await deleteRow(DEMANDS_SHEET, item._rowIndex);
+    publishDemandasUpdate({
+      type: 'solicitacao_removida',
+      demandaId: item.ID
+    });
     return res.json({ message: 'Solicitação removida' });
   } catch (error) {
     return res.status(500).json({ error: error.message });
@@ -234,6 +250,11 @@ router.post('/:id/atribuir', async (req, res) => {
 
     item['Atribuida para'] = atendenteNome;
     await updateMappedRow(DEMANDS_SHEET, item._rowIndex, item);
+    publishDemandasUpdate({
+      type: 'solicitacao_atribuida',
+      demandaId: item.ID,
+      atribuidaPara: atendenteNome
+    });
     return res.json({ message: 'Solicitação atribuída' });
   } catch (error) {
     return res.status(500).json({ error: error.message });
@@ -272,6 +293,11 @@ router.post('/:id/reabrir', async (req, res) => {
     item.Finalizado = '';
     item['Finalizado por'] = '';
     await updateMappedRow(DEMANDS_SHEET, item._rowIndex, item);
+    publishDemandasUpdate({
+      type: 'solicitacao_reaberta',
+      demandaId: item.ID,
+      atribuidaPara: item['Atribuida para'] || ''
+    });
 
     return res.json({ message: 'Demanda reaberta com sucesso' });
   } catch (error) {
