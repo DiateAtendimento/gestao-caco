@@ -17,6 +17,7 @@ const AVATAR_FILES = [
   'Aline.svg',
   'Allex Rodrigues.svg',
   'Andre.png',
+  'Bruna.svg',
   'Carina.png',
   'Carlos.png',
   'Charles.svg',
