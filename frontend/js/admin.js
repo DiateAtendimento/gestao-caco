@@ -578,17 +578,25 @@ function setupSolicitacaoForm() {
 
 function openSolicitacao(id = null) {
   state.editingId = id;
+  const areaEl = document.getElementById('sol-area');
+  const metaEl = document.getElementById('sol-meta');
+  const categoriaEl = document.getElementById('sol-categoria');
   document.getElementById('sol-id').value = id || 'Gerado automaticamente no salvar';
   document.getElementById('sol-title').textContent = id ? 'Editar Solicitação' : `Nova Solicitação - ${state.selectedAtendente}`;
   document.getElementById('sol-descricao').value = '';
-  document.getElementById('sol-categoria').value = inferCategoryFromMeta(document.getElementById('sol-meta').value);
+  if (!id && isFlowManager) {
+    metaEl.value = '1';
+    categoriaEl.value = 'Baixo';
+  } else {
+    categoriaEl.value = inferCategoryFromMeta(metaEl.value);
+  }
 
   if (id) {
     const row = state.selectedSolicitacoes.find((p) => p.id === id);
     if (row) {
-      document.getElementById('sol-area').value = row.area;
-      document.getElementById('sol-meta').value = String(row.meta);
-      document.getElementById('sol-categoria').value = row.categoria || inferCategoryFromMeta(row.meta);
+      areaEl.value = row.area;
+      metaEl.value = String(row.meta);
+      categoriaEl.value = row.categoria || inferCategoryFromMeta(row.meta);
       document.getElementById('sol-descricao').value = row.descricao;
     }
   }
