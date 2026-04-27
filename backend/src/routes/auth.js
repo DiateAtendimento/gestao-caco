@@ -7,6 +7,19 @@ const { equalsIgnoreCase, normalizeText } = require('../utils/text');
 
 const router = express.Router();
 let senhaColumnReady = false;
+const ROLE_ADMIN = 'admin';
+const ROLE_COLABORADOR = 'colaborador';
+const ROLE_GESTOR_FLUXO = 'gestor_fluxo_demandas';
+
+function normalizeRole(value) {
+  const role = normalizeText(value).toLowerCase();
+  if (role === ROLE_ADMIN) return ROLE_ADMIN;
+  if (role === ROLE_COLABORADOR) return ROLE_COLABORADOR;
+  if (role === ROLE_GESTOR_FLUXO || role === 'gestor de fluxo de demandas' || role === 'gestor fluxo de demandas') {
+    return ROLE_GESTOR_FLUXO;
+  }
+  return '';
+}
 
 router.post('/login', async (req, res) => {
   try {
@@ -27,12 +40,12 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Usuário inválido ou inativo' });
     }
 
-    const role = normalizeText(user.Role).toLowerCase();
-    if (role !== 'admin' && role !== 'colaborador') {
+    const role = normalizeRole(user.Role);
+    if (!role) {
       return res.status(400).json({ error: 'Role inválida na planilha' });
     }
 
-    if (equalsIgnoreCase(nome, 'admin') && role !== 'admin') {
+    if (equalsIgnoreCase(nome, 'admin') && role !== ROLE_ADMIN) {
       return res.status(401).json({ error: 'Login admin requer role=admin' });
     }
 

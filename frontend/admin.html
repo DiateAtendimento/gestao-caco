@@ -12,8 +12,8 @@
   <main class="app-shell admin-shell glass-frame">
     <aside class="app-sidebar">
       <section class="admin-user-mini">
-        <img id="admin-avatar" src="./img/admin.png?v=20260226" alt="Admin" />
-        <div class="sidebar-user-name">Administrador</div>
+        <img id="admin-avatar" src="./img/admin.png?v=20260226" alt="Perfil" />
+        <div id="sidebar-user-name" class="sidebar-user-name">Administrador</div>
       </section>
       <button id="btn-open-demandas-registros" class="sidebar-action-btn" type="button">
         <img src="./assets/icons/historico-pesquisa.svg" alt="Demandas e Registros" />
@@ -54,9 +54,9 @@
       </header>
       <div class="modal-content">
         <div class="tab-row">
-          <button data-tab="atividades">Atividades</button>
-          <button data-tab="solicitacoes">Solicitações</button>
-          <button data-tab="historico">Histórico de Demandas</button>
+          <button id="tab-btn-atividades" data-tab="atividades">Atividades</button>
+          <button id="tab-btn-solicitacoes" data-tab="solicitacoes">Solicitações</button>
+          <button id="tab-btn-historico" data-tab="historico">Histórico de Demandas</button>
         </div>
 
         <section id="tab-atividades" class="tab-content active">
@@ -136,13 +136,19 @@
 
   <div id="modal-novo-colab" class="modal-overlay">
     <div class="modal small">
-      <header class="modal-header">Novo Colaborador
+      <header class="modal-header">Novo Usuário
         <button id="btn-close-colab" class="modal-close-x">×</button>
       </header>
       <div class="modal-content">
         <form id="form-novo-colab" autocomplete="off">
           <div class="form-row"><input id="colab-nome" placeholder="Nome" required autocomplete="off" /></div>
           <div class="form-row"><input id="colab-ramal" placeholder="Ramal" required autocomplete="off" /></div>
+          <div class="form-row">
+            <select id="colab-role" autocomplete="off">
+              <option value="colaborador">Colaborador</option>
+              <option value="gestor_fluxo_demandas">Gestor de fluxo de demandas</option>
+            </select>
+          </div>
           <div class="form-row">
             <select id="colab-genero" autocomplete="off">
               <option value="masculino">Masculino</option>

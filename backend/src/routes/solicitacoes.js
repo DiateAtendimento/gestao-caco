@@ -9,6 +9,11 @@ const { publishDemandasUpdate } = require('../services/eventBus');
 
 const router = express.Router();
 router.use(authMiddleware);
+const MANAGER_ROLES = ['admin', 'gestor_fluxo_demandas'];
+
+function canManageSolicitacoes(user) {
+  return !!user && MANAGER_ROLES.includes(user.role);
+}
 
 function mapSolicitacao(row) {
   return {
@@ -111,7 +116,7 @@ router.get('/', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
+    if (!canManageSolicitacoes(req.user)) {
       return res.status(403).json({ error: 'Acesso negado' });
     }
 
@@ -167,7 +172,7 @@ router.post('/', async (req, res) => {
 
 router.put('/:id', async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
+    if (!canManageSolicitacoes(req.user)) {
       return res.status(403).json({ error: 'Acesso negado' });
     }
 
@@ -231,7 +236,7 @@ router.delete('/:id', async (req, res) => {
 
 router.post('/:id/atribuir', async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
+    if (!canManageSolicitacoes(req.user)) {
       return res.status(403).json({ error: 'Acesso negado' });
     }
 

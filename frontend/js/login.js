@@ -1,5 +1,6 @@
 ﻿import { api, setSession, clearSession, initThemeIcon } from './auth.js';
 import { showLoading, showStatus } from './feedback.js';
+import { routeForRole } from './auth.js';
 
 initThemeIcon();
 let loginInFlight = false;
@@ -54,7 +55,7 @@ document.getElementById('login-form').addEventListener('submit', async (event) =
     setSession(data.token, data.user);
     console.log('[Login] sucesso, redirecionando para role:', data.user.role);
     await showStatus('salvo', 'Login realizado com sucesso');
-    window.location.href = data.user.role === 'admin' ? 'admin.html' : 'me.html';
+    window.location.href = routeForRole(data.user.role);
   } catch (error) {
     msg.textContent = error.message;
     console.error('[Login] falha:', error.message);

@@ -6,6 +6,22 @@ const { equalsIgnoreCase, normalizeText } = require('../utils/text');
 
 const router = express.Router();
 router.use(authMiddleware, requireRole('admin'));
+const ROLE_COLABORADOR = 'colaborador';
+const ROLE_GESTOR_FLUXO = 'gestor_fluxo_demandas';
+
+function normalizeRole(value) {
+  const role = normalizeText(value).toLowerCase();
+  if (role === ROLE_COLABORADOR) return ROLE_COLABORADOR;
+  if (role === ROLE_GESTOR_FLUXO || role === 'gestor de fluxo de demandas' || role === 'gestor fluxo de demandas') {
+    return ROLE_GESTOR_FLUXO;
+  }
+  return '';
+}
+
+function roleLabel(role) {
+  if (role === ROLE_GESTOR_FLUXO) return 'Gestor de fluxo de demandas';
+  return 'colaborador';
+}
 
 async function ensureProfileStructure() {
   await writeHeadersIfEmpty(PROFILE_SHEET, PROFILE_HEADERS);
@@ -33,7 +49,7 @@ router.get('/', async (_req, res) => {
 
     const { rows } = await readSheet(PROFILE_SHEET);
     const users = rows
-      .filter((row) => row.Ativo === 'Sim' && normalizeText(row.Role).toLowerCase() === 'colaborador')
+      .filter((row) => row.Ativo === 'Sim' && normalizeRole(row.Role) === ROLE_COLABORADOR)
       .map((row) => ({
         nome: row.Atendente,
         ramal: row.Ramal,
@@ -58,9 +74,13 @@ router.post('/', async (req, res) => {
     const ramal = normalizeText(req.body?.ramal);
     const senha = normalizeText(req.body?.senha);
     const genero = normalizeText(req.body?.genero).toLowerCase();
+    const role = normalizeRole(req.body?.role || ROLE_COLABORADOR);
 
     if (!nome || !ramal) {
       return res.status(400).json({ error: 'Nome e ramal são obrigatórios' });
+    }
+    if (!role) {
+      return res.status(400).json({ error: 'Perfil inválido' });
     }
 
     if (genero && genero !== 'masculino' && genero !== 'feminino') {
@@ -72,7 +92,7 @@ router.post('/', async (req, res) => {
     const { rows } = await readSheet(PROFILE_SHEET);
     const exists = rows.find((row) => equalsIgnoreCase(row.Atendente, nome));
     if (exists && exists.Ativo === 'Sim') {
-      return res.status(409).json({ error: 'Colaborador já existe e está ativo' });
+      return res.status(409).json({ error: 'Usuário já existe e está ativo' });
     }
 
     const payload = PROFILE_HEADERS.reduce((acc, header) => {
@@ -83,7 +103,7 @@ router.post('/', async (req, res) => {
     payload.Atendente = nome;
     payload.Ramal = ramal;
     payload.Ativo = 'Sim';
-    payload.Role = 'colaborador';
+    payload.Role = roleLabel(role);
     payload.Senha = senha || ramal;
 
     ACTIVITY_COLUMNS.forEach((activity) => {
@@ -91,7 +111,7 @@ router.post('/', async (req, res) => {
     });
 
     await appendMappedRow(PROFILE_SHEET, payload, PROFILE_HEADERS);
-    return res.status(201).json({ message: 'Colaborador criado', senhaInicial: payload.Senha });
+    return res.status(201).json({ message: 'Usuário criado', senhaInicial: payload.Senha, role });
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }

@@ -6,7 +6,7 @@ const { parseMeta } = require('../services/demandService');
 const { normalizeText, equalsIgnoreCase } = require('../utils/text');
 
 const router = express.Router();
-router.use(authMiddleware, requireRole('admin'));
+router.use(authMiddleware, requireRole(['admin', 'gestor_fluxo_demandas']));
 
 function isBrDate(value) {
   return /^\d{2}\/\d{2}\/\d{4}$/.test(normalizeText(value));

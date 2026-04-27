@@ -4,9 +4,13 @@ import { showLoading, showStatus, promptText, mountInlineLottie } from './feedba
 import { attachAvatar } from './avatar.js';
 import { API_BASE_URL } from './config.js';
 
-const user = requireAuth('admin');
+const user = requireAuth(['admin', 'gestor_fluxo_demandas']);
 if (!user) throw new Error('Sessão inválida');
 initThemeIcon();
+const isAdmin = user.role === 'admin';
+const isFlowManager = user.role === 'gestor_fluxo_demandas';
+const profileName = isAdmin ? 'Administrador' : 'Gestor de fluxo de demandas';
+const profileAvatarName = isAdmin ? 'admin' : 'Gestor de fluxo de demandas';
 
 const state = {
   cards: [],
@@ -53,10 +57,16 @@ let realtimeStream = null;
 let realtimeRefreshTimer = null;
 let demandasRegistrosFilteredCount = 0;
 const adminAvatar = document.getElementById('admin-avatar');
+const sidebarUserName = document.getElementById('sidebar-user-name');
 if (adminAvatar) {
-  adminAvatar.src = ADMIN_AVATAR_SRC;
-  adminAvatar.onerror = () => attachAvatar(adminAvatar, 'admin');
+  if (isAdmin) {
+    adminAvatar.src = ADMIN_AVATAR_SRC;
+    adminAvatar.onerror = () => attachAvatar(adminAvatar, 'admin');
+  } else {
+    attachAvatar(adminAvatar, profileAvatarName);
+  }
 }
+if (sidebarUserName) sidebarUserName.textContent = profileName;
 
 function showMsg(text) {
   msgEl.textContent = text || '';
@@ -67,6 +77,32 @@ function getApiBaseUrl() {
     || localStorage.getItem('apiBaseUrl')
     || API_BASE_URL
     || 'https://gestao-caco-backend.onrender.com';
+}
+
+function setActiveTab(tabName) {
+  document.querySelectorAll('.tab-content').forEach((el) => el.classList.remove('active'));
+  document.querySelectorAll('[data-tab]').forEach((btn) => btn.classList.toggle('active', btn.dataset.tab === tabName));
+  const target = document.getElementById(`tab-${tabName}`);
+  if (target) target.classList.add('active');
+}
+
+function setupUiForRole() {
+  document.title = `Gestão CACO - ${profileName}`;
+  if (isAdmin) return;
+
+  const btnAtividades = document.getElementById('tab-btn-atividades');
+  const btnHistorico = document.getElementById('tab-btn-historico');
+  const tabAtividades = document.getElementById('tab-atividades');
+  const tabHistorico = document.getElementById('tab-historico');
+  const btnOpenDemandasRegistros = document.getElementById('btn-open-demandas-registros');
+
+  if (btnAtividades) btnAtividades.hidden = true;
+  if (btnHistorico) btnHistorico.hidden = true;
+  if (tabAtividades) tabAtividades.classList.remove('active');
+  if (tabHistorico) tabHistorico.classList.remove('active');
+  if (btnOpenDemandasRegistros) btnOpenDemandasRegistros.hidden = true;
+
+  setActiveTab('solicitacoes');
 }
 
 function openModal(el) { el.classList.add('open'); }
@@ -320,33 +356,33 @@ function renderCards() {
 
   state.cards.forEach((card) => {
     const acts = enabledActivitiesMap(card);
-    const mood = resolveMood(card);
+    const mood = isAdmin ? resolveMood(card) : null;
     const percentualRaw = Number(card.percentual || 0);
     const percentualCapped = Math.min(percentualRaw, 100);
-    const overLimit = percentualRaw > 100;
+    const overLimit = isAdmin && percentualRaw > 100;
     const box = document.createElement('article');
     box.className = 'colab-card';
     box.innerHTML = `
       <div class="colab-head">
         <div class="colab-icon-actions">
-          <button class="icon-btn" data-del="${card.nome}" title="Excluir"><i class="bi bi-trash-fill" aria-hidden="true"></i></button>
+          ${isAdmin ? `<button class="icon-btn" data-del="${card.nome}" title="Excluir"><i class="bi bi-trash-fill" aria-hidden="true"></i></button>` : ''}
           <button class="icon-btn" data-edit="${card.nome}" title="Editar"><i class="bi bi-pencil-fill" aria-hidden="true"></i></button>
         </div>
         <img class="colab-avatar" data-avatar-name="${card.nome}" alt="${card.nome}" />
         <div class="colab-name">${card.nome}</div>
-        <div class="mood-badge ${mood.className}" title="Humor baseado no volume de atividades">${mood.label}</div>
-        <div class="progress-wrap">
+        ${isAdmin ? `<div class="mood-badge ${mood.className}" title="Humor baseado no volume de atividades">${mood.label}</div>` : ''}
+        ${isAdmin ? `<div class="progress-wrap">
           <div class="progress-green" style="width:${percentualCapped}%"></div>
           <div class="progress-text">${formatPercent(percentualCapped)}</div>
-        </div>
+        </div>` : ''}
         ${overLimit ? '<div class="card-limit-warning">Atendente ultrapassou o limite de atividades</div>' : ''}
-        ${card.staleOver48h ? '<div class="card-stale-warning">Existem demandas paradas a mais de 48h</div>' : ''}
+        ${isAdmin && card.staleOver48h ? '<div class="card-stale-warning">Existem demandas paradas a mais de 48h</div>' : ''}
       </div>
       <div class="colab-body">
         <h5>Atividades</h5>
         <div class="card-acts">${acts.map((a) => `<img src="${a.icon}" alt="${a.label}" />`).join('')}</div>
-        <div class="exec-text">Detalhamento da execução</div>
-        <div class="count-row">
+        ${isAdmin ? '<div class="exec-text">Detalhamento da execução</div>' : ''}
+        ${isAdmin ? `<div class="count-row">
           <div class="count-item">
             <b>${card.emAndamento}</b>
             <span>Em andamento</span>
@@ -355,7 +391,7 @@ function renderCards() {
             <b>${card.naoIniciadas}</b>
             <span>Não iniciadas</span>
           </div>
-        </div>
+        </div>` : ''}
       </div>
     `;
     cardsEl.appendChild(box);
@@ -365,33 +401,45 @@ function renderCards() {
     attachAvatar(img, img.dataset.avatarName);
   });
 
-  const add = document.createElement('article');
-  add.className = 'add-colab-card';
-  add.innerHTML = `
-    <button id="btn-open-new" type="button">
-      <img src="assets/icons/btn-adicionar.svg" alt="Adicionar" />
-      Adicionar um novo colaborador
-    </button>
-  `;
-  cardsEl.appendChild(add);
+  if (isAdmin) {
+    const add = document.createElement('article');
+    add.className = 'add-colab-card';
+    add.innerHTML = `
+      <button id="btn-open-new" type="button">
+        <img src="assets/icons/btn-adicionar.svg" alt="Adicionar" />
+        Adicionar um novo usuário
+      </button>
+    `;
+    cardsEl.appendChild(add);
+  }
 
   cardsEl.querySelectorAll('[data-edit]').forEach((btn) => {
     btn.addEventListener('click', () => openConfig(btn.dataset.edit));
   });
 
-  cardsEl.querySelectorAll('[data-del]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      state.selectedAtendente = btn.dataset.del;
-      document.getElementById('confirm-delete-name').textContent = state.selectedAtendente;
-      openModal(modalConfirmDelete);
+  if (isAdmin) {
+    cardsEl.querySelectorAll('[data-del]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        state.selectedAtendente = btn.dataset.del;
+        document.getElementById('confirm-delete-name').textContent = state.selectedAtendente;
+        openModal(modalConfirmDelete);
+      });
     });
-  });
+  }
 
-  document.getElementById('btn-open-new').addEventListener('click', () => openModal(modalNovoColab));
+  const openNewBtn = document.getElementById('btn-open-new');
+  if (openNewBtn) {
+    openNewBtn.addEventListener('click', () => openModal(modalNovoColab));
+  }
 }
 
 function renderAtividades() {
   const target = document.getElementById('atividades-grid');
+  if (!target) return;
+  if (!isAdmin) {
+    target.innerHTML = '';
+    return;
+  }
   const card = state.cards.find((c) => c.nome === state.selectedAtendente);
   const atividades = card?.atividades || {};
   target.innerHTML = '';
@@ -443,7 +491,7 @@ function renderSolicitacoesSelecionado() {
       <td>${row.descricao}</td>
       <td class="actions-cell">
         <button data-edit-sol="${row.id}" title="Editar"><i class="bi bi-pencil-fill" aria-hidden="true"></i></button>
-        <button data-del-sol="${row.id}" title="Excluir"><i class="bi bi-trash-fill" aria-hidden="true"></i></button>
+        ${isAdmin ? `<button data-del-sol="${row.id}" title="Excluir"><i class="bi bi-trash-fill" aria-hidden="true"></i></button>` : ''}
         <button data-assign-sol="${row.id}" class="btn-assign-sol" title="Atribuir"><i class="bi bi-send-fill"></i></button>
       </td>
     `;
@@ -804,10 +852,15 @@ async function openConfig(nome) {
   try {
     await runAction('abrir configurações', 'Carregando configurações...', null, null, async () => {
       await loadSelectedSolicitacoes();
-      await loadSelectedHistorico();
-      renderAtividades();
+      if (isAdmin) {
+        await loadSelectedHistorico();
+        renderAtividades();
+        renderHistoricoSelecionado();
+      } else {
+        state.selectedHistorico = [];
+      }
       renderSolicitacoesSelecionado();
-      renderHistoricoSelecionado();
+      setActiveTab(isAdmin ? 'atividades' : 'solicitacoes');
       openModal(modalConfig);
     });
   } catch (_e) {}
@@ -870,9 +923,11 @@ async function refreshSilently() {
     await loadAdminData();
     renderCards();
     if (state.selectedAtendente) {
-      await Promise.all([loadSelectedSolicitacoes(), loadSelectedHistorico()]);
+      const loaders = [loadSelectedSolicitacoes()];
+      if (isAdmin) loaders.push(loadSelectedHistorico());
+      await Promise.all(loaders);
       renderSolicitacoesSelecionado();
-      renderHistoricoSelecionado();
+      if (isAdmin) renderHistoricoSelecionado();
     }
   } catch (error) {
     console.error('[Admin] atualização silenciosa com erro:', error.message);
@@ -950,8 +1005,7 @@ textSearchInput.addEventListener('input', () => {
 });
 
 document.querySelectorAll('[data-tab]').forEach((btn) => btn.addEventListener('click', () => {
-  document.querySelectorAll('.tab-content').forEach((el) => el.classList.remove('active'));
-  document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
+  setActiveTab(btn.dataset.tab);
 }));
 
 document.getElementById('btn-new-solicitacao').addEventListener('click', () => openSolicitacao());
@@ -1046,6 +1100,7 @@ document.getElementById('form-novo-colab').addEventListener('submit', async (eve
   const body = {
     nome: document.getElementById('colab-nome').value.trim(),
     ramal: document.getElementById('colab-ramal').value.trim(),
+    role: document.getElementById('colab-role').value,
     genero: document.getElementById('colab-genero').value
   };
 
@@ -1076,6 +1131,7 @@ document.getElementById('btn-confirm-delete').addEventListener('click', async ()
 });
 
 setupSolicitacaoForm();
+setupUiForRole();
 (async () => {
   try {
     await runAction('carregar dashboard admin', 'Carregando painel admin...', null, null, async () => {

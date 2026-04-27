@@ -19,6 +19,10 @@ export function clearSession() {
   sessionStorage.removeItem('user');
 }
 
+export function routeForRole(role) {
+  return role === 'admin' || role === 'gestor_fluxo_demandas' ? 'admin.html' : 'me.html';
+}
+
 function themeStorageKey() {
   const user = getUser();
   const userName = String(user?.nome || '').trim().toLowerCase();
@@ -70,8 +74,9 @@ export function requireAuth(role) {
     return null;
   }
 
-  if (role && user.role !== role) {
-    window.location.href = user.role === 'admin' ? 'admin.html' : 'me.html';
+  const allowedRoles = Array.isArray(role) ? role : (role ? [role] : []);
+  if (allowedRoles.length && !allowedRoles.includes(user.role)) {
+    window.location.href = routeForRole(user.role);
     return null;
   }
 

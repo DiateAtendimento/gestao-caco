@@ -26,6 +26,7 @@ const AVATAR_FILES = [
   'Elceane.svg',
   'Fabricia Padilha.svg',
   'Francisca.png',
+  'gestor-fluxo-demandas.svg',
   'Hildiene.svg',
   'Hugo.svg',
   'Ilusca.svg',
@@ -72,6 +73,8 @@ function buildAvatarNameMap() {
 }
 
 const AVATAR_NAME_MAP = buildAvatarNameMap();
+AVATAR_NAME_MAP.set('gestor de fluxo de demandas', 'gestor-fluxo-demandas.svg');
+AVATAR_NAME_MAP.set('gestordefluxodedemandas', 'gestor-fluxo-demandas.svg');
 
 function resolveAvatarUrl(name) {
   const keys = keyVariants(name);
