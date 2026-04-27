@@ -73,6 +73,7 @@ function buildAvatarNameMap() {
 }
 
 const AVATAR_NAME_MAP = buildAvatarNameMap();
+AVATAR_NAME_MAP.set('gestor', 'gestor-fluxo-demandas.svg');
 AVATAR_NAME_MAP.set('gestor de fluxo de demandas', 'gestor-fluxo-demandas.svg');
 AVATAR_NAME_MAP.set('gestordefluxodedemandas', 'gestor-fluxo-demandas.svg');
 
