@@ -305,6 +305,9 @@ function cleanupRecentlyAssigned() {
 }
 
 function enabledActivitiesMap(card) {
+  if (card.role === 'gestor_fluxo_demandas') {
+    return [{ key: 'GestorFluxoDemandas', label: 'Gestor de fluxo de demandas', icon: 'assets/icons/gestor.svg' }];
+  }
   return ACTIVITIES.filter((a) => card.atividades?.[a.key] === 'Sim').slice(0, 3);
 }
 

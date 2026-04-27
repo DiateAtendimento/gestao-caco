@@ -63,14 +63,27 @@ function parseSigaMeta(value) {
   return 0.5;
 }
 
-router.get('/admin', async (_req, res) => {
+function normalizeRole(value) {
+  const role = normalizeText(value).toLowerCase();
+  if (role === 'admin') return 'admin';
+  if (role === 'colaborador') return 'colaborador';
+  if (role === 'gestor_fluxo_demandas' || role === 'gestor de fluxo de demandas' || role === 'gestor fluxo de demandas') {
+    return 'gestor_fluxo_demandas';
+  }
+  return '';
+}
+
+router.get('/admin', async (req, res) => {
   try {
     const [{ rows: users }, { rows: demandas }] = await Promise.all([
       readSheet(PROFILE_SHEET),
       readSheet(DEMANDS_SHEET)
     ]);
 
-    const colaboradores = users.filter((row) => row.Ativo === 'Sim' && normalizeText(row.Role).toLowerCase() === 'colaborador');
+    const visibleRoles = req.user?.role === 'admin'
+      ? ['colaborador', 'gestor_fluxo_demandas']
+      : ['colaborador'];
+    const colaboradores = users.filter((row) => row.Ativo === 'Sim' && visibleRoles.includes(normalizeRole(row.Role)));
     const pendingSiga = demandas.filter(isSigaQueueItem);
     const pendingSigaCount = pendingSiga.length;
     const pendingSigaMeta = pendingSiga.reduce((acc, row) => acc + parseSigaMeta(row['Meta registro siga']), 0);
@@ -107,6 +120,7 @@ router.get('/admin', async (_req, res) => {
       return {
         nome: col.Atendente,
         ramal: col.Ramal,
+        role: normalizeRole(col.Role),
         percentual,
         emAndamento,
         naoIniciadas,
