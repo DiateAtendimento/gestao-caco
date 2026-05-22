@@ -1915,8 +1915,8 @@ img {
   width: 100%;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.08);
-  color: #f2f8ff;
+  background: var(--panel);
+  color: var(--ink);
   padding: 8px;
   text-align: left;
 }
@@ -1930,7 +1930,7 @@ img {
   overflow: hidden;
   pointer-events: none;
   transition: max-height 220ms ease, opacity 220ms ease;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--panel-strong);
 }
 
 .redir-candidate-list.open {
@@ -1945,7 +1945,7 @@ img {
   border: 0;
   border-bottom: 1px solid rgba(149, 177, 212, 0.35);
   background: transparent;
-  color: #f2f8ff;
+  color: var(--ink);
   padding: 8px 10px;
   display: flex;
   align-items: center;
@@ -1992,6 +1992,19 @@ img {
 
 [data-theme='dark'] .redir-person-card {
   background: rgba(22, 54, 88, 0.86);
+}
+
+[data-theme='dark'] .redir-picker-btn {
+  background: rgba(255, 255, 255, 0.08);
+  color: #f2f8ff;
+}
+
+[data-theme='dark'] .redir-candidate-list {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme='dark'] .redir-candidate-item {
+  color: #f2f8ff;
 }
 
 [data-theme='dark'] #modal-webconf-wizard .modal-content {

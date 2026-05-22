@@ -31,6 +31,7 @@ function mapDemanda(row) {
     id: row.ID,
     area: row.Assunto,
     descricao: row['Descrição'],
+    detalhamento: row.Detalhamento || row['Detalhamento'] || '',
     dataRegistro: row['Data do Registro'],
     finalizado: row.Finalizado,
     meta: parseMeta(row.Meta),

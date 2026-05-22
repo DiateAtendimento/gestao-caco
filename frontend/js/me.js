@@ -426,7 +426,9 @@ function renderDemandas() {
       const demanda = abertas.find((d) => d.id === id && (rowIndex ? Number(d.rowIndex) === rowIndex : true))
         || abertas.find((d) => d.id === id);
       if (!demanda || !demandaDetalheContent) return;
-      const text = `${demanda.descricao || '-'}`;
+      const detalhamento = String(demanda.detalhamento || '').trim();
+      const descricao = String(demanda.descricao || '').trim();
+      const text = detalhamento || descricao || '-';
       demandaDetalheContent.textContent = text;
       openModal(modalDemandaDetalhe);
     });
