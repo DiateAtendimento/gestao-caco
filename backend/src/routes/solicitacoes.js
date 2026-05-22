@@ -1,6 +1,6 @@
 ﻿const express = require('express');
 const { authMiddleware } = require('../middleware/auth');
-const { DEMANDS_SHEET, DEMANDS_HEADERS, STATUS } = require('../config/constants');
+const { DEMANDS_SHEET, DEMANDS_HEADERS, STATUS, REDIRECT_SHEET, REDIRECT_HEADERS } = require('../config/constants');
 const { readSheet, appendMappedRow, updateMappedRow, deleteRow, writeHeadersIfEmpty } = require('../services/sheetsService');
 const { ensureDemandsMetaColumn, generateNextSolicitacaoId, demandsRowTemplate, parseMeta } = require('../services/demandService');
 const { normalizeText } = require('../utils/text');
@@ -81,6 +81,36 @@ function sortByMostRecent(rows) {
   });
 }
 
+function buildParticipationMap(rows, atendente) {
+  const ID_DEMANDA_COL = REDIRECT_HEADERS[1];
+  const DE_COLABORADOR_COL = REDIRECT_HEADERS[2];
+  const PARA_COLABORADOR_COL = REDIRECT_HEADERS[3];
+  const OBSERVACOES_COL = REDIRECT_HEADERS[15];
+  const map = new Map();
+  rows.forEach((row) => {
+    const idDemanda = String(row[ID_DEMANDA_COL] || '').trim();
+    if (!idDemanda) return;
+
+    const eventos = [];
+    const deColaborador = row[DE_COLABORADOR_COL] || '';
+    const paraColaborador = row[PARA_COLABORADOR_COL] || '';
+    const observacoes = row[OBSERVACOES_COL] || '';
+
+    if (normalizeText(paraColaborador) === atendente) {
+      eventos.push(`Recebeu de ${deColaborador || '-'}${observacoes ? `: ${observacoes}` : ''}`);
+    }
+    if (normalizeText(deColaborador) === atendente) {
+      eventos.push(`Redirecionou para ${paraColaborador || '-'}${observacoes ? `: ${observacoes}` : ''}`);
+    }
+
+    if (!eventos.length) return;
+    const current = map.get(idDemanda) || [];
+    current.push(...eventos);
+    map.set(idDemanda, current);
+  });
+  return map;
+}
+
 router.get('/', async (req, res) => {
   try {
     await writeHeadersIfEmpty(DEMANDS_SHEET, DEMANDS_HEADERS);
@@ -91,6 +121,7 @@ router.get('/', async (req, res) => {
     const atendente = normalizeText(req.query.atendente);
     const minhas = req.query.minhas === 'true';
     const historico = req.query.historico === 'true';
+    let participationMap = new Map();
 
     let filtered = sortByMostRecent(rows);
     if (pendentes) {
@@ -101,14 +132,29 @@ router.get('/', async (req, res) => {
         normalizeText(row['Registrado por'] || row['Registrador por']) === normalizeText(req.user.nome)
       );
     }
-    if (atendente) {
+    if (atendente && !historico) {
       filtered = filtered.filter((row) => normalizeText(row['Atribuida para']) === atendente);
     }
     if (historico) {
+      await writeHeadersIfEmpty(REDIRECT_SHEET, REDIRECT_HEADERS);
+      const { rows: redirectRows } = await readSheet(REDIRECT_SHEET);
+      if (atendente) {
+        participationMap = buildParticipationMap(redirectRows, atendente);
+      }
       filtered = filtered.filter((row) => !!normalizeText(row['Atribuida para']) && isConcluido(row.Finalizado));
+      if (atendente) {
+        filtered = filtered.filter((row) =>
+          normalizeText(row['Atribuida para']) === atendente || participationMap.has(String(row.ID || '').trim())
+        );
+      }
     }
 
-    return res.json({ solicitacoes: filtered.map(mapSolicitacao) });
+    return res.json({
+      solicitacoes: filtered.map((row) => ({
+        ...mapSolicitacao(row),
+        participacaoFluxo: participationMap.get(String(row.ID || '').trim()) || []
+      }))
+    });
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }

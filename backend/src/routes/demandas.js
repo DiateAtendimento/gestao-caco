@@ -194,6 +194,14 @@ function mapRedirectRow(row) {
   };
 }
 
+function sortRedirectRows(rows) {
+  return [...rows].sort((a, b) => {
+    const rowA = Number(a._rowIndex || a.rowIndex || 0) || 0;
+    const rowB = Number(b._rowIndex || b.rowIndex || 0) || 0;
+    return rowA - rowB;
+  });
+}
+
 function applyRedirectRowTemplate(overrides = {}) {
   const base = {};
   REDIRECT_HEADERS.forEach((h) => { base[h] = ''; });
@@ -405,6 +413,67 @@ router.get('/redirecionadas/enviadas', async (req, res) => {
       })
       .map(mapRedirectRow);
     return res.json({ registros });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/:id/fluxo', async (req, res) => {
+  try {
+    const id = normalizeText(req.params.id);
+    const rowIndex = Number(req.query?.rowIndex || 0) || null;
+    const { rows: demandRows } = await readSheet(DEMANDS_SHEET);
+    const item = resolveDemandRow(demandRows, id, rowIndex);
+    if (!item) return res.status(404).json({ error: 'Demanda não encontrada' });
+
+    await writeHeadersIfEmpty(REDIRECT_SHEET, REDIRECT_HEADERS);
+    const { rows: redirectRows } = await readSheet(REDIRECT_SHEET);
+    const relatedRedirects = sortRedirectRows(
+      redirectRows.filter((row) => equalsIgnoreCase(row[REDIRECT_COL.ID_DEMANDA], item.ID))
+    );
+
+    const isManager = req.user.role === 'admin' || req.user.role === 'gestor_fluxo_demandas';
+    const isCurrentAssignee = equalsIgnoreCase(item['Atribuida para'], req.user.nome);
+    const isOwner = equalsIgnoreCase(getRegisteredBy(item), req.user.nome);
+    const isFinalizer = equalsIgnoreCase(item['Finalizado por'], req.user.nome);
+    const isParticipant = relatedRedirects.some((row) =>
+      equalsIgnoreCase(row[REDIRECT_COL.DE_COLABORADOR], req.user.nome)
+      || equalsIgnoreCase(row[REDIRECT_COL.PARA_COLABORADOR], req.user.nome)
+    );
+
+    if (!isManager && req.user.role === 'colaborador' && !isCurrentAssignee && !isOwner && !isFinalizer && !isParticipant) {
+      return res.status(403).json({ error: 'Acesso negado ao fluxo desta demanda' });
+    }
+
+    return res.json({
+      demanda: {
+        id: item.ID,
+        rowIndex: Number(item._rowIndex || 0) || null,
+        area: item.Assunto || '',
+        descricao: item['Descrição'] || '',
+        detalhamento: item.Detalhamento || item['Detalhamento'] || '',
+        dataRegistro: item['Data do Registro'] || '',
+        registradoPor: getRegisteredBy(item),
+        atribuidaPara: item['Atribuida para'] || '',
+        finalizado: item.Finalizado || '',
+        finalizadoPor: item['Finalizado por'] || ''
+      },
+      etapas: relatedRedirects.map((row) => ({
+        idRedirecionamento: row[REDIRECT_COL.ID_REDIRECT] || '',
+        deColaborador: row[REDIRECT_COL.DE_COLABORADOR] || '',
+        paraColaborador: row[REDIRECT_COL.PARA_COLABORADOR] || '',
+        descricaoSnapshot: row[REDIRECT_COL.DESCRICAO_SNAPSHOT] || '',
+        observacoes: row[REDIRECT_COL.OBSERVACOES] || '',
+        status: row[REDIRECT_COL.STATUS] || '',
+        motivoDevolucao: row[REDIRECT_COL.MOTIVO_DEVOLUCAO] || '',
+        dataHoraEnvio: row[REDIRECT_COL.DATA_ENVIO] || '',
+        dataHoraResposta: row[REDIRECT_COL.DATA_RESPOSTA] || '',
+        respondidoPor: row[REDIRECT_COL.RESPONDIDO_POR] || '',
+        tentativa: Number(row[REDIRECT_COL.TENTATIVA] || 1) || 1,
+        ativo: equalsIgnoreCase(row[REDIRECT_COL.ATIVO], 'Sim'),
+        rowIndex: Number(row._rowIndex || 0) || null
+      }))
+    });
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }

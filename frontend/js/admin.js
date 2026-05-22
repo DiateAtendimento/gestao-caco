@@ -632,7 +632,7 @@ function renderHistoricoSelecionado() {
   const body = document.getElementById('tbody-historico');
   body.innerHTML = '';
   if (!state.selectedHistorico.length) {
-    body.innerHTML = '<tr><td colspan="9">Nenhuma demanda concluída para este atendente.</td></tr>';
+    body.innerHTML = '<tr><td colspan="10">Nenhuma demanda concluída para este atendente.</td></tr>';
     return;
   }
 
@@ -640,11 +640,13 @@ function renderHistoricoSelecionado() {
     const canReopen = Number(row.demandaReabertaQtd || 0) < 1;
     const dataAtribuicao = formatDateBr(row.dataRegistro);
     const dataConclusao = parseBrDate(row.finalizado) ? formatDateBr(row.finalizado) : (row.finalizado || '-');
+    const participacaoFluxo = (row.participacaoFluxo || []).map((item) => escapeHtml(item)).join('<br>') || '-';
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${row.id}</td>
       <td>${row.area}</td>
       <td>${row.descricao}</td>
+      <td>${participacaoFluxo}</td>
       <td><button data-reopen="${row.id}" title="Reabrir" ${canReopen ? '' : 'disabled'}><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i></button></td>
       <td>${row.medidasAdotadas || '-'}</td>
       <td>${row.motivoReabertura || '-'}</td>

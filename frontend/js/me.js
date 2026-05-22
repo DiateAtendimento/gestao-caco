@@ -52,9 +52,13 @@ const modalWebconfEditParticipante = document.getElementById('modal-webconf-edit
 const modalTelefoneForm = document.getElementById('modal-telefone-form');
 const modalTelefoneDetalhe = document.getElementById('modal-telefone-detalhe');
 const modalDemandaDetalhe = document.getElementById('modal-demanda-detalhe');
+const modalDemandaFluxo = document.getElementById('modal-demanda-fluxo');
 const modalRedir = document.getElementById('modal-redir');
 const modalRedirCriar = document.getElementById('modal-redir-criar');
 const demandaDetalheContent = document.getElementById('demanda-detalhe-content');
+const demandaFluxoTitleEl = document.getElementById('demanda-fluxo-title');
+const demandaFluxoInitialEl = document.getElementById('demanda-fluxo-initial');
+const demandaFluxoListEl = document.getElementById('demanda-fluxo-list');
 const redirBadgeEl = document.getElementById('redir-badge');
 const redirUnificadoBodyEl = document.getElementById('redir-unificado-body');
 const redirObservacoesEl = document.getElementById('redir-observacoes');
@@ -174,6 +178,103 @@ function truncateText(value, size = 90) {
   const text = String(value || '').trim();
   if (text.length <= size) return text;
   return `${text.slice(0, size)}...`;
+}
+
+function escapeHtml(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function buildDemandFlowStepDescription(step) {
+  const parts = [];
+  const observacoes = String(step.observacoes || '').trim();
+  const motivoDevolucao = String(step.motivoDevolucao || '').trim();
+  const status = String(step.status || '').trim();
+  const envio = String(step.dataHoraEnvio || '').trim();
+  const resposta = String(step.dataHoraResposta || '').trim();
+
+  if (observacoes) parts.push(observacoes);
+  if (motivoDevolucao) parts.push(`Motivo da devolução: ${motivoDevolucao}`);
+  if (status) parts.push(`Status: ${status}`);
+  if (envio) parts.push(`Enviado em: ${envio}`);
+  if (resposta) parts.push(`Respondido em: ${resposta}`);
+  return parts.join('\n');
+}
+
+function renderDemandFlowModal(data) {
+  if (!demandaFluxoListEl || !demandaFluxoInitialEl || !demandaFluxoTitleEl) return;
+  const demanda = data?.demanda || {};
+  const etapas = Array.isArray(data?.etapas) ? data.etapas : [];
+  const descricaoInicial = String(demanda.descricao || demanda.detalhamento || '-').trim() || '-';
+  demandaFluxoTitleEl.textContent = `Redirecionamentos - ${demanda.id || '-'}${descricaoInicial && descricaoInicial !== '-' ? `, ${truncateText(descricaoInicial, 60)}` : ''}`;
+  demandaFluxoInitialEl.textContent = descricaoInicial;
+  demandaFluxoListEl.innerHTML = '';
+
+  if (!etapas.length) {
+    demandaFluxoListEl.innerHTML = '<div class="empty-state-box"><p>Nenhum redirecionamento registrado para esta demanda.</p></div>';
+    return;
+  }
+
+  etapas.forEach((step) => {
+    const card = document.createElement('article');
+    card.className = 'flow-step-card';
+    const description = buildDemandFlowStepDescription(step) || 'Sem observações informadas.';
+    card.innerHTML = `
+      <div class="flow-people-grid">
+        <div class="flow-person-card">
+          <span class="flow-person-label">De</span>
+          <div class="flow-person-box">
+            <img data-flow-avatar="${escapeHtml(step.deColaborador || '')}" alt="${escapeHtml(step.deColaborador || 'Origem')}" />
+            <strong>${escapeHtml(step.deColaborador || '-')}</strong>
+          </div>
+        </div>
+        <div class="flow-arrow" aria-hidden="true"><i class="bi bi-arrow-right"></i></div>
+        <div class="flow-person-card">
+          <span class="flow-person-label">Para</span>
+          <div class="flow-person-box">
+            <img data-flow-avatar="${escapeHtml(step.paraColaborador || '')}" alt="${escapeHtml(step.paraColaborador || 'Destino')}" />
+            <strong>${escapeHtml(step.paraColaborador || '-')}</strong>
+          </div>
+        </div>
+      </div>
+      <div class="flow-text-block">
+        <div class="flow-step-head">
+          <span class="flow-step-id">${escapeHtml(step.idRedirecionamento || '-')}</span>
+          <span class="flow-step-status">${escapeHtml(step.status || '-')}</span>
+        </div>
+        <pre class="flow-step-description">${escapeHtml(description)}</pre>
+      </div>
+    `;
+    demandaFluxoListEl.appendChild(card);
+    const [fromAvatar, toAvatar] = card.querySelectorAll('[data-flow-avatar]');
+    if (fromAvatar) {
+      fromAvatar.dataset.flowAvatar = step.deColaborador || '';
+      fromAvatar.alt = step.deColaborador || 'Origem';
+    }
+    if (toAvatar) {
+      toAvatar.dataset.flowAvatar = step.paraColaborador || '';
+      toAvatar.alt = step.paraColaborador || 'Destino';
+    }
+  });
+
+  demandaFluxoListEl.querySelectorAll('[data-flow-avatar]').forEach((img) => {
+    attachAvatar(img, img.dataset.flowAvatar || '');
+  });
+}
+
+async function openDemandFlowModal(demandaId, rowIndex = null) {
+  try {
+    const query = rowIndex ? `?rowIndex=${encodeURIComponent(rowIndex)}` : '';
+    const data = await api(`/api/demandas/${encodeURIComponent(demandaId)}/fluxo${query}`);
+    renderDemandFlowModal(data);
+    openModal(modalDemandaFluxo);
+  } catch (error) {
+    await showStatus('erro', `Erro ao carregar fluxo: ${error.message}`);
+  }
 }
 
 function parseBrDate(value) {
@@ -390,6 +491,9 @@ function renderDemandas() {
           <button class="detail-inline-btn" data-detail="${d.id}" data-row-index="${d.rowIndex || ''}" type="button" title="Ver detalhamento">
             <i class="bi bi-eye-fill" aria-hidden="true"></i>
           </button>
+          <button class="detail-inline-btn flow-inline-btn" data-flow="${d.id}" data-row-index="${d.rowIndex || ''}" type="button" title="Ver fluxo da demanda">
+            <i class="bi bi-file-earmark-text-fill" aria-hidden="true"></i>
+          </button>
           <button class="detail-inline-btn redirect-btn" data-redirect="${d.id}" data-row-index="${d.rowIndex || ''}" type="button" title="Redirecionar demanda">
             <i class="bi bi-arrow-left-right" aria-hidden="true"></i>
           </button>
@@ -441,6 +545,11 @@ function renderDemandas() {
         || abertas.find((d) => d.id === id);
       if (!demanda) return;
       void openRedirectCreateModal(demanda);
+    });
+  });
+  demandasEl.querySelectorAll('[data-flow]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      void openDemandFlowModal(btn.dataset.flow, Number(btn.dataset.rowIndex || 0) || null);
     });
   });
 }
@@ -752,13 +861,25 @@ function renderRedirectUnified() {
     let actionHtml = '<span>-</span>';
     if (item.actionType === 'recebida') {
       actionHtml = `
+        <button class="detail-inline-btn flow-inline-btn" data-redir-flow="${item.idDemanda}" type="button" title="Ver fluxo da demanda">
+          <i class="bi bi-file-earmark-text-fill" aria-hidden="true"></i>
+        </button>
         <button class="btn-status concluido" data-redir-accept="${item.idRedirecionamento}" type="button">Aceitar</button>
         <button class="btn-status andamento" data-redir-return="${item.idRedirecionamento}" type="button">Devolver</button>
       `;
     } else if (item.actionType === 'enviada-devolvida') {
       actionHtml = `
+        <button class="detail-inline-btn flow-inline-btn" data-redir-flow="${item.idDemanda}" type="button" title="Ver fluxo da demanda">
+          <i class="bi bi-file-earmark-text-fill" aria-hidden="true"></i>
+        </button>
         <button class="btn-status concluido" data-redir-accept-return="${item.idRedirecionamento}" type="button">Aceitar</button>
         <button class="btn-status andamento" data-redir-refuse-return="${item.idRedirecionamento}" type="button">Recusar</button>
+      `;
+    } else {
+      actionHtml = `
+        <button class="detail-inline-btn flow-inline-btn" data-redir-flow="${item.idDemanda}" type="button" title="Ver fluxo da demanda">
+          <i class="bi bi-file-earmark-text-fill" aria-hidden="true"></i>
+        </button>
       `;
     }
 
@@ -793,6 +914,11 @@ function renderRedirectUnified() {
   });
   redirUnificadoBodyEl.querySelectorAll('[data-redir-refuse-return]').forEach((btn) => {
     btn.addEventListener('click', () => void refuseReturnedRedirect(btn.dataset.redirRefuseReturn));
+  });
+  redirUnificadoBodyEl.querySelectorAll('[data-redir-flow]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      void openDemandFlowModal(btn.dataset.redirFlow);
+    });
   });
 }
 
@@ -1590,6 +1716,10 @@ document.getElementById('btn-logout').addEventListener('click', async () => {
 const btnCloseDemandaDetalhe = document.getElementById('btn-close-demanda-detalhe');
 if (btnCloseDemandaDetalhe) {
   btnCloseDemandaDetalhe.addEventListener('click', () => closeModal(modalDemandaDetalhe));
+}
+const btnCloseDemandaFluxo = document.getElementById('btn-close-demanda-fluxo');
+if (btnCloseDemandaFluxo) {
+  btnCloseDemandaFluxo.addEventListener('click', () => closeModal(modalDemandaFluxo));
 }
 
 function resetTelefoneForm() {
