@@ -1,5 +1,5 @@
 ﻿import { api, requireAuth, clearSession, initThemeIcon } from './auth.js';
-import { ACTIVITIES } from './data.js';
+import { ACTIVITIES, SUBJECT_OPTIONS } from './data.js';
 import { showLoading, showStatus, mountInlineLottie, showAtribuicaoRecebida, showMessageDialog, promptText } from './feedback.js';
 import { attachAvatar } from './avatar.js';
 
@@ -95,46 +95,6 @@ let realtimeConnected = false;
 let realtimeRefreshTimer = null;
 let webconfStep = 1;
 let webconfEditIndex = -1;
-const WHATSAPP_ASSUNTOS = [
-  'Atendimento',
-  'Atuária',
-  'Auditoria',
-  'Auditoria - Direta',
-  'Benefício',
-  'CadPrev - Duvidas',
-  'CadPrev - Erro',
-  'CadPrev - Liberação de Acesso',
-  'Certificação Profissional',
-  'CNIS-RPPS',
-  'COMPREV - Sistema',
-  'COMPREV - Termo de Adesão e Operacionalização',
-  'COMPREV/DATAPREV',
-  'Contabilidade',
-  'Contencioso',
-  'CRP - EMERGENCIAL',
-  'E-Social',
-  'Email',
-  'Encaminhamento da legislação',
-  'Gescon',
-  'Indicador de Situação Previdenciária - ISP',
-  'Informações Judiciais - Outros',
-  'INSS',
-  'Investimentos',
-  'Normatização',
-  'Outros Assuntos',
-  'Pedido de Reunião',
-  'Plano de Custeio',
-  'Previdência Complementar - SURPC',
-  'PRÓ-GESTÃO RPPS',
-  'Programa de Regularidade',
-  'Pronto - DATAPREV',
-  'Prova de Vida',
-  'Repasse e Parcelamento - Confessado',
-  'Repasse e Parcelamento - PAP',
-  'SIG-RPPS',
-  'SIPREV',
-  'SIRC - DATAPREV'
-];
 const ACTIVITY_LINKS = {
   Webconferencia: 'https://outlook.office.com/bookings/calendar',
   Registrosiga: 'https://siga-rpps.sistema.gov.br/dashboard-mps/solicitacao/lista',
@@ -143,6 +103,14 @@ const ACTIVITY_LINKS = {
   Taxigov: 'https://auth.wexp.com.br/account/login?returnUrl=%2Fconnect%2Fauthorize%2Fcallback%3Fclient_id%3Dmvc%26redirect_uri%3Dhttps%253A%252F%252Fmobgov.wexp.com.br%252Fsignin-oidc%26response_type%3Dcode%2520id_token%26scope%3Dopenid%2520profile%2520wExpoPublicAPI%26response_mode%3Dform_post%26nonce%3D639082430395886225.MDc1YzM0Y2EtZmM3OC00ZGRhLWJkYTItZjU0ZjEwZTBjMTcwNjg3MTljMmMtNjQzMi00ZjdiLTljM2UtOWI3ZjMxNjMwNTUy%26state%3DCfDJ8OjS9ljEBdxDjFgdWE_ng_qA7trVo1hWSqhL_-8aV-Ix6SAnKNVBDh8AemhJgzDa0wCIlQB_f4PkkxPqJBlMDXFMIpydFB1MrJ8hqxpct1B1IGjjHYmc0regbOvrChKLLOb_r_PZk7h1FSQqHaJqN54JIZMuMldHGdOalaCPDwvSyF0RgjhOk7Tv6ClSz8RFkaSVX5rF6nygMeS8DtsCQ8ebVXIqV5JigloqU335r8EzTkSbRJBenWSQtnzDsVpixEmCFRPuD7tzhXGmvWF52b_tnTrUq9jwlmqLwfA4GbSfIrTzfTJH-NJvxLzaV56xBdiY8O_SU6HGkFtmDUh5EX0%26x-client-SKU%3DID_NETSTANDARD1_4%26x-client-ver%3D5.2.0.0',
   Phplist: 'https://maillist-listas.trabalho.gov.br/lists/admin/?page=logout&err=1'
 };
+
+function populateSubjectSelect(selectEl) {
+  if (!selectEl) return;
+  selectEl.innerHTML = `
+    <option value="">Selecione o assunto</option>
+    ${SUBJECT_OPTIONS.map((item) => `<option value="${item}">${item}</option>`).join('')}
+  `;
+}
 
 function showMsg(text) {
   msgEl.textContent = text || '';
@@ -1323,10 +1291,7 @@ function setupWhatsapp() {
     descricaoInput.setAttribute('spellcheck', 'false');
   }
   if (assuntoSelect && !assuntoSelect.dataset.ready) {
-    assuntoSelect.innerHTML = `
-      <option value="">Selecione o assunto</option>
-      ${WHATSAPP_ASSUNTOS.map((item) => `<option value="${item}">${item}</option>`).join('')}
-    `;
+    populateSubjectSelect(assuntoSelect);
     assuntoSelect.dataset.ready = 'true';
   }
 
@@ -1480,6 +1445,7 @@ function setupWebconfWizard() {
   const closeParticipantesBtn = document.getElementById('btn-close-webconf-participantes');
   const closeEditBtn = document.getElementById('btn-close-webconf-edit');
   const saveEditBtn = document.getElementById('btn-save-webconf-edit');
+  const qualSelect = document.getElementById('webconf-qual');
   const pNome = document.getElementById('webconf-p-nome');
   const webconfDataInput = document.getElementById('webconf-data');
   const pCpf = document.getElementById('webconf-p-cpf');
@@ -1492,6 +1458,10 @@ function setupWebconfWizard() {
   const editUf = document.getElementById('webconf-edit-uf');
   const editCpfHint = document.getElementById('webconf-edit-cpf-hint');
   if (!openBtn || !closeBtn || !closeParticipantesBtn || !closeEditBtn || !saveEditBtn) return;
+  if (qualSelect && !qualSelect.dataset.ready) {
+    populateSubjectSelect(qualSelect);
+    qualSelect.dataset.ready = 'true';
+  }
 
   openBtn.addEventListener('click', () => openWebconfWizard());
   closeBtn.addEventListener('click', () => closeModal(modalWebconfWizard));
@@ -1743,6 +1713,10 @@ function resetTelefoneForm() {
     el.setAttribute('autocapitalize', 'off');
     el.setAttribute('spellcheck', 'false');
   });
+  if (assuntoEl && !assuntoEl.dataset.ready) {
+    populateSubjectSelect(assuntoEl);
+    assuntoEl.dataset.ready = 'true';
+  }
   if (assuntoEl) assuntoEl.value = '';
   if (descricaoEl) descricaoEl.value = '';
   if (dataEl) dataEl.value = getTodayBrDate();
