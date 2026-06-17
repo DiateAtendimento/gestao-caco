@@ -21,6 +21,26 @@ function normalizeRole(value) {
   return '';
 }
 
+function firstNameOf(value) {
+  return normalizeText(value).split(/\s+/)[0] || '';
+}
+
+function findActiveUserByFirstName(rows, nome) {
+  const firstName = firstNameOf(nome).toLowerCase();
+  if (!firstName) return { user: null, ambiguous: false };
+
+  const matches = rows.filter((row) => (
+    row.Ativo === 'Sim'
+    && firstNameOf(row.Atendente).toLowerCase() === firstName
+  ));
+
+  if (matches.length > 1) {
+    return { user: null, ambiguous: true };
+  }
+
+  return { user: matches[0] || null, ambiguous: false };
+}
+
 router.post('/login', async (req, res) => {
   try {
     const nome = normalizeText(req.body?.nome);
@@ -94,19 +114,19 @@ router.post('/primeiro-acesso', async (req, res) => {
     }
 
     const { rows } = await readSheet(PROFILE_SHEET);
-    const user = rows.find((row) => equalsIgnoreCase(row.Atendente, nome));
+    const { user, ambiguous } = findActiveUserByFirstName(rows, nome);
 
-    if (!user || user.Ativo !== 'Sim') {
-      return res.status(404).json({ error: 'Atendente não encontrado ou inativo' });
+    if (ambiguous) {
+      return res.status(409).json({ error: 'Há mais de um usuário ativo com esse primeiro nome' });
     }
 
-    if (normalizeText(user.Senha)) {
-      return res.status(400).json({ error: 'Este usuário já possui senha cadastrada' });
+    if (!user) {
+      return res.status(404).json({ error: 'Atendente não encontrado ou inativo' });
     }
 
     user.Senha = senha;
     await updateMappedRow(PROFILE_SHEET, user._rowIndex, user);
-    return res.json({ message: 'Primeiro acesso concluído com sucesso' });
+    return res.json({ message: 'Senha redefinida com sucesso' });
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }

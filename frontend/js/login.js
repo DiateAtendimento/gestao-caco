@@ -91,19 +91,19 @@ document.getElementById('form-primeiro-acesso').addEventListener('submit', async
   const msg = document.getElementById('msg');
 
   if (!nome || !senha || !confirmarSenha) {
-    msg.textContent = 'Preencha todos os campos do primeiro acesso.';
+    msg.textContent = 'Preencha todos os campos para redefinir sua senha.';
     await showStatus('erro', 'Preencha todos os campos');
     return;
   }
 
-  const loading = await showLoading('Configurando primeiro acesso...');
+  const loading = await showLoading('Redefinindo senha...');
   try {
     await api('/api/auth/primeiro-acesso', {
       method: 'POST',
       body: JSON.stringify({ nome, senha, confirmarSenha })
     });
-    msg.textContent = 'Primeiro acesso concluído. Agora faça login.';
-    await showStatus('salvo', 'Senha cadastrada com sucesso');
+    msg.textContent = 'Senha redefinida com sucesso. Agora faça login.';
+    await showStatus('salvo', 'Senha redefinida com sucesso');
     event.target.reset();
     closePrimeiroAcesso();
   } catch (error) {
