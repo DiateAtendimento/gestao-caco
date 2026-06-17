@@ -32,6 +32,7 @@ const AVATAR_FILES = [
   'Ilusca.svg',
   'Jessiane.svg',
   'Joelma.png',
+  'Kawanny.svg',
   'Leonardo Coimbra.svg',
   'Lourdes.png',
   'Luciana.svg',
