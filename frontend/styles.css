@@ -1285,6 +1285,35 @@ img {
   width: min(1100px, 96vw);
 }
 
+/* Mantém a lista de redirecionamentos dentro da viewport e rola só a tabela. */
+#modal-redir .modal {
+  max-height: calc(100vh - 32px);
+  max-height: calc(100dvh - 32px);
+  display: flex;
+  flex-direction: column;
+}
+
+#modal-redir .modal-header {
+  flex: 0 0 auto;
+}
+
+#modal-redir .modal-content {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+#modal-redir .table-shell {
+  min-height: 0;
+  overflow: auto;
+}
+
+/* O fluxo aberto pela coluna Ação precisa ficar acima da lista de demandas. */
+#modal-demanda-fluxo {
+  z-index: 110;
+}
+
 .modal-header {
   background: linear-gradient(135deg, #0f9cb4, #1687c9);
   color: #fff;

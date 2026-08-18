@@ -58,6 +58,7 @@ export const SUBJECT_OPTIONS = [
   'Programa de Regularidade',
   'Pronto - DATAPREV',
   'Prova de Vida',
+  'Reforma da previdência',
   'Repasse e Parcelamento - Confessado',
   'Repasse e Parcelamento - PAP',
   'SIG-RPPS',
