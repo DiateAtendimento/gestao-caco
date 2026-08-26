@@ -494,7 +494,7 @@ function renderSolicitacoesSelecionado() {
       <td>${row.descricao}</td>
       <td class="actions-cell">
         <button data-edit-sol="${row.id}" title="Editar"><i class="bi bi-pencil-fill" aria-hidden="true"></i></button>
-        ${isAdmin ? `<button data-del-sol="${row.id}" title="Excluir"><i class="bi bi-trash-fill" aria-hidden="true"></i></button>` : ''}
+        <button data-del-sol="${row.id}" title="Excluir"><i class="bi bi-trash-fill" aria-hidden="true"></i></button>
         <button data-assign-sol="${row.id}" class="btn-assign-sol" title="Atribuir"><i class="bi bi-send-fill"></i></button>
       </td>
     `;

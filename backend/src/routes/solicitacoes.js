@@ -258,7 +258,7 @@ router.put('/:id', async (req, res) => {
 
 router.delete('/:id', async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
+    if (!canManageSolicitacoes(req.user)) {
       return res.status(403).json({ error: 'Acesso negado' });
     }
 

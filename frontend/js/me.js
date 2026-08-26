@@ -14,6 +14,7 @@ const state = {
   webconfRegistros: [],
   telefoneRegistros: [],
   telefoneTransferGroups: [],
+  editingTelefoneId: null,
   selectedTelefoneTransfer: null,
   webconfDraft: {
     qualWebconferencia: '',
@@ -667,7 +668,7 @@ function renderTelefoneRegistros() {
   }
 
   if (!filtered.length) {
-    telefoneBodyEl.innerHTML = '<tr><td colspan="8">Nenhum registro de telefone encontrado.</td></tr>';
+    telefoneBodyEl.innerHTML = '<tr><td colspan="9">Nenhum registro de telefone encontrado.</td></tr>';
     return;
   }
 
@@ -698,6 +699,10 @@ function renderTelefoneRegistros() {
           <i class="bi bi-eye-fill" aria-hidden="true"></i>
         </button>
       </td>
+      <td class="actions-cell">
+        <button data-telefone-edit="${key}" type="button" title="Editar"><i class="bi bi-pencil-fill" aria-hidden="true"></i></button>
+        <button data-telefone-delete="${key}" type="button" title="Excluir"><i class="bi bi-trash-fill" aria-hidden="true"></i></button>
+      </td>
     `;
     telefoneBodyEl.appendChild(tr);
   });
@@ -721,6 +726,28 @@ function renderTelefoneRegistros() {
       attachAvatar(document.getElementById('telefone-detalhe-atendente-avatar'), row.atendente || '');
       attachAvatar(document.getElementById('telefone-detalhe-transferido-avatar'), row.transferidoPara || '');
       openModal(modalTelefoneDetalhe);
+    });
+  });
+
+  telefoneBodyEl.querySelectorAll('[data-telefone-edit]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const row = filtered.find((item, idx) => (item.id || `tel-${idx}`) === btn.dataset.telefoneEdit);
+      if (!row) return;
+      openTelefoneForm(row);
+    });
+  });
+
+  telefoneBodyEl.querySelectorAll('[data-telefone-delete]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const id = btn.dataset.telefoneDelete;
+      if (!id || !window.confirm(`Excluir o registro ${id}?`)) return;
+      try {
+        await runAction('excluir registro de telefone', 'Excluindo registro...', 'excluido', 'Registro de telefone excluído', async () => {
+          await api(`/api/telefone/registros/${encodeURIComponent(id)}`, { method: 'DELETE' });
+          await loadData();
+          renderTelefoneRegistros();
+        });
+      } catch (_e) {}
     });
   });
 }
@@ -888,6 +915,7 @@ function renderRedirectUnified() {
       void openDemandFlowModal(btn.dataset.redirFlow);
     });
   });
+
 }
 
 function renderRedirectCandidateList(candidates) {
@@ -1693,6 +1721,7 @@ if (btnCloseDemandaFluxo) {
 }
 
 function resetTelefoneForm() {
+  state.editingTelefoneId = null;
   state.selectedTelefoneTransfer = null;
   const assuntoEl = document.getElementById('telefone-assunto');
   const descricaoEl = document.getElementById('telefone-descricao');
@@ -1722,10 +1751,37 @@ function resetTelefoneForm() {
   if (dataEl) dataEl.value = getTodayBrDate();
   if (transferidoEl) transferidoEl.value = '';
   if (coordenacaoEl) coordenacaoEl.value = '';
+  const titleEl = document.getElementById('telefone-form-title');
+  const saveBtn = document.getElementById('btn-save-telefone');
+  if (titleEl) titleEl.textContent = 'Registro de Telefone';
+  if (saveBtn) saveBtn.textContent = 'Registrar';
   if (telefoneTransferListEl) {
     telefoneTransferListEl.innerHTML = '';
     telefoneTransferListEl.classList.remove('open');
   }
+}
+
+function openTelefoneForm(row = null) {
+  resetTelefoneForm();
+  const atendente = row?.atendente || user.nome;
+  const atendenteEl = document.getElementById('telefone-atendente');
+  if (atendenteEl) atendenteEl.textContent = atendente;
+  attachAvatar(document.getElementById('telefone-atendente-avatar'), atendente);
+
+  if (row) {
+    state.editingTelefoneId = row.id;
+    document.getElementById('telefone-assunto').value = row.assunto || '';
+    document.getElementById('telefone-descricao').value = row.descricao || '';
+    document.getElementById('telefone-data').value = row.dataRegistro || '';
+    document.getElementById('telefone-transferido-input').value = row.transferidoPara || '';
+    document.getElementById('telefone-coordenacao').value = row.coordenacao || '';
+    const titleEl = document.getElementById('telefone-form-title');
+    const saveBtn = document.getElementById('btn-save-telefone');
+    if (titleEl) titleEl.textContent = `Editar Registro de Telefone - ${row.id}`;
+    if (saveBtn) saveBtn.textContent = 'Salvar alterações';
+  }
+
+  openModal(modalTelefoneForm);
 }
 
 function setupTelefoneModule() {
@@ -1736,14 +1792,13 @@ function setupTelefoneModule() {
   if (!openBtn || !closeBtn || !saveBtn || !closeDetailBtn) return;
 
   openBtn.addEventListener('click', () => {
-    resetTelefoneForm();
-    const atendenteEl = document.getElementById('telefone-atendente');
-    if (atendenteEl) atendenteEl.textContent = user.nome;
-    attachAvatar(document.getElementById('telefone-atendente-avatar'), user.nome);
-    openModal(modalTelefoneForm);
+    openTelefoneForm();
   });
 
-  closeBtn.addEventListener('click', () => closeModal(modalTelefoneForm));
+  closeBtn.addEventListener('click', () => {
+    resetTelefoneForm();
+    closeModal(modalTelefoneForm);
+  });
   closeDetailBtn.addEventListener('click', () => closeModal(modalTelefoneDetalhe));
 
   if (telefoneTransferInputEl && !telefoneTransferInputEl.dataset.bound) {
@@ -1787,11 +1842,21 @@ function setupTelefoneModule() {
       await showStatus('erro', 'Assunto é obrigatório');
       return;
     }
+    if (!descricao) {
+      await showStatus('erro', 'Descrição é obrigatória');
+      return;
+    }
 
     try {
-      await runAction('registrar telefone', 'Salvando registro...', 'salvo', 'Registro de telefone salvo', async () => {
-        await api('/api/telefone/registros', {
-          method: 'POST',
+      const editingId = state.editingTelefoneId;
+      const actionLabel = editingId ? 'editar registro de telefone' : 'registrar telefone';
+      const successLabel = editingId ? 'Registro de telefone atualizado' : 'Registro de telefone salvo';
+      await runAction(actionLabel, 'Salvando registro...', 'salvo', successLabel, async () => {
+        const endpoint = editingId
+          ? `/api/telefone/registros/${encodeURIComponent(editingId)}`
+          : '/api/telefone/registros';
+        await api(endpoint, {
+          method: editingId ? 'PUT' : 'POST',
           body: JSON.stringify({
             assunto,
             descricao,
@@ -1799,6 +1864,7 @@ function setupTelefoneModule() {
             transferidoPara
           })
         });
+        resetTelefoneForm();
         closeModal(modalTelefoneForm);
         await loadData();
         renderTelefoneRegistros();

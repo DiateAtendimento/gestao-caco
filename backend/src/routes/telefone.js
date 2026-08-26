@@ -8,7 +8,13 @@ const {
   TELEFONE_HEADERS,
   COORDENACOES_SHEET
 } = require('../config/constants');
-const { readSheet, writeHeadersIfEmpty, appendMappedRow } = require('../services/sheetsService');
+const {
+  readSheet,
+  writeHeadersIfEmpty,
+  appendMappedRow,
+  updateMappedRow,
+  deleteRow
+} = require('../services/sheetsService');
 const { ensureDemandsMetaColumn, demandsRowTemplate } = require('../services/demandService');
 const { normalizeText, equalsIgnoreCase } = require('../utils/text');
 const { toBrDate, currentYear } = require('../utils/datetime');
@@ -223,6 +229,105 @@ router.post('/registros', async (req, res) => {
       registradoPor: req.user.nome
     });
     return res.status(201).json({ message: 'Registro de telefone salvo', id: telefoneId });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+router.put('/registros/:id', async (req, res) => {
+  try {
+    if (!(await hasTelefonePermission(req.user.nome))) {
+      return res.status(403).json({ error: 'Usuário sem permissão de Telefone' });
+    }
+
+    const id = normalizeText(req.params.id);
+    const assunto = normalizeText(req.body?.assunto);
+    const descricao = normalizeText(req.body?.descricao);
+    const dataRegistro = normalizeText(req.body?.dataRegistro) || toBrDate();
+    const transferidoPara = normalizeText(req.body?.transferidoPara);
+
+    if (!assunto || !descricao) {
+      return res.status(400).json({ error: 'Assunto e descrição são obrigatórios' });
+    }
+
+    const { rows: telefoneRows } = await readSheet(TELEFONE_SHEET, { forceRefresh: true });
+    const telefoneRow = telefoneRows.find((row) => normalizeText(row.ID) === id);
+    if (!telefoneRow) {
+      return res.status(404).json({ error: 'Registro de telefone não encontrado' });
+    }
+
+    const { rows: coordRows } = await readSheet(COORDENACOES_SHEET);
+    const normalized = normalizeTransferOptions(coordRows);
+    const coordenacao = resolveSiglaByName(normalized.flat, transferidoPara);
+    const atendente = normalizeText(telefoneRow.Atendente) || req.user.nome;
+
+    telefoneRow.Assunto = assunto;
+    telefoneRow['Descrição'] = descricao;
+    telefoneRow['DescriÃ§Ã£o'] = descricao;
+    telefoneRow['Data do Registro'] = dataRegistro;
+    telefoneRow['Transferido para'] = transferidoPara;
+    telefoneRow.Coordenacao = coordenacao;
+    telefoneRow['Coordenação'] = coordenacao;
+    telefoneRow.Detalhamento = buildDetalhamento({
+      assunto,
+      descricao,
+      dataRegistro,
+      atendente,
+      transferidoPara,
+      coordenacao
+    });
+    await updateMappedRow(TELEFONE_SHEET, telefoneRow._rowIndex, telefoneRow);
+
+    const { rows: demandRows } = await readSheet(DEMANDS_SHEET, { forceRefresh: true });
+    const demandRow = demandRows.find((row) => normalizeText(row.ID) === id);
+    if (demandRow) {
+      demandRow.Assunto = assunto;
+      demandRow['Descrição'] = descricao;
+      demandRow['DescriÃ§Ã£o'] = descricao;
+      demandRow['Data do Registro'] = dataRegistro;
+      await updateMappedRow(DEMANDS_SHEET, demandRow._rowIndex, demandRow);
+    }
+
+    publishDemandasUpdate({
+      type: 'registro_telefone_atualizado',
+      demandaId: id,
+      origem: 'telefone',
+      registradoPor: atendente
+    });
+    return res.json({ message: 'Registro de telefone atualizado' });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+router.delete('/registros/:id', async (req, res) => {
+  try {
+    if (!(await hasTelefonePermission(req.user.nome))) {
+      return res.status(403).json({ error: 'Usuário sem permissão de Telefone' });
+    }
+
+    const id = normalizeText(req.params.id);
+    const { rows: telefoneRows } = await readSheet(TELEFONE_SHEET, { forceRefresh: true });
+    const telefoneRow = telefoneRows.find((row) => normalizeText(row.ID) === id);
+    if (!telefoneRow) {
+      return res.status(404).json({ error: 'Registro de telefone não encontrado' });
+    }
+
+    await deleteRow(TELEFONE_SHEET, telefoneRow._rowIndex);
+
+    const { rows: demandRows } = await readSheet(DEMANDS_SHEET, { forceRefresh: true });
+    const demandRow = demandRows.find((row) => normalizeText(row.ID) === id);
+    if (demandRow) {
+      await deleteRow(DEMANDS_SHEET, demandRow._rowIndex);
+    }
+
+    publishDemandasUpdate({
+      type: 'registro_telefone_removido',
+      demandaId: id,
+      origem: 'telefone',
+      registradoPor: telefoneRow.Atendente || req.user.nome
+    });
+    return res.json({ message: 'Registro de telefone removido' });
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }
