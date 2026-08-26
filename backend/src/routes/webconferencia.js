@@ -13,7 +13,9 @@ const {
   readSheetValues,
   appendMappedRow,
   writeHeadersIfEmpty,
-  updateMappedRowsBatch
+  updateMappedRowsBatch,
+  updateMappedRow,
+  deleteRow
 } = require('../services/sheetsService');
 const { ensureDemandsMetaColumn, demandsRowTemplate } = require('../services/demandService');
 const { normalizeText, equalsIgnoreCase } = require('../utils/text');
@@ -460,6 +462,93 @@ router.post('/registros', async (req, res) => {
       registroId: webId,
       demandasGeradas: createdDemandIds
     });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+router.put('/registros/:id', async (req, res) => {
+  try {
+    if (!(await hasWebconferencePermission(req.user.nome))) {
+      return res.status(403).json({ error: 'Usuário sem permissão de Webconferencia' });
+    }
+
+    const id = normalizeText(req.params.id);
+    const qualWebconferencia = normalizeText(req.body?.qualWebconferencia);
+    const data = normalizeText(req.body?.data) || toBrDate();
+    const horario = normalizeText(req.body?.horario);
+    const enteCompareceu = normalizeText(req.body?.enteCompareceu)
+      || invertYesNo(normalizeText(req.body?.enteNaoCompareceu))
+      || '';
+    const enteNaoCompareceu = invertYesNo(enteCompareceu);
+    const participants = parseParticipants(req.body?.participants);
+
+    if (!qualWebconferencia) {
+      return res.status(400).json({ error: 'Webconferência é obrigatória' });
+    }
+
+    const { headers, rows } = await readSheet(WEBCONF_SHEET, { forceRefresh: true });
+    const row = rows.find((item) => normalizeText(item.ID) === id);
+    if (!row) {
+      return res.status(404).json({ error: 'Registro de webconferência não encontrado' });
+    }
+
+    const participantesTexto = participants.length
+      ? participants.map((participant, index) => participantBlock(participant, index)).join('\n\n--------------------\n\n')
+      : '';
+    row.Data = data;
+    row.Participantes = participantesTexto;
+    setByHeaderAliases(
+      row,
+      headers,
+      ['Qual a Webconferencia', 'Qual a Webconferência', 'Qual Webconferencia', 'Qual Webconferência'],
+      qualWebconferencia
+    );
+    setByHeaderTokenIncludes(row, headers, ['qual', 'webconfer'], qualWebconferencia);
+    setByHeaderAliases(row, headers, ['Horário', 'Horario'], horario);
+    setByHeaderAliases(row, headers, ['Ente compareceu ao agendamento', 'Ente compareceu'], enteCompareceu);
+    setByHeaderAliases(
+      row,
+      headers,
+      ['Ente não compareceu ao agendamento', 'Ente nao compareceu ao agendamento'],
+      enteNaoCompareceu
+    );
+    setByHeaderAliases(row, headers, ['Quantidade atendida'], String(participants.length));
+    await updateMappedRow(WEBCONF_SHEET, row._rowIndex, row);
+
+    publishDemandasUpdate({
+      type: 'registro_webconferencia_atualizado',
+      origem: 'webconferencia',
+      registroId: id,
+      registradoPor: row.Atendente || req.user.nome
+    });
+    return res.json({ message: 'Registro de webconferência atualizado' });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+router.delete('/registros/:id', async (req, res) => {
+  try {
+    if (!(await hasWebconferencePermission(req.user.nome))) {
+      return res.status(403).json({ error: 'Usuário sem permissão de Webconferencia' });
+    }
+
+    const id = normalizeText(req.params.id);
+    const { rows } = await readSheet(WEBCONF_SHEET, { forceRefresh: true });
+    const row = rows.find((item) => normalizeText(item.ID) === id);
+    if (!row) {
+      return res.status(404).json({ error: 'Registro de webconferência não encontrado' });
+    }
+
+    await deleteRow(WEBCONF_SHEET, row._rowIndex);
+    publishDemandasUpdate({
+      type: 'registro_webconferencia_removido',
+      origem: 'webconferencia',
+      registroId: id,
+      registradoPor: row.Atendente || req.user.nome
+    });
+    return res.json({ message: 'Registro de webconferência removido' });
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }

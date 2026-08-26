@@ -962,6 +962,14 @@ img {
   color: #1f78d1;
 }
 
+.table td.actions-cell .action-edit-btn {
+  color: #f28c28;
+}
+
+.table td.actions-cell .action-delete-btn {
+  color: #d9363e;
+}
+
 .status-actions {
   display: flex;
   gap: 8px;

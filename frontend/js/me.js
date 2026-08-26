@@ -12,6 +12,7 @@ const state = {
   demandas: [],
   sigaRegistros: [],
   webconfRegistros: [],
+  editingWebconfId: null,
   telefoneRegistros: [],
   telefoneTransferGroups: [],
   editingTelefoneId: null,
@@ -593,7 +594,7 @@ function renderWebconfRegistros() {
   }
 
   if (!filtered.length) {
-    webconfBodyEl.innerHTML = '<tr><td colspan=\"8\">Nenhum registro de webconferência encontrado.</td></tr>';
+    webconfBodyEl.innerHTML = '<tr><td colspan=\"9\">Nenhum registro de webconferência encontrado.</td></tr>';
     return;
   }
 
@@ -618,6 +619,10 @@ function renderWebconfRegistros() {
           <i class=\"bi bi-eye-fill\" aria-hidden=\"true\"></i>
         </button>
       </td>
+      <td class="actions-cell">
+        <button class="action-edit-btn" data-webconf-registro-edit="${webconfKey}" type="button" title="Editar"><i class="bi bi-pencil-fill" aria-hidden="true"></i></button>
+        <button class="action-delete-btn" data-webconf-registro-delete="${webconfKey}" type="button" title="Excluir"><i class="bi bi-trash-fill" aria-hidden="true"></i></button>
+      </td>
     `;
     tr.dataset.webconfKey = webconfKey;
     webconfBodyEl.appendChild(tr);
@@ -634,6 +639,28 @@ function renderWebconfRegistros() {
       const row = filtered.find((r, idx) => (r.id || `legacy-${idx}`) === key);
       document.getElementById('webconf-participantes-preview').textContent = row?.participantes || 'Sem participantes';
       openModal(modalWebconfParticipantes);
+    });
+  });
+
+  webconfBodyEl.querySelectorAll('[data-webconf-registro-edit]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const row = filtered.find((item, idx) => (item.id || `legacy-${idx}`) === btn.dataset.webconfRegistroEdit);
+      if (!row) return;
+      openWebconfWizard(row);
+    });
+  });
+
+  webconfBodyEl.querySelectorAll('[data-webconf-registro-delete]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const id = btn.dataset.webconfRegistroDelete;
+      if (!id || !window.confirm(`Excluir o registro ${id}?`)) return;
+      try {
+        await runAction('excluir registro de webconferência', 'Excluindo registro...', 'excluido', 'Registro de webconferência excluído', async () => {
+          await api(`/api/webconferencia/registros/${encodeURIComponent(id)}`, { method: 'DELETE' });
+          await loadData();
+          renderWebconfRegistros();
+        });
+      } catch (_e) {}
     });
   });
 }
@@ -700,8 +727,8 @@ function renderTelefoneRegistros() {
         </button>
       </td>
       <td class="actions-cell">
-        <button data-telefone-edit="${key}" type="button" title="Editar"><i class="bi bi-pencil-fill" aria-hidden="true"></i></button>
-        <button data-telefone-delete="${key}" type="button" title="Excluir"><i class="bi bi-trash-fill" aria-hidden="true"></i></button>
+        <button class="action-edit-btn" data-telefone-edit="${key}" type="button" title="Editar"><i class="bi bi-pencil-fill" aria-hidden="true"></i></button>
+        <button class="action-delete-btn" data-telefone-delete="${key}" type="button" title="Excluir"><i class="bi bi-trash-fill" aria-hidden="true"></i></button>
       </td>
     `;
     telefoneBodyEl.appendChild(tr);
@@ -1177,15 +1204,37 @@ function maskDateInput(value) {
   return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
 }
 
-function openWebconfWizard() {
+function parseWebconfParticipants(text) {
+  return String(text || '')
+    .split(/\n\s*-{5,}\s*\n/g)
+    .map((block) => {
+      const field = (label) => {
+        const match = block.match(new RegExp(`^${label}:\\s*(.*)$`, 'mi'));
+        const value = String(match?.[1] || '').trim();
+        return value === '-' ? '' : value;
+      };
+      return {
+        nome: field('Nome'),
+        cpf: field('CPF').replace(/\D/g, ''),
+        municipio: field('Município'),
+        uf: field('UF').toUpperCase(),
+        descricao: field('Descrição')
+      };
+    })
+    .filter((participant) => Object.values(participant).some(Boolean));
+}
+
+function openWebconfWizard(row = null) {
   resetWebconfDraft();
+  state.editingWebconfId = null;
   webconfEditIndex = -1;
   setWebconfStep(1);
   document.getElementById('webconf-qual').value = '';
   document.getElementById('webconf-data').value = '';
   document.getElementById('webconf-horario').value = '';
-  document.getElementById('webconf-atendente').textContent = user.nome;
-  attachAvatar(document.getElementById('webconf-atendente-avatar'), user.nome);
+  const atendente = row?.atendente || user.nome;
+  document.getElementById('webconf-atendente').textContent = atendente;
+  attachAvatar(document.getElementById('webconf-atendente-avatar'), atendente);
   document.getElementById('webconf-p-nome').value = '';
   document.getElementById('webconf-p-cpf').value = '';
   document.getElementById('webconf-p-municipio').value = '';
@@ -1194,6 +1243,29 @@ function openWebconfWizard() {
   document.querySelectorAll('input[name="webconf-ente-nao"]').forEach((radio) => {
     radio.checked = radio.value === 'Não';
   });
+  const titleEl = document.getElementById('webconf-form-title');
+  const saveBtn = document.getElementById('webconf-save');
+  if (titleEl) titleEl.textContent = 'Registros Webconferência';
+  if (saveBtn) saveBtn.textContent = 'Registrar';
+
+  if (row) {
+    state.editingWebconfId = row.id;
+    state.webconfDraft = {
+      qualWebconferencia: row.qualWebconferencia || '',
+      data: row.data || '',
+      horario: row.horario || '',
+      enteCompareceu: row.enteCompareceu || 'Não',
+      participants: parseWebconfParticipants(row.participantes)
+    };
+    document.getElementById('webconf-qual').value = state.webconfDraft.qualWebconferencia;
+    document.getElementById('webconf-data').value = state.webconfDraft.data;
+    document.getElementById('webconf-horario').value = state.webconfDraft.horario;
+    document.querySelectorAll('input[name="webconf-ente-nao"]').forEach((radio) => {
+      radio.checked = radio.value === state.webconfDraft.enteCompareceu;
+    });
+    if (titleEl) titleEl.textContent = `Editar Webconferência - ${row.id}`;
+    if (saveBtn) saveBtn.textContent = 'Salvar alterações';
+  }
   paintCpfHint(document.getElementById('webconf-p-cpf-hint'), false);
   paintCpfHint(document.getElementById('webconf-edit-cpf-hint'), false);
   const noHistorySuffix = String(Date.now());
@@ -1545,7 +1617,9 @@ function setupWebconfWizard() {
       await showStatus('erro', 'Selecione qual é a webconferência');
       return;
     }
-    await fillWebconfAgendaDefaults(state.webconfDraft.qualWebconferencia);
+    if (!state.editingWebconfId) {
+      await fillWebconfAgendaDefaults(state.webconfDraft.qualWebconferencia);
+    }
     setWebconfStep(2);
   });
   document.getElementById('webconf-back-2').addEventListener('click', () => setWebconfStep(1));
@@ -1611,9 +1685,15 @@ function setupWebconfWizard() {
     state.webconfDraft.enteCompareceu = selectedEnteCompareceuValue();
 
     try {
-      await runAction('registrar webconferência', 'Salvando registro...', 'salvo', 'Registro de webconferência salvo', async () => {
-        await api('/api/webconferencia/registros', {
-          method: 'POST',
+      const editingId = state.editingWebconfId;
+      const actionLabel = editingId ? 'editar registro de webconferência' : 'registrar webconferência';
+      const successLabel = editingId ? 'Registro de webconferência atualizado' : 'Registro de webconferência salvo';
+      await runAction(actionLabel, 'Salvando registro...', 'salvo', successLabel, async () => {
+        const endpoint = editingId
+          ? `/api/webconferencia/registros/${encodeURIComponent(editingId)}`
+          : '/api/webconferencia/registros';
+        await api(endpoint, {
+          method: editingId ? 'PUT' : 'POST',
           body: JSON.stringify({
             qualWebconferencia: state.webconfDraft.qualWebconferencia,
             data: state.webconfDraft.data,
@@ -1622,6 +1702,7 @@ function setupWebconfWizard() {
             participants: state.webconfDraft.participants
           })
         });
+        state.editingWebconfId = null;
         closeModal(modalWebconfWizard);
         await loadData();
         renderWebconfRegistros();
